@@ -1,0 +1,15 @@
+# Python binaries
+__pycache__/
+*.py[cod]
+
+# Vim files
+*.swp
+tags
+
+# Mac Things
+*.DS_Store
+
+# Sass things
+.sass-cache/
+*.css
+*.css.map
