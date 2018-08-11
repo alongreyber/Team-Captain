@@ -5,6 +5,7 @@ services:
     build: .
     environment:
       FLASK_ENV: development
+      SERVER_NAME: bcb.manager:5000
     volumes:
       - .:/code
     ports:

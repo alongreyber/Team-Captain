@@ -15,7 +15,9 @@
 	{% for user in users %}    
 	<tr>
 	    <td>
-		{{user.email}}
+		<a href="{{url_for('user_info', id=user.id)}}">
+		    {{user.email}}
+		</a>
 	    </td>
 	    <td>
 		{{user.first_name}}

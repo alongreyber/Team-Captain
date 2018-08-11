@@ -1,10 +1,10 @@
 <html>
     <head>
-	<!-- Bootstrap -->
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
 	<!-- Material Icons -->
-	<link href="https://fonts.googleapis.com/icon?family=Material+Icons"
-      rel="stylesheet">
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+	<!-- Main stylesheet -->
+	<link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/main.css')}}">
+
 	
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
@@ -16,21 +16,40 @@
 	{% endblock %}
     </head>
     <body>
+	<div class="navbar is-info">
+	    <div class="navbar-menu">
+		<div class="navbar-start">
+		    <a href="{{url_for('user_list')}}" class="navbar-item {{ "is-active" if request.path == '/' }}">
+			Users
+		    </a>
+		    <a href="#" class="navbar-item">
+			Time Logs
+		    </a>
+		</div>
+		<div class="navbar-end">
+		    <div class="navbar-item">
+			Team 6332
+		    </div>
+		</div>
+	    </div>
+	</div>
 	{% block nav %}{% endblock %}
 
-	{% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-	    {% if category != 'feedback' %}
-	    <div class="alert alert-{{ category }}" role="alert">
-		{{ message }}
-	    </div>
+	<div class="container">
+	    {% with messages = get_flashed_messages(with_categories=true) %}
+	    {% if messages %}
+		{% for category, message in messages %}
+		{% if category != 'feedback' %}
+		<div class="notification is-{{ category }}" role="alert">
+		    {{ message }}
+		</div>
+		{% endif %}
+		{% endfor %}
 	    {% endif %}
-            {% endfor %}
-        {% endif %}
-        {% endwith %}
+	    {% endwith %}
 
-        {% block content %}{% endblock %}
+	    {% block content %}{% endblock %}
+	</div>
     </body>
 </html>
 

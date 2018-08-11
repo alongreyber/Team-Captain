@@ -1,12 +1,15 @@
 from app import db
 
-class User(db.Document):
-    email = db.StringField(required=True)
-    barcode = db.StringField()
+class BaseModel(db.Document):
+    meta = {'allow_inheritance': True}
+
+class User(BaseModel):
+    email = db.EmailField(max_length=100)
+    barcode = db.StringField(max_length=100)
     first_name = db.StringField(max_length=50)
     last_name = db.StringField(max_length=50)
 
-class TimeLog(db.Document):
+class TimeLog(BaseModel):
     user = db.ReferenceField(User)
     time_in = db.DateTimeField()
     time_out = db.DateTimeField()
