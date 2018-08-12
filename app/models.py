@@ -1,3 +1,4 @@
+import datetime
 from app import db
 
 class BaseModel(db.Document):
@@ -14,6 +15,9 @@ class TimeLog(BaseModel):
     time_in = db.DateTimeField()
     time_out = db.DateTimeField()
 
+# Sample data
 if not User.objects(email='alongreyber@gmail.com'):
-    User(email='alongreyber@gmail.com', first_name='Alon', last_name='Greyber').save()
+    u1 = User(email='alongreyber@gmail.com', first_name='Alon', last_name='Greyber').save()
     User(email='amgreybe@ncsu.edu', first_name='Ricky', last_name='Bobby').save()
+    TimeLog(user=u1, time_in=datetime.datetime.now(),
+                     time_out=datetime.datetime.now() + datetime.timedelta(hours=5)).save()

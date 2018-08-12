@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 class="title">Time log for {{timelog.user.first_name}} {{timelog.user.last_name}}</h1>
+<form action="" method="post">
+    {{ form.hidden_tag() }}
+
+    <div class="field">
+	{{ form.user.label(class_='label') }}
+	<div class="control">
+	    {{ form.user(class_='input') }}
+	</div>
+    </div>
+    <div class="field">
+	{{ form.time_in.label(class_='label') }}
+	<div class="control">
+	    {{ form.time_in(class_='input') }}
+	</div>
+    </div>
+    <div class="field">
+	{{ form.time_out.label(class_='label') }}
+	<div class="control">
+	{{ form.time_out(class_='input') }}
+	</div>
+    </div>
+    <input class="btn btn-primary" id="submit" name="submit" type="submit" value="Save">
+</form>
+{% endblock %}

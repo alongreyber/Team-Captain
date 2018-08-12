@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h1 class="title"> All Time Logs </h1>
+<a href="{{url_for('clock_in')}}">
+    <button class="button">Go to Clock In</button>
+</a>
+<br />
+<table class="table">
+    <thead>
+	<tr>
+	    <th>User Name</th>
+	    <th>Time In</th>
+	    <th>Time Out</th>
+	    <th>Edit</th>
+	</tr>
+    </thead>
+    <tbody>
+	{% for t in timelogs %}    
+	<tr>
+	    <td>
+		<a href="{{url_for('user_info', id=t.user.id)}}">
+		{{t.user.first_name}} {{t.user.last_name}}
+		</a>
+	    </td>
+	    <td>
+		{{t.time_in}}
+	    </td>
+	    <td>
+		{{t.time_out}}
+	    </td>
+	    <td>
+		<a href="{{url_for('timelog_info', id=t.id)}}">
+		    <span class="icon is-small">
+			<i class="fas fa-pencil-alt"></i>
+		    </span>
+		</a>
+	    </td>
+	</tr>
+	{% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

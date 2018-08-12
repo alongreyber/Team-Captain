@@ -1,10 +1,9 @@
 <html>
     <head>
-	<!-- Material Icons -->
-	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+	<!-- Font Awesome Icons -->
+	<script defer src="https://use.fontawesome.com/releases/v5.1.0/js/all.js"></script>
 	<!-- Main stylesheet -->
 	<link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/main.css')}}">
-
 	
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
@@ -17,12 +16,12 @@
     </head>
     <body>
 	<div class="navbar is-info">
-	    <div class="navbar-menu">
+	    <div class="navbar-menu is-active">
 		<div class="navbar-start">
 		    <a href="{{url_for('user_list')}}" class="navbar-item {{ "is-active" if request.path == '/' }}">
 			Users
 		    </a>
-		    <a href="#" class="navbar-item">
+		    <a href="{{url_for('timelog_list')}}" class="navbar-item">
 			Time Logs
 		    </a>
 		</div>
@@ -35,7 +34,7 @@
 	</div>
 	{% block nav %}{% endblock %}
 
-	<div class="container">
+	<div class="container" id='main-container'>
 	    {% with messages = get_flashed_messages(with_categories=true) %}
 	    {% if messages %}
 		{% for category, message in messages %}

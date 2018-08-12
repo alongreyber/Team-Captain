@@ -7,3 +7,9 @@ UserForm = model_form(models.User, field_args = {
     'email' : {'label' : "Email"},
     'barcode' : {'label' : "Barcode"},
 })
+
+TimeLogForm = model_form(models.TimeLog, field_args = {
+    'user' : {'label' : "User", 'label_attr' : 'email'},
+    'time_in' : {'label' : "Time In"},
+    'time_out' : {'label' : "Time Out"},
+})
