@@ -14,11 +14,6 @@ def user_list():
     users = models.User.objects
     return render_template('admin/user_list.html', users=users)
 
-@admin.route('/timelogs')
-def timelog_list():
-    timelogs = models.TimeLog.objects
-    return render_template('admin/timelog_list.html', timelogs=timelogs)
-
 @admin.route('/u/<id>', methods=['GET', 'POST'])
 def user_info(id):
     user = models.User.objects(id=id).first()
@@ -32,6 +27,11 @@ def user_info(id):
     if len(form.errors) > 0:
         flash_errors(form)
     return render_template('admin/user_info.html', user=user, form=form)
+
+@admin.route('/timelogs')
+def timelog_list():
+    timelogs = models.TimeLog.objects
+    return render_template('admin/timelog_list.html', timelogs=timelogs)
 
 @admin.route('/t/<id>', methods=['GET', 'POST'])
 def timelog_info(id):
@@ -72,6 +72,14 @@ def sign_everyone_out():
         t.save()
     flash('Signed Out ' + str(len(timelogs)) + ' users', 'success')
     return redirect(url_for('admin.timelog_list'))
+
+@admin.route('/meetings')
+def meetings_list():
+    meetings = models.Meeting.objects()
+    recurring_meetings = models.RecurringMeeting.objects()
+    return render_template('admin/meeting_list.html',
+            meetings=meetings,
+            recurring_meetings=recurring_meetings)
 
 def flash_errors(form):
     """Flash errors from a form at the top of the page"""

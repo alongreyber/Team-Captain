@@ -6,7 +6,11 @@ import datetime
 
 public = Blueprint('public', __name__, template_folder='templates')
 
-@public.route('/')
-@login_required
+@public.route('/home')
 def index():
-    return "Authorized!"
+    return redirect(url_for('public.user_profile'))
+
+@public.route('/profile')
+@login_required
+def user_profile():
+    return render_template('public/user_profile.html', user=current_user)

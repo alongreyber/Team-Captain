@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="hero is-primary">
+  <div class="hero-body">
+    <div class="container">
+      <h1 class="title">
+        Welcome to the FRC Management System
+      </h1>
+      <h2 class="subtitle">
+	  Developed by Alon Greyber with Bull City Botics
+	  <br />
+	  <br />
+	  <a href="{{url_for('public.index')}}">
+	      <button class="button is-link">
+		  Let's get started!
+	      </button>
+	  </a>
+      </h2>
+    </div>
+  </div>
+</section>
+{% endblock %}

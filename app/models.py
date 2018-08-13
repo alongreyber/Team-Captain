@@ -21,9 +21,15 @@ class TimeLog(BaseModel):
     time_in = db.DateTimeField()
     time_out = db.DateTimeField()
 
-# Sample data
-if not User.objects(email='alongreyber@gmail.com'):
-    u1 = User(email='alongreyber@gmail.com', first_name='Alon', last_name='Greyber').save()
-    User(email='amgreybe@ncsu.edu', first_name='Ricky', last_name='Bobby').save()
-    TimeLog(user=u1, time_in=datetime.datetime.now(),
-                     time_out=datetime.datetime.now() + datetime.timedelta(hours=5)).save()
+class RecurringMeeting(BaseModel):
+    start_date = db.DateTimeField()
+    end_date = db.DateTimeField()
+    start_time = db.DateTimeField()
+    end_time = db.DateTimeField()
+    days_of_week = db.ListField(db.StringField())
+
+class Meeting(BaseModel):
+    start_time = db.DateTimeField()
+    end_time = db.DateTimeField()
+    recurrence = db.ReferenceField(RecurringMeeting)
+

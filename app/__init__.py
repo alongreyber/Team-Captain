@@ -19,6 +19,7 @@ db = MongoEngine(app)
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
 login_manager.session_protection = "strong"
+login_manager.login_message = None
 
 from app.admin.routes import admin as admin_module
 from app.public.routes import public as public_module
