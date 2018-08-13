@@ -1,5 +1,5 @@
-{% extends 'base.html' %}
-{% block content %}
+{% extends 'admin/base.html' %}
+{% block admin_content %}
 
 <h1 class="title"> All Users </h1>
 <table class="table">
@@ -15,7 +15,7 @@
 	{% for user in users %}    
 	<tr>
 	    <td>
-		<a href="{{url_for('user_info', id=user.id)}}">
+		<a href="{{url_for('admin.user_info', id=user.id)}}">
 		    {{user.email}}
 		</a>
 	    </td>

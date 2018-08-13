@@ -1,9 +1,12 @@
-{% extends 'base.html' %}
-{% block content %}
+{% extends 'admin/base.html' %}
+{% block admin_content %}
 
 <h1 class="title"> All Time Logs </h1>
-<a href="{{url_for('clock_in')}}">
+<a href="{{url_for('admin.clock_in')}}">
     <button class="button">Go to Clock In</button>
+</a>
+<a href="{{url_for('admin.sign_everyone_out')}}">
+    <button class="button">Sign Out Everyone</button>
 </a>
 <br />
 <table class="table">
@@ -19,7 +22,7 @@
 	{% for t in timelogs %}    
 	<tr>
 	    <td>
-		<a href="{{url_for('user_info', id=t.user.id)}}">
+		<a href="{{url_for('admin.user_info', id=t.user.id)}}">
 		{{t.user.first_name}} {{t.user.last_name}}
 		</a>
 	    </td>
@@ -30,7 +33,7 @@
 		{{t.time_out}}
 	    </td>
 	    <td>
-		<a href="{{url_for('timelog_info', id=t.id)}}">
+		<a href="{{url_for('admin.timelog_info', id=t.id)}}">
 		    <span class="icon is-small">
 			<i class="fas fa-pencil-alt"></i>
 		    </span>

@@ -1,5 +1,7 @@
 Flask
 Flask-WTF
+Flask-Login
 mongoengine
 flask-mongoengine
 hashids
+requests_oauthlib

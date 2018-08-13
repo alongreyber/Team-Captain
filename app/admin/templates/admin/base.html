@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block nav %}
+<div class="navbar is-info">
+    <div class="navbar-menu is-active">
+	<div class="navbar-start">
+	    <a href="{{url_for('admin.user_list')}}" class="navbar-item {{ "is-active" if request.path == '/users' }}">
+		Users
+	    </a>
+	    <a href="{{url_for('admin.timelog_list')}}" class="navbar-item {{ "is-active" if request.path == '/timelogs' }}">
+		Time Logs
+	    </a>
+	</div>
+	<div class="navbar-end">
+	    <div class="navbar-item">
+		Team 6332
+	    </div>
+	</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% block admin_content %}{% endblock %}
+{% endblock %}

@@ -1,14 +1,20 @@
 import datetime
-from app import db
+from app import db, login_manager
+
+from flask_login import UserMixin
 
 class BaseModel(db.Document):
     meta = {'allow_inheritance': True}
 
-class User(BaseModel):
+class User(BaseModel, UserMixin):
     email = db.EmailField(max_length=100)
     barcode = db.StringField(max_length=100)
     first_name = db.StringField(max_length=50)
     last_name = db.StringField(max_length=50)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.objects(id=user_id).first()
 
 class TimeLog(BaseModel):
     user = db.ReferenceField(User)
