@@ -74,12 +74,39 @@ def sign_everyone_out():
     return redirect(url_for('admin.timelog_list'))
 
 @admin.route('/meetings')
-def meetings_list():
-    meetings = models.Meeting.objects()
+def meeting_list():
+    scheduled_meetings = models.Meeting.objects(recurrence=None)
     recurring_meetings = models.RecurringMeeting.objects()
     return render_template('admin/meeting_list.html',
-            meetings=meetings,
+            scheduled_meetings=scheduled_meetings,
             recurring_meetings=recurring_meetings)
+
+@admin.route('/m/<id>', methods=["GET","POST"])
+def scheduled_meeting_info(id):
+    meeting = models.Meeting.objects(id=id, recurrence=None).first()
+    if not meeting:
+        abort(404)
+    form = forms.MeetingForm(request.form, data=meeting.to_mongo().to_dict())
+    if form.validate_on_submit():
+        updated_dict = form.data
+        # The dates/times need to be converted to datetime objects
+        updated_dict['start_time'] = datetime.datetime.combine(datetime.datetime.min.date(), updated_dict['start_time'])
+        updated_dict['end_time'] = datetime.datetime.combine(datetime.datetime.min.date(), updated_dict['end_time'])
+        del updated_dict['csrf_token']
+        if updated_dict['end_time'] <= updated_dict['start_time']:
+            flash('Start of meeting cannot be before end!', 'warning')
+        else:
+            updated_dict['date'] = datetime.datetime.combine(updated_dict['date'], datetime.datetime.min.time())
+            flash('Changes Saved', 'success')
+            meeting.update(**updated_dict)
+    if len(form.errors) > 0:
+        flash_errors(form)
+    return render_template('admin/meeting_info.html', meeting=meeting, form=form)
+
+@admin.route('/newmeeting')
+def meeting_new():
+    meeting = models.Meeting().save()
+    return redirect(url_for('admin.scheduled_meeting_info', id=meeting.id))
 
 def flash_errors(form):
     """Flash errors from a form at the top of the page"""

@@ -1,3 +1,17 @@
 #main-container {
     margin-top: 2em;
 }
+
+.meetings-page {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto;
+    grid-template-areas: "recurring scheduled";
+
+    .meetings-page__recurring {
+	grid-area: recurring;
+    }
+    .meetings-page__scheduled {
+	grid-area: scheduled;
+    }
+}

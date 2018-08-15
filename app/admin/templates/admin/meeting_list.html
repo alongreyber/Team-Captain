@@ -1,4 +1,68 @@
-{% extends 'public/base.html' %}
-{% block public_content %}
-<h1> Meetings </h1>
+{% extends 'admin/base.html' %}
+{% block admin_content %}
+<h1 class="title"> Meetings </h1>
+
+<div class="meetings-page">
+    <div class="meetings-page__recurring">
+	<h3 class="title is-4">Recurring Meetings</h3>
+	<a href="{{url_for('admin.meeting_new')}}" class="button">New</a>
+	<table class="table">
+	    <thead>
+		<th>Dates</th>
+		<th>Times</th>
+		<th>Days of Week</th>
+		<th>Edit</th>
+	    </thead>
+	    <tbody>
+		{% for m in recurring_meetings %}
+		<tr>
+		    <td>
+			{{m.start_date}} - {{m.end_date}}
+		    </td>
+		    <td>
+			{{m.start_time}} - {{m.end_time}}
+		    </td>
+		    <td>
+			Days of Week
+		    </td>
+		</tr>
+		{% endfor %}
+	    </tbody>
+	</table>
+    </div>
+    <div class="meetings-page__scheduled">
+	<h3 class="title is-4"> One Time Meetings </h3>
+	<a href="{{url_for('admin.meeting_new')}}" class="button">New</a>
+	<table class="table">
+	    <thead>
+		<th>Name</th>
+		<th>Times</th>
+		<th>Date</th>
+		<th>Edit</th>
+	    </thead>
+	    <tbody>
+		{% for m in scheduled_meetings %}
+		<tr>
+		    <td>
+			{{m.name}}
+		    </td>
+		    <td>
+			{{m.start_time.strftime('%I:%M %p')}} - {{m.end_time.strftime('%I:%M %p')}}
+		    </td>
+		    <td>
+			{{m.date.strftime('%a %B %d')}}
+		    </td>
+		    <td>
+			<a href="{{url_for('admin.scheduled_meeting_info', id=m.id)}}">
+			    <span class="icon is-small">
+				<i class="fas fa-pencil-alt"></i>
+			    </span>
+			</a>
+		    </td>
+		</tr>
+		{% endfor %}
+	    </tbody>
+	</table>
+    </div>
+</div>
 {% endblock %}

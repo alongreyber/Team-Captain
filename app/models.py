@@ -22,6 +22,7 @@ class TimeLog(BaseModel):
     time_out = db.DateTimeField()
 
 class RecurringMeeting(BaseModel):
+    name = db.StringField()
     start_date = db.DateTimeField()
     end_date = db.DateTimeField()
     start_time = db.DateTimeField()
@@ -29,7 +30,9 @@ class RecurringMeeting(BaseModel):
     days_of_week = db.ListField(db.StringField())
 
 class Meeting(BaseModel):
+    name = db.StringField()
     start_time = db.DateTimeField()
     end_time = db.DateTimeField()
+    date = db.DateTimeField()
     recurrence = db.ReferenceField(RecurringMeeting)
 
