@@ -3,10 +3,7 @@ from app import db, login_manager
 
 from flask_login import UserMixin
 
-class BaseModel(db.Document):
-    meta = {'allow_inheritance': True}
-
-class User(BaseModel, UserMixin):
+class User(db.Document, UserMixin):
     email = db.EmailField(max_length=100)
     barcode = db.StringField(max_length=100)
     first_name = db.StringField(max_length=50)
@@ -16,20 +13,20 @@ class User(BaseModel, UserMixin):
 def load_user(user_id):
     return User.objects(id=user_id).first()
 
-class TimeLog(BaseModel):
+class TimeLog(db.Document):
     user = db.ReferenceField(User)
     time_in = db.DateTimeField()
     time_out = db.DateTimeField()
 
-class RecurringMeeting(BaseModel):
+class RecurringMeeting(db.Document):
     name = db.StringField()
     start_date = db.DateTimeField()
     end_date = db.DateTimeField()
     start_time = db.DateTimeField()
     end_time = db.DateTimeField()
-    days_of_week = db.ListField(db.StringField())
+    days_of_week = db.ListField(db.IntField())
 
-class Meeting(BaseModel):
+class Meeting(db.Document):
     name = db.StringField()
     start_time = db.DateTimeField()
     end_time = db.DateTimeField()

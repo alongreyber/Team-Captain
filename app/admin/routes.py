@@ -1,4 +1,5 @@
 from app import models, forms
+from app.admin import context
 from flask import render_template, request, redirect, flash, session, abort, url_for, Blueprint
 
 import datetime
@@ -23,10 +24,15 @@ def user_info(id):
     if form.validate_on_submit():
         user_updated_dict = form.data
         del user_updated_dict['csrf_token']
-        user.update(**user_updated_dict)
+        user.modify(**user_updated_dict)
     if len(form.errors) > 0:
         flash_errors(form)
     return render_template('admin/user_info.html', user=user, form=form)
+
+@admin.route('/newuser')
+def user_new():
+    user = models.User().save()
+    return redirect(url_for('admin.user_info', id=user.id))
 
 @admin.route('/timelogs')
 def timelog_list():
@@ -42,7 +48,7 @@ def timelog_info(id):
     if form.validate_on_submit():
         updated_dict = form.data
         del updated_dict['csrf_token']
-        timelog.update(**updated_dict)
+        timelog.modify(**updated_dict)
     if len(form.errors) > 0:
         flash_errors(form)
     return render_template('admin/timelog_info.html', timelog=timelog, form=form)
@@ -98,15 +104,77 @@ def scheduled_meeting_info(id):
         else:
             updated_dict['date'] = datetime.datetime.combine(updated_dict['date'], datetime.datetime.min.time())
             flash('Changes Saved', 'success')
-            meeting.update(**updated_dict)
+            meeting.modify(**updated_dict)
     if len(form.errors) > 0:
         flash_errors(form)
     return render_template('admin/meeting_info.html', meeting=meeting, form=form)
 
+@admin.route('/rm/<id>', methods=["GET","POST"])
+def recurring_meeting_info(id):
+    meeting = models.RecurringMeeting.objects(id=id).first()
+    if not meeting:
+        abort(404)
+    form = forms.RecurringMeetingForm(request.form, data=meeting.to_mongo().to_dict())
+    all_days_of_week = ['S','M','T','W','H','F','S']
+    form.days_of_week.choices = list(zip(range(7), all_days_of_week))
+    if form.validate_on_submit():
+        updated_dict = form.data
+        # The dates/times need to be converted to datetime objects
+        updated_dict['start_time'] = datetime.datetime.combine(datetime.datetime.min.date(), updated_dict['start_time'])
+        updated_dict['end_time'] = datetime.datetime.combine(datetime.datetime.min.date(), updated_dict['end_time'])
+        del updated_dict['csrf_token']
+        if updated_dict['end_time'] <= updated_dict['start_time']:
+            flash('Start of meeting cannot be before end!', 'warning')
+        if updated_dict['end_date'] <= updated_dict['start_date']:
+            flash('Start of recurring meeting cannot be before end!', 'warning')
+        if len(updated_dict['days_of_week']) == 0:
+            flash('Meeting must happen at least one day a week!', 'warning')
+        else:
+            updated_dict['start_date'] = datetime.datetime.combine(updated_dict['start_date'], datetime.datetime.min.time())
+            updated_dict['end_date'] = datetime.datetime.combine(updated_dict['end_date'], datetime.datetime.min.time())
+            flash('Changes Saved', 'success')
+            meeting.modify(**updated_dict)
+            # Delete the existing meetings
+            models.Meeting.objects(recurrence=meeting).delete()
+            # Re-add
+            d = meeting.start_date
+            while d <= meeting.end_date:
+                d += datetime.timedelta(days=1)
+                if d.weekday() in meeting.days_of_week:
+                    new_meeting = models.Meeting(name=meeting.name,
+                                                 start_time=meeting.start_time,
+                                                 end_time=meeting.end_time,
+                                                 date = d,
+                                                 recurrence = meeting)
+                    new_meeting.save()
+    if len(form.errors) > 0:
+        flash_errors(form)
+    print(meeting.days_of_week)
+    return render_template('admin/recurring_meeting_info.html',
+            meeting=meeting,
+            form=form,
+            selected_days_of_week = meeting.days_of_week)
+
+@admin.route('/newrecurringmeeting')
+def recurring_meeting_new():
+    meeting = models.RecurringMeeting()
+    meeting.start_date = datetime.datetime.now()
+    meeting.end_date = datetime.datetime.now() + datetime.timedelta(days=1) 
+    meeting.start_time = datetime.datetime.combine(datetime.datetime.min.date(), datetime.time(17))
+    meeting.end_time = datetime.datetime.combine(datetime.datetime.min.date(), datetime.time(19))
+    meeting.days_of_week = [1,3,5]
+    meeting.save()
+    return redirect(url_for('admin.recurring_meeting_info', id=meeting.id))
+
 @admin.route('/newmeeting')
 def meeting_new():
-    meeting = models.Meeting().save()
+    meeting = models.Meeting()
+    meeting.date = datetime.datetime.now()
+    meeting.start_time = datetime.datetime.combine(datetime.datetime.min.date(), datetime.time(17))
+    meeting.end_time = datetime.datetime.combine(datetime.datetime.min.date(), datetime.time(19))
+    meeting.save()
     return redirect(url_for('admin.scheduled_meeting_info', id=meeting.id))
+
 
 def flash_errors(form):
     """Flash errors from a form at the top of the page"""

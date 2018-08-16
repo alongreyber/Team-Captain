@@ -21,8 +21,12 @@ $input-background-color: $beige-lighter;
 $input-border-color: transparent;
 $input-shadow: none;
 
+// Make hover on table a bit darker
+$table-row-hover-background-color: hsl(0, 0%, 95%);
+
 // Import the rest of Bulma
 @import "bulma-0.7.1/bulma.sass";
 
 // Include our stuff
 @import 'layout';
+@import 'typography';

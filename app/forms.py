@@ -3,6 +3,7 @@ from app import models
 from flask_wtf import FlaskForm
 from wtforms.fields import html5
 from wtforms.fields import *
+from wtforms.validators import *
 
 from flask_mongoengine.wtf import model_form
 
@@ -27,6 +28,14 @@ TimeLogForm = model_form(models.TimeLog, field_args = {
 
 class MeetingForm(FlaskForm):
     name = StringField()
-    start_time = html5.TimeField('Start Time')
-    end_time = html5.TimeField('End Time')
-    date = html5.DateField('Date')
+    start_time = html5.TimeField('Start Time', validators=[required()])
+    end_time = html5.TimeField('End Time', validators=[required()])
+    date = html5.DateField('Date', validators=[required()])
+
+class RecurringMeetingForm(FlaskForm):
+    name = StringField()
+    start_date = html5.DateField('Start Date', validators=[required()])
+    end_date = html5.DateField('End Date', validators=[required()])
+    start_time = html5.TimeField('Start Time', validators=[required()])
+    end_time = html5.TimeField('End Time', validators=[required()])
+    days_of_week = SelectMultipleField('Days of Week', coerce=int)

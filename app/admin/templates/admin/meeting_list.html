@@ -1,3 +1,4 @@
+{% import 'helpers.html' as helpers %}
 {% extends 'admin/base.html' %}
 {% block admin_content %}
 <h1 class="title"> Meetings </h1>
@@ -5,25 +6,30 @@
 <div class="meetings-page">
     <div class="meetings-page__recurring">
 	<h3 class="title is-4">Recurring Meetings</h3>
-	<a href="{{url_for('admin.meeting_new')}}" class="button">New</a>
-	<table class="table">
+	<a href="{{url_for('admin.recurring_meeting_new')}}" class="button">New</a>
+	<table class="table is-hoverable">
 	    <thead>
+		<th>Name</th>
 		<th>Dates</th>
 		<th>Times</th>
 		<th>Days of Week</th>
-		<th>Edit</th>
 	    </thead>
 	    <tbody>
 		{% for m in recurring_meetings %}
-		<tr>
+		<tr class="hoverable" {{helpers.onclick(url_for('admin.recurring_meeting_info', id=m.id))}}>
 		    <td>
-			{{m.start_date}} - {{m.end_date}}
+			{{m.name}}
 		    </td>
 		    <td>
-			{{m.start_time}} - {{m.end_time}}
+			{{m.start_date.strftime('%a %B %d')}} - {{m.end_date.strftime('%a %B %d')}}
 		    </td>
 		    <td>
-			Days of Week
+			{{m.start_time.strftime('%I:%M %p')}} - {{m.end_time.strftime('%I:%M %p')}}
+		    </td>
+		    <td>
+			{% for d in m.days_of_week %}
+			    {{d | day_of_week_letter }}
+			{% endfor %}
 		    </td>
 		</tr>
 		{% endfor %}
