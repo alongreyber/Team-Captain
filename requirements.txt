@@ -1,6 +1,7 @@
 Flask
 Flask-WTF
 Flask-Login
+Flask-Gravatar
 mongoengine
 flask-mongoengine
 hashids

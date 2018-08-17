@@ -5,6 +5,7 @@ from flask_login import UserMixin
 
 class User(db.Document, UserMixin):
     email = db.EmailField(max_length=100)
+    bio = db.StringField()
     barcode = db.StringField(max_length=100)
     first_name = db.StringField(max_length=50)
     last_name = db.StringField(max_length=50)

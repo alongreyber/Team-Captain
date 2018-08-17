@@ -1,5 +1,6 @@
 from app import app
 import datetime
+import hashlib
 
 @app.template_filter('day_of_week_letter')
 def day_of_week_letter(d):
@@ -10,3 +11,7 @@ def day_of_week_letter(d):
 @app.context_processor
 def inject_time():
     return dict(now=datetime.datetime.now())
+
+@app.template_filter('md5')
+def md5(s):
+    return hashlib.md5(s)

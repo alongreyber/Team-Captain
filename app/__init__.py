@@ -2,6 +2,7 @@ import os
 from flask import Flask, redirect
 from flask_mongoengine import MongoEngine
 from flask_login import LoginManager
+from flask_gravatar import Gravatar
 
 app = Flask(__name__)
 
@@ -20,6 +21,15 @@ login_manager = LoginManager(app)
 login_manager.login_view = "login"
 login_manager.session_protection = "strong"
 login_manager.login_message = None
+
+gravatar = Gravatar(app,
+                    size=100,
+                    rating='g',
+                    default='retro',
+                    force_default=False,
+                    force_lower=False,
+                    use_ssl=False,
+                    base_url=None)
 
 from app.admin.routes import admin as admin_module
 from app.public.routes import public as public_module

@@ -1,7 +1,18 @@
 {% extends 'public/base.html' %}
 
 {% block public_content %}
-<h1>User Profile</h1>
-{{user.first_name}} {{user.last_name}}
-{{user.email}}
+<h1 class="title">User Profile</h1>
+
+<div class="public-profile">
+    <div class="public-profile__name">
+	<h5 class="title is-5">{{user.first_name}}</h5>
+	<h5 class="title is-5">{{user.last_name}}</h5>
+    </div>
+    <div class="public-profile__photo">
+	<img src="{{user.email | gravatar }}">
+    </div>
+    <div class="public-profile__bio">
+	<p>{{user.bio}}</p>
+    </div>
+</div>
 {% endblock %}

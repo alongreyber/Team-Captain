@@ -15,3 +15,21 @@
 	grid-area: scheduled;
     }
 }
+
+.public-profile {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto;
+    grid-template-areas: "photo name"
+    			 "photo bio";
+
+    .public-profile__photo {
+	grid-area: photo;
+    }
+    .public-profile__name {
+	grid-area: name;
+    }
+    .public-profile__bio {
+	grid-area: bio;
+    }
+}
