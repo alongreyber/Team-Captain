@@ -1,0 +1,28 @@
+{% extends 'public/base.html' %}
+
+{% block public_content %}
+<h1 class="title">Meetings</h1>
+<h3 class="title is-3">RSVP</h3>
+
+<div class="rsvp-selector-list">
+    {% for m in meetings if m.start > now %}
+    <div class="rsvp-selector">
+	<p>
+	    {{m.date.strftime('%a %B %d')}}
+	    <br />
+	    {{m.start_time.strftime('%I:%M %p')}} - {{m.end_time.strftime('%I:%M %p')}}
+	</p>
+	<a href="{{url_for('public.rsvp_for_meeting', id=m.id, r='y')}}" class="button is-large is-success {% if not user in m.rsvp_yes %}is-outlined{% endif %}">
+	    Yes
+	</a>
+	<a href="{{url_for('public.rsvp_for_meeting', id=m.id, r='m')}}" class="button is-large is-warning {% if user in m.rsvp_yes or user in m.rsvp_no %}is-outlined{% endif %}">
+	    Maybe
+	</a>
+	<a href="{{url_for('public.rsvp_for_meeting', id=m.id, r='n')}}" class="button is-large is-danger {% if not user in m.rsvp_no %}is-outlined{% endif %}" >
+	    No
+	</a>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

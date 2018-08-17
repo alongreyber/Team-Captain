@@ -29,6 +29,10 @@ def user_info(id):
         flash_errors(form)
     return render_template('admin/user_info.html', user=user, form=form)
 
+@admin.route('/u/<id>/delete')
+def user_delete(id):
+    return "Deleted user"
+
 @admin.route('/newuser')
 def user_new():
     user = models.User().save()

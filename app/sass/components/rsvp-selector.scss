@@ -1,0 +1,13 @@
+.rsvp-selector-list {
+    display: flex;
+    flex-direction: column;
+}
+.rsvp-selector {
+    align-items: center;
+    margin-top: 5px;
+    display: flex;
+    a {
+	margin-left: 5px;
+	border-radius: 0px;
+    }
+}

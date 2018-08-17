@@ -30,6 +30,10 @@ class Meeting(db.Document):
     name = db.StringField()
     start_time = db.DateTimeField()
     end_time = db.DateTimeField()
+    @property
+    def start(self):
+        return datetime.datetime.combine( self.date.date(), self.start_time.time() )
     date = db.DateTimeField()
     recurrence = db.ReferenceField(RecurringMeeting)
-
+    rsvp_yes = db.ListField(db.ReferenceField(User))
+    rsvp_no = db.ListField(db.ReferenceField(User))

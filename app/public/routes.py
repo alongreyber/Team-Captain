@@ -14,3 +14,27 @@ def index():
 @login_required
 def user_profile():
     return render_template('public/user_profile.html', user=current_user)
+
+@public.route('/meetings')
+@login_required
+def meetings_page():
+    meetings = models.Meeting.objects()
+    return render_template('public/meetings.html', user=current_user, meetings=meetings)
+
+@public.route('/rsvp/<id>')
+@login_required
+def rsvp_for_meeting(id):
+    meeting = models.Meeting.objects(id=id).first()
+    if not meeting or \
+        'r' not in request.args \
+        or request.args.get('r') not in ['y', 'n', 'm']:
+        return redirect(request.referrer)
+    if current_user in meeting.rsvp_yes:
+        meeting.modify(pull__rsvp_yes=current_user.to_dbref())
+    if current_user in meeting.rsvp_no:
+        meeting.modify(pull__rsvp_no=current_user.to_dbref())
+    if request.args.get('r') == 'y':
+        meeting.modify(push__rsvp_yes=current_user.to_dbref())
+    if request.args.get('r') == 'n':
+        meeting.modify(push__rsvp_no=current_user.to_dbref())
+    return redirect(request.referrer)

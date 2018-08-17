@@ -2,7 +2,7 @@
 
 {% block admin_content %}
 <h1 class="title">{{user.first_name}} {{user.last_name}}</h1>
-<form action="" method="post">
+<form submit="return false;" action="" method="post">
     {{ form.hidden_tag() }}
 
     <div class="field">
