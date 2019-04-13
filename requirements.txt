@@ -6,3 +6,4 @@ mongoengine
 flask-mongoengine
 hashids
 requests_oauthlib
+dnspython

@@ -33,11 +33,6 @@ def user_info(id):
 def user_delete(id):
     return "Deleted user"
 
-@admin.route('/newuser')
-def user_new():
-    user = models.User().save()
-    return redirect(url_for('admin.user_info', id=user.id))
-
 @admin.route('/timelogs')
 def timelog_list():
     timelogs = models.TimeLog.objects
@@ -94,19 +89,18 @@ def meeting_list():
 @admin.route('/m/<id>', methods=["GET","POST"])
 def scheduled_meeting_info(id):
     meeting = models.Meeting.objects(id=id, recurrence=None).first()
-    if not meeting:
+    if not meeting or meeting.start < datetime.datetime.now():
         abort(404)
     form = forms.MeetingForm(request.form, data=meeting.to_mongo().to_dict())
     if form.validate_on_submit():
         updated_dict = form.data
         # The dates/times need to be converted to datetime objects
-        updated_dict['start_time'] = datetime.datetime.combine(datetime.datetime.min.date(), updated_dict['start_time'])
-        updated_dict['end_time'] = datetime.datetime.combine(datetime.datetime.min.date(), updated_dict['end_time'])
         del updated_dict['csrf_token']
-        if updated_dict['end_time'] <= updated_dict['start_time']:
+        if updated_dict['end'] <= updated_dict['start']:
             flash('Start of meeting cannot be before end!', 'warning')
+        elif updated_dict['start'] <= datetime.datetime.now():
+            flash('Meeting cannot start in the past', 'warning')
         else:
-            updated_dict['date'] = datetime.datetime.combine(updated_dict['date'], datetime.datetime.min.time())
             flash('Changes Saved', 'success')
             meeting.modify(**updated_dict)
     if len(form.errors) > 0:
@@ -129,9 +123,11 @@ def recurring_meeting_info(id):
         del updated_dict['csrf_token']
         if updated_dict['end_time'] <= updated_dict['start_time']:
             flash('Start of meeting cannot be before end!', 'warning')
-        if updated_dict['end_date'] <= updated_dict['start_date']:
+        elif updated_dict['end_date'] <= updated_dict['start_date']:
             flash('Start of recurring meeting cannot be before end!', 'warning')
-        if len(updated_dict['days_of_week']) == 0:
+        elif updated_dict['start_date'] < datetime.datetime.now().date():
+            flash('Meetings cannot start in the past!', 'warning')
+        elif len(updated_dict['days_of_week']) == 0:
             flash('Meeting must happen at least one day a week!', 'warning')
         else:
             updated_dict['start_date'] = datetime.datetime.combine(updated_dict['start_date'], datetime.datetime.min.time())
@@ -146,9 +142,8 @@ def recurring_meeting_info(id):
                 d += datetime.timedelta(days=1)
                 if d.weekday() in meeting.days_of_week:
                     new_meeting = models.Meeting(name=meeting.name,
-                                                 start_time=meeting.start_time,
-                                                 end_time=meeting.end_time,
-                                                 date = d,
+                                                 start=datetime.datetime.combine(d,meeting.start_time.time()),
+                                                 end=datetime.datetime.combine(d,meeting.end_time.time()),
                                                  recurrence = meeting)
                     new_meeting.save()
     if len(form.errors) > 0:
@@ -173,9 +168,8 @@ def recurring_meeting_new():
 @admin.route('/newmeeting')
 def meeting_new():
     meeting = models.Meeting()
-    meeting.date = datetime.datetime.now()
-    meeting.start_time = datetime.datetime.combine(datetime.datetime.min.date(), datetime.time(17))
-    meeting.end_time = datetime.datetime.combine(datetime.datetime.min.date(), datetime.time(19))
+    meeting.start = datetime.datetime.now() + datetime.timedelta(days=1)
+    meeting.end = meeting.start + datetime.timedelta(hours=2)
     meeting.save()
     return redirect(url_for('admin.scheduled_meeting_info', id=meeting.id))
 

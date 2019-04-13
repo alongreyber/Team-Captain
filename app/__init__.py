@@ -1,16 +1,17 @@
-import os
+import os, configparser
 from flask import Flask, redirect
 from flask_mongoengine import MongoEngine
 from flask_login import LoginManager
 from flask_gravatar import Gravatar
 
+mongo_settings = configparser.ConfigParser()
+mongo_settings.read('mongo-credentials.ini')
+
 app = Flask(__name__)
 
 app.config['MONGODB_SETTINGS'] = {
-    'db': 'admin',
-    'host': 'mongo',
-    'username': 'root',
-    'password': 'password'
+#    'db' : 'test',
+    'host': mongo_settings['development']['hostname'],
 }
 app.config['SECRET_KEY'] = 'dont-guess-this-please'
 app.config['SERVER_NAME'] = os.environ.get('SERVER_NAME')
@@ -35,7 +36,7 @@ from app.admin.routes import admin as admin_module
 from app.public.routes import public as public_module
 
 # Register admin first so that it takes precendence over our domain search
-app.register_blueprint(admin_module, subdomain='admin')
+app.register_blueprint(admin_module, url_prefix='/admin')
 app.register_blueprint(public_module)
 
 from app import routes

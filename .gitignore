@@ -13,3 +13,7 @@ tags
 .sass-cache/
 *.css
 *.css.map
+
+# Gitignore things
+mongo-credentials.ini
+.gitsecret/keys/random_seed

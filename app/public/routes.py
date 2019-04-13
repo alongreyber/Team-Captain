@@ -19,7 +19,8 @@ def user_profile():
 @login_required
 def meetings_page():
     meetings = models.Meeting.objects()
-    return render_template('public/meetings.html', user=current_user, meetings=meetings)
+    one_week_from_now = datetime.datetime.now() + datetime.timedelta(days=7)
+    return render_template('public/meetings.html', user=current_user, meetings=meetings, one_week_from_now=one_week_from_now)
 
 @public.route('/rsvp/<id>')
 @login_required

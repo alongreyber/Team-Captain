@@ -5,9 +5,13 @@
 <h3 class="title is-3">RSVP</h3>
 
 <div class="rsvp-selector-list">
-    {% for m in meetings if m.start > now %}
+    {% for m in meetings if m.start > now and m.start < one_week_from_now %}
     <div class="rsvp-selector">
 	<p>
+	    <strong>
+		{{m.name}}
+	    </strong>
+	    <br />
 	    {{m.date.strftime('%a %B %d')}}
 	    <br />
 	    {{m.start_time.strftime('%I:%M %p')}} - {{m.end_time.strftime('%I:%M %p')}}

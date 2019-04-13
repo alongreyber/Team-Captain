@@ -53,10 +53,10 @@
 			{{m.name}}
 		    </td>
 		    <td>
-			{{m.start_time.strftime('%I:%M %p')}} - {{m.end_time.strftime('%I:%M %p')}}
+			{{m.start.strftime('%I:%M %p')}} - {{m.end.strftime('%I:%M %p')}}
 		    </td>
 		    <td>
-			{{m.date.strftime('%a %B %d')}}
+			{{m.start.strftime('%a %B %d')}}
 		    </td>
 		    <td>
 			<a href="{{url_for('admin.scheduled_meeting_info', id=m.id)}}">

@@ -20,17 +20,11 @@ TimeLogForm = model_form(models.TimeLog, field_args = {
     'time_out' : {'label' : "Time Out"},
 })
 
-#MeetingForm = model_form(models.Meeting, field_args = {
-#    'start_time' : {'label' : "Start Time"},
-#    'end_time' : {'label' : "End Time"},
-#    'date' : {'label' : "Date"},
-#})
-
-class MeetingForm(FlaskForm):
-    name = StringField()
-    start_time = html5.TimeField('Start Time', validators=[required()])
-    end_time = html5.TimeField('End Time', validators=[required()])
-    date = html5.DateField('Date', validators=[required()])
+MeetingForm = model_form(models.Meeting, field_args = {
+    'start' : {'label' : "Start Date/Time"},
+    'end' : {'label' : "End Date/Time"},
+    'name' : {'label' : "Name"}
+})
 
 class RecurringMeetingForm(FlaskForm):
     name = StringField()
