@@ -9,6 +9,7 @@
 	    <th>First Name</th>
 	    <th>Last Name</th>
 	    <th>Barcode</th>
+	    <th>Roles</th>
 	</tr>
     </thead>
     <tbody>
@@ -27,6 +28,11 @@
 	    </td>
 	    <td>
 		{{user.barcode}}
+	    </td>
+	    <td>
+		{% for r in user.roles %}
+		<div class="button is-rounded is-link">{{r | capitalize}}</div>
+		{% endfor %}
 	    </td>
 	</tr>
 	{% endfor %}

@@ -1,12 +1,12 @@
 {% import 'helpers.html' as helpers %}
 {% extends 'admin/base.html' %}
 {% block admin_content %}
-<h1 class="title"> Meetings </h1>
+<h1 class="title"> Events </h1>
 
-<div class="meetings-page">
-    <div class="meetings-page__recurring">
-	<h3 class="title is-4">Recurring Meetings</h3>
-	<a href="{{url_for('admin.recurring_meeting_new')}}" class="button">New</a>
+<div class="events-page">
+    <div class="events-page__recurring">
+	<h3 class="title is-4">Recurring Events</h3>
+	<a href="{{url_for('admin.recurring_event_new')}}" class="button">New</a>
 	<table class="table is-hoverable">
 	    <thead>
 		<th>Name</th>
@@ -15,8 +15,8 @@
 		<th>Days of Week</th>
 	    </thead>
 	    <tbody>
-		{% for m in recurring_meetings %}
-		<tr class="hoverable" {{helpers.onclick(url_for('admin.recurring_meeting_info', id=m.id))}}>
+		{% for m in recurring_events %}
+		<tr class="hoverable" {{helpers.onclick(url_for('admin.recurring_event_info', id=m.id))}}>
 		    <td>
 			{{m.name}}
 		    </td>
@@ -36,9 +36,9 @@
 	    </tbody>
 	</table>
     </div>
-    <div class="meetings-page__scheduled">
-	<h3 class="title is-4"> One Time Meetings </h3>
-	<a href="{{url_for('admin.meeting_new')}}" class="button">New</a>
+    <div class="events-page__scheduled">
+	<h3 class="title is-4"> One Time Events </h3>
+	<a href="{{url_for('admin.event_new')}}" class="button">New</a>
 	<table class="table">
 	    <thead>
 		<th>Name</th>
@@ -47,7 +47,7 @@
 		<th>Edit</th>
 	    </thead>
 	    <tbody>
-		{% for m in scheduled_meetings %}
+		{% for m in scheduled_events %}
 		<tr>
 		    <td>
 			{{m.name}}
@@ -59,7 +59,7 @@
 			{{m.start.strftime('%a %B %d')}}
 		    </td>
 		    <td>
-			<a href="{{url_for('admin.scheduled_meeting_info', id=m.id)}}">
+			<a href="{{url_for('admin.scheduled_event_info', id=m.id)}}">
 			    <span class="icon is-small">
 				<i class="fas fa-pencil-alt"></i>
 			    </span>

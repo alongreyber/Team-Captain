@@ -22,6 +22,16 @@ def meetings_page():
     one_week_from_now = datetime.datetime.now() + datetime.timedelta(days=7)
     return render_template('public/meetings.html', user=current_user, meetings=meetings, one_week_from_now=one_week_from_now)
 
+@public.route('/task/<id>')
+@login_required
+def task_info(id):
+    task = models.Task.objects(id=id).first()
+    if not task:
+        abort(404)
+    if current_user not in task.assigned_to:
+        abort(404)
+    return render_template('public/task_info.html', task=task)
+
 @public.route('/rsvp/<id>')
 @login_required
 def rsvp_for_meeting(id):

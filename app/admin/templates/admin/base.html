@@ -7,20 +7,38 @@
 {% block nav %}
 <div class="navbar is-info">
     <div class="navbar-menu is-active">
+	<div class="navbar-brand">
+	    <div class="navbar-item">
+		<div class="button is-danger">
+		    Admin Console
+		</div>
+	    </div>
+	</div>
 	<div class="navbar-start">
-	    <a href="{{url_for('admin.user_list')}}" class="navbar-item {{ "is-active" if request.path == '/users' }}">
+	    <a href="{{url_for('admin.user_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/user') }}">
 		Users
 	    </a>
-	    <a href="{{url_for('admin.timelog_list')}}" class="navbar-item {{ "is-active" if request.path == '/timelogs' }}">
-		Time Logs
+	    <a href="{{url_for('admin.event_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/event') }}">
+		Events
 	    </a>
-	    <a href="{{url_for('admin.meeting_list')}}" class="navbar-item {{ "is-active" if request.path == '/meetings' }}">
-		Meetings
+	    <a href="{{url_for('admin.task_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/tasks') }}">
+		Tasks
 	    </a>
 	</div>
 	<div class="navbar-end">
 	    <div class="navbar-item">
-		Team 6332
+		{% if current_user.first_name %}
+		Welcome {{current_user.first_name}}
+		{% else %}
+		Welcome {{current_user.email[:current_user.email.find('@')]}}!
+		{% endif %}
+	    </div>
+	    <div class="navbar-item">
+		<a href="{{url_for('logout')}}">
+		    <button class="button is-link">
+			Sign Out
+		    </button>
+		</a>
 	    </div>
 	</div>
     </div>

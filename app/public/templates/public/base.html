@@ -12,6 +12,30 @@
 	    </a>
 	</div>
 	<div class="navbar-end">
+	    <div id="notification-dropdown" class="navbar-item has-dropdown">
+		<a class="navbar-link is-arrowless" onclick="toggle_active('notification-dropdown')">
+		    {% if n|length == 0 %}
+		    <span class="icon is-medium badge">
+		    {% else %}
+		    <span class="icon is-medium badge has-badge-rounded is-badge-small" data-badge="{{n|length}}" style="margin-right: 4px">
+		    {% endif %}
+			<i class="fas fa-bell fa-lg"></i>
+		    </span>
+		</a>
+		<div class="navbar-dropdown">
+		    {% if n|length == 0 %}
+		    	<a class="dropdown-item">
+			    All caught up!
+			</a>
+		    {% else %}
+			{% for n in current_user.notifications %}
+			    <a href="{{ n.link }}" class="dropdown-item">
+				{{ n.text }}
+			    </a>
+			{% endfor %}
+		    {% endif %}
+		</div>
+	    </div>
 	    <div class="navbar-item">
 		{% if current_user.first_name %}
 		Welcome {{current_user.first_name}}

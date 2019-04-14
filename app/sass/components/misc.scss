@@ -1,0 +1,10 @@
+.role-delete:hover {
+    color: red;
+}
+.role-delete:hover span {
+    display:none;
+}
+
+.role-delete:hover:before {
+    content:"Remove";
+}

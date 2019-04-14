@@ -1,0 +1,36 @@
+{% extends 'admin/base.html' %}
+
+{% block admin_content %}
+<h1 class="title">Edit Task</h1>
+<form submit="return false;" action="" method="post">
+    {{ form.hidden_tag() }}
+
+    <div class="field">
+	{{ form.subject.label(class_='label') }}
+	<div class="control">
+	    {{ form.subject(class_='input') }}
+	</div>
+    </div>
+    <div class="field">
+	{{ form.content.label(class_='label') }}
+	<div class="control">
+	{{ form.content(class_='input', rows='4') }}
+	</div>
+    </div>
+    <div class="field">
+	{{ form.due.label(class_='label') }}
+	<div class="control">
+	{{ form.due(class_='input') }}
+	</div>
+    </div>
+
+    <input class="button is-primary" id="submit" name="submit" type="submit" value="Save">
+</form>
+
+<h3 class="title">Assign To</h3>
+
+<div class="button is-success">
+    Publish
+</div>
+
+{% endblock %}

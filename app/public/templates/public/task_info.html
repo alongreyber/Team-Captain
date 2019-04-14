@@ -1,0 +1,10 @@
+{% extends 'public/base.html' %}
+
+{% block public_content %}
+<h1 class="title">{{task.subject}}</h1>
+<h3 class="title">Due {{task.due.strftime("%m/%d/%Y, %H:%M:%S")}}
+
+<div class="container" >
+    {{task.content}}
+</div>
+{% endblock %}
