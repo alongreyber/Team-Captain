@@ -29,26 +29,16 @@
 	{{ form.barcode(class_='input') }}
 	</div>
     </div>
+    <div class="field">
+	{{ form.roles.label(class_='label') }}
+	<select id="roles" class="select2" name="roles" multiple="multiple" style="width: 100%">
+	    {% for r in form.roles.choices %}
+		<option value="{{r[0]}}" {% if r[1] in selected_roles %}selected="selected"{% endif %}>{{r[1]}}</option>
+	    {% endfor %}
+	</select>
+    </div>
 
     <input class="button is-primary" id="submit" name="submit" type="submit" value="Save">
-</form>
-
-<h4 class="title is-4">
-    Roles
-</h4>
-{% for r in user.roles %}
-<a class="button is-rounded is-link role-delete" href="{{ url_for('admin.remove_role', id=user.id, role=r)}}">
-    <span>{{r | capitalize}}</span>
-</a>
-{% endfor %}
-<form submit="return false;" action="{{ url_for('admin.add_role', id=user.id) }}" method="post">
-    {{ role_form.hidden_tag() }}
-    <div class="field">
-	<span class="control">
-	    {{ role_form.role(class_='input', style='width: 200px') }}
-	</span>
-	<input class="button is-primary" id="submit" name="submit" type="submit" value="Add">
-    </div>
 </form>
 
 {% endblock %}

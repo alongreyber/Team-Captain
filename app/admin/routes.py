@@ -6,6 +6,8 @@ from flask_login import current_user
 
 import datetime
 
+from bson import ObjectId
+
 admin = Blueprint('admin', __name__, template_folder='templates')
 
 @admin.before_request
@@ -13,9 +15,11 @@ def require_authorization():
     if not current_user.is_authenticated:
         flash('Please log in to view this page', 'danger')
         return redirect(url_for('login', next=request.endpoint))
-    if "admin" not in current_user.roles:
-        flash('You do not have permission to view this page', 'danger')
-        return redirect(url_for('public.index'))
+    for role in current_user.roles:
+        if role.name == 'admin':
+            return
+    flash('You do not have permission to view this page', 'danger')
+    return redirect(url_for('public.index'))
 
 @admin.route('/')
 def index():
@@ -29,35 +33,53 @@ def user_list():
 @admin.route('/u/<id>', methods=['GET', 'POST'])
 def user_info(id):
     user = models.User.objects(id=id).first()
+    all_roles = models.Role.objects
     if not user:
         abort(404)
     form = forms.UserForm(request.form, data=user.to_mongo().to_dict())
-    role_form = forms.RoleForm()
+    form.roles.choices = [(str(role.id), role.name) for role in all_roles]
     if form.validate_on_submit():
-        user_updated_dict = form.data
-        del user_updated_dict['csrf_token']
-        user.modify(**user_updated_dict)
+        user.first_name = form.first_name.data
+        user.last_name = form.last_name.data
+        user.email = form.email.data
+        user.barcode = form.barcode.data
+        user.roles = [ObjectId(r) for r in form.roles.data]
+        user.save()
+        flash('Changes Saved', 'success')
     if len(form.errors) > 0:
         flash_errors(form)
-    return render_template('admin/user_info.html', user=user, form=form, role_form=role_form)
+    return render_template('admin/user_info.html', user=user, form=form,
+            selected_roles=[role.name for role in user.roles])
 
-@admin.route('/u/<id>/role/add', methods=['POST'])
-def add_role(id):
-    user = models.User.objects(id=id).first()
-    if not user:
-        abort(404)
+@admin.route('/roles')
+def role_list():
+    roles = models.Role.objects
+    role_form = forms.RoleForm()
+    return render_template('admin/role_list.html', roles=roles, role_form=role_form)
+
+@admin.route('/newrole', methods=['POST'])
+def role_new():
     form = forms.RoleForm()
+    all_roles = models.Role.objects
     if form.validate_on_submit():
-        role = form.data['role']
-        role = role.lower()
-        if role in user.roles:
-            flash('User already has role', 'warning')
-        else:
-            user.roles.append(role)
-            user.save()
+        for r in all_roles:
+            if r.name == form.data['role'].lower():
+                flash(f'Role already exists', 'warning')
+                return redirect(url_for('admin.role_list'))
+        new_role = models.Role()
+        new_role.name = form.data['role'].lower()
+        new_role.save()
+        flash('Added Role', 'success')
     if len(form.errors) > 0:
         flash_errors(form)
-    return redirect(url_for('admin.user_info', id=user.id))
+    return redirect(url_for('admin.role_list'))
+
+@admin.route('/role/<id>/remove')
+def role_delete(id):
+    role = models.Role.objects(id=id).first()
+    role.delete()
+    flash('Deleted Role', 'success')
+    return redirect(url_for('admin.role_list'))
 
 @admin.route('/u/<id>/role/remove/<role>')
 def remove_role(id, role):
@@ -181,18 +203,22 @@ def task_new():
 @admin.route('/task/<id>', methods=['GET', 'POST'])
 def task_info(id):
     task = models.Task.objects(id=id).first()
+    all_roles = models.Role.objects
     form = forms.TaskForm(data=task.to_mongo().to_dict())
-    user_select_form = forms.SelectUsersForm()
+    form.assigned_roles.choices = [(str(role.id), role.name) for role in all_roles]
     if not task:
         abort(404)
     if form.validate_on_submit():
-        task_updated_dict = form.data
-        del task_updated_dict['csrf_token']
-        task.modify(**task_updated_dict)
+        task.subject = form.subject.data
+        task.content = form.content.data
+        task.due = form.due.data
+        print(form.assigned_roles.data)
+        task.assigned_roles = [ObjectId(r) for r in form.assigned_roles.data]
+        task.save()
         flash('Changes Saved', 'success')
     if len(form.errors) > 0:
         flash_errors(form)
-    return render_template('admin/task_info.html', task=task, form=form, user_select_form=user_select_form)
+    return render_template('admin/task_info.html', task=task, form=form)
 
 def flash_errors(form):
     """Flash errors from a form at the top of the page"""

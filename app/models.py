@@ -42,6 +42,7 @@ class Task(db.Document):
     subject = db.StringField()
     content = db.StringField()
     due = db.DateTimeField()
-    assigned_to = db.ListField(db.ReferenceField(User))
+    assigned_users = db.ListField(db.ReferenceField(User))
+    assigned_roles = db.ListField(db.ReferenceField(Role))
     has_completed = db.ListField(db.ReferenceField(User))
     is_draft = db.BooleanField(default=False)

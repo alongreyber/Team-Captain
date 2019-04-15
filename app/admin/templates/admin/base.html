@@ -24,6 +24,9 @@
 	    <a href="{{url_for('admin.task_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/tasks') }}">
 		Tasks
 	    </a>
+	    <a href="{{url_for('admin.role_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/role') }}">
+		Roles
+	    </a>
 	</div>
 	<div class="navbar-end">
 	    <div class="navbar-item">

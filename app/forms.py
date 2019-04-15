@@ -7,12 +7,12 @@ from wtforms.validators import *
 
 from flask_mongoengine.wtf import model_form
 
-UserForm = model_form(models.User, field_args = {
-    'first_name' : {'label' : "First Name"},
-    'last_name' : {'label' : "Last Name"},
-    'email' : {'label' : "Email"},
-    'barcode' : {'label' : "Barcode"},
-})
+class UserForm(FlaskForm):
+    first_name = StringField()
+    last_name = StringField()
+    email = html5.EmailField()
+    barcode = StringField()
+    roles = SelectMultipleField('Roles', coerce=str)
 
 EventForm = model_form(models.Event, field_args = {
     'start' : {'label' : "Start Date/Time"},
@@ -24,6 +24,8 @@ class TaskForm(FlaskForm):
     subject = StringField()
     content = TextAreaField()
     due = html5.DateTimeLocalField(format='%Y-%m-%dT%H:%M', validators=[required()])
+    assigned_roles = SelectMultipleField('Roles')
+    assigned_users = SelectMultipleField('Users')
 
 class RoleForm(FlaskForm):
     role = StringField(label="Add")
@@ -35,6 +37,3 @@ class RecurringEventForm(FlaskForm):
     start_time = html5.TimeField('Start Time', validators=[required()])
     end_time = html5.TimeField('End Time', validators=[required()])
     days_of_week = SelectMultipleField('Days of Week', coerce=int)
-
-class SelectUsersForm():
-    users = SelectMultipleForm()
