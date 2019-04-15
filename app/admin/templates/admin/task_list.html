@@ -19,7 +19,7 @@
 	{% for task in tasks %}    
 	<tr>
 	    <td>
-		<a href="{{url_for('admin.task_info', id=task.id)}}">
+		<a href="{{url_for('admin.task_edit', id=task.id)}}">
 			{{task.subject}}
 		</a>
 	    </td>

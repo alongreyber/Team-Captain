@@ -1,0 +1,24 @@
+{% extends 'admin/base.html' %}
+
+{% block admin_content %}
+<h1 class="title">Task Info</h1>
+
+<p>{{task.subject}}</p>
+
+<div id="editor" style="height: 200px"></div>
+<script>
+    $(document).ready(function() {
+	var quill = new Quill('#editor', {
+	    theme: 'snow',
+	    modules: {
+		toolbar: false;
+	    },
+	    readOnly: true,
+	});
+	// Load contents from server
+	var delta = JSON.parse({{task.content|safe}});
+	quill.setContents(delta);
+    });
+</script>
+
+{% endblock %}

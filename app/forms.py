@@ -22,10 +22,13 @@ EventForm = model_form(models.Event, field_args = {
 
 class TaskForm(FlaskForm):
     subject = StringField()
-    content = TextAreaField()
+    content = StringField()
     due = html5.DateTimeLocalField(format='%Y-%m-%dT%H:%M', validators=[required()])
     assigned_roles = SelectMultipleField('Roles')
     assigned_users = SelectMultipleField('Users')
+    notify_by_email = BooleanField('Notify by Email?')
+    notify_by_phone = BooleanField('Notify by Phone?')
+    additional_notifications = IntegerField('Number of additional notifications', validators=[NumberRange(min=0)], default=0)
 
 class RoleForm(FlaskForm):
     role = StringField(label="Add")

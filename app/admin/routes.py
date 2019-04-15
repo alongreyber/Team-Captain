@@ -4,7 +4,7 @@ from flask import render_template, request, redirect, flash, session, abort, url
 
 from flask_login import current_user
 
-import datetime
+import datetime, json
 
 from bson import ObjectId
 
@@ -200,25 +200,63 @@ def task_new():
     task.save()
     return redirect(url_for('admin.task_info', id=task.id))
 
-@admin.route('/task/<id>', methods=['GET', 'POST'])
-def task_info(id):
+
+@admin.route('/task/<id>/edit', methods=['GET', 'POST'])
+def task_edit(id):
     task = models.Task.objects(id=id).first()
-    all_roles = models.Role.objects
-    form = forms.TaskForm(data=task.to_mongo().to_dict())
-    form.assigned_roles.choices = [(str(role.id), role.name) for role in all_roles]
     if not task:
         abort(404)
+    if not task.is_draft:
+        redirect(url_for('admin.task_view', id=id))
+    all_roles = models.Role.objects
+    all_users = models.User.objects
+    form = forms.TaskForm(data=task.to_mongo().to_dict())
+    form.assigned_roles.choices = [(str(role.id), role.name) for role in all_roles]
+    form.assigned_users.choices = [(str(user.id), user.first_name + " " + user.last_name) for user in all_users]
     if form.validate_on_submit():
         task.subject = form.subject.data
-        task.content = form.content.data
+        task.content = json.dumps(form.content.data)
         task.due = form.due.data
-        print(form.assigned_roles.data)
         task.assigned_roles = [ObjectId(r) for r in form.assigned_roles.data]
+        task.assigned_users = [ObjectId(r) for r in form.assigned_users.data]
+        task.notify_by_email = form.notify_by_email.data
+        task.notify_by_phone = form.notify_by_phone.data
+        task.additional_notifications = form.additional_notifications.data
         task.save()
         flash('Changes Saved', 'success')
     if len(form.errors) > 0:
         flash_errors(form)
-    return render_template('admin/task_info.html', task=task, form=form)
+    return render_template('admin/task_edit.html', task=task, form=form,
+            selected_roles=[role.name for role in task.assigned_roles],
+            selected_users=[user.first_name + " " + user.last_name for user in task.assigned_users])
+
+@admin.route('/task/<id>/publish')
+def task_publish(id):
+    task = models.Task.objects(id=id).first()
+    if not task:
+        abort(404)
+    if not task.is_draft:
+        redirect(url_for('admin.task_edit', id=id))
+    # Parse task into viewing format
+    task.is_draft = False
+    # Find all users with role
+    for role in task.assigned_roles:
+        users_with_role = models.User.objects(roles=role)
+        for u in users_with_role:
+            task.assigned_users.append(u)
+    task.save()
+    # Send out notifications to users
+    return redirect(url_for('admin.task_view',id=id))
+
+
+@admin.route('/task/<id>/view')
+def task_view(id):
+    task = models.Task.objects(id=id).first()
+    if not task:
+        abort(404)
+    if task.is_draft:
+        redirect(url_for('admin.task_edit', id=id))
+    return render_template('admin/task_view.html', task=task)
 
 def flash_errors(form):
     """Flash errors from a form at the top of the page"""

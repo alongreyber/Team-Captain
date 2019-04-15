@@ -1,0 +1,94 @@
+{% extends 'admin/base.html' %}
+
+{% block admin_content %}
+<h1 class="title">Edit Task</h1>
+<h3 class="title is-3">Task Details</h3>
+<form id="task-form" submit="return false;" action="" method="post">
+    {{ form.hidden_tag() }}
+
+    <div class="field">
+	{{ form.subject.label(class_='label') }}
+	<div class="control">
+	    {{ form.subject(class_='input') }}
+	</div>
+    </div>
+
+    <div class="field">
+	{{ form.content(class_='input', type="hidden", id="quill-form") }}
+	{{ form.content.label(class_='label') }}
+	<div id="editor" style="height: 200px"></div>
+    </div>
+    <br />
+    <script>
+	$(document).ready(function() {
+	    var quill = new Quill('#editor', {
+		theme: 'snow',
+	    });
+	    // Save contents on form submission
+	    $("#task-form").on("submit", function() {
+		$("#quill-form").val(JSON.stringify(quill.getContents()));
+	    });
+	    // Load contents from server
+	    var delta = JSON.parse({{task.content|safe}});
+	    quill.setContents(delta);
+	})
+    </script>
+    <div class="field">
+	{{ form.due.label(class_='label') }}
+	<div class="control">
+	{{ form.due(class_='input') }}
+	</div>
+    </div>
+    <br />
+    <h3 class="title is-3">Assigned To</h3>
+    <div class="field">
+	{{ form.assigned_roles.label(class_='label') }}
+	<select id="assigned_roles" class="select2" name="assigned_roles" multiple="multiple" style="width: 100%">
+	    {% for r in form.assigned_roles.choices %}
+		<option value="{{r[0]}}" {% if r[1] in selected_roles %}selected="selected"{% endif %}>{{r[1] | capitalize}}</option>
+	    {% endfor %}
+	</select>
+    </div>
+    <div class="field">
+	{{ form.assigned_users.label(class_='label') }}
+	<select id="assigned_users" class="select2" name="assigned_users" multiple="multiple" style="width: 100%">
+	    {% for r in form.assigned_users.choices %}
+		<option value="{{r[0]}}" {% if r[1] in selected_users %}selected="selected"{% endif %}>{{r[1]}}</option>
+	    {% endfor %}
+	</select>
+    </div>
+
+    <h3 class="title is-3">Notification Options</h3>
+    <div class="field">
+	<div class="control">
+	    <label class="checkbox" for="notify_by_email">
+		{{ form.notify_by_email() }}
+		Notify by Email?
+	    </label>
+	</div>
+    </div>
+    <div class="field">
+	<div class="control">
+	    <label class="checkbox" for="notify_by_phone">
+		{{ form.notify_by_phone(class_='checkbox') }}
+		Notify by Text?
+	    </label>
+	</div>
+    </div>
+    <div class="field">
+	{{ form.additional_notifications.label(class_='label') }}
+	<div class="control">
+	{{ form.additional_notifications(class_='input') }}
+	</div>
+    </div>
+
+    <br />
+    <input class="button is-primary" id="submit" name="submit" type="submit" value="Save">
+    <a href="{{url_for('admin.task_publish', id=task.id)}}" class="button is-success">
+	Publish
+    </a>
+</form>
+
+
+
+{% endblock %}

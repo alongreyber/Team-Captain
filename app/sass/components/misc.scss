@@ -8,3 +8,8 @@
 .role-delete:hover:before {
     content:"Remove";
 }
+
+// Style select2 box
+.select2-selection__choice {
+    margin-bottom: 5px;
+}
