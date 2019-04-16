@@ -29,7 +29,7 @@
 		$("#quill-form").val(JSON.stringify(quill.getContents()));
 	    });
 	    // Load contents from server
-	    var delta = JSON.parse({{task.content|safe}});
+	    var delta = JSON.parse({% if task.content %}{{task.content|safe}}{% else %}"{}"{% endif %});
 	    quill.setContents(delta);
 	})
     </script>

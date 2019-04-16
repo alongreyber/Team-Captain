@@ -3,15 +3,18 @@
 {% block admin_content %}
 <h1 class="title">Task Info</h1>
 
+<h5 class="title is-5">Subject</h5>
 <p>{{task.subject}}</p>
+<br />
 
+<h5 class="title is-5">Content</h5>
 <div id="editor" style="height: 200px"></div>
 <script>
     $(document).ready(function() {
 	var quill = new Quill('#editor', {
 	    theme: 'snow',
 	    modules: {
-		toolbar: false;
+		toolbar: false
 	    },
 	    readOnly: true,
 	});
@@ -20,5 +23,28 @@
 	quill.setContents(delta);
     });
 </script>
+
+<br />
+<h5 class="title is-5">Assigned Users</h5>
+<table class="table">
+    <thead>
+	<th>User Name</th>
+	<th>Seen</th>
+	<th>Completed?</th>
+    </thead>
+    <tbody>
+	{% for tu in task.assigned_users %}
+	<tr>
+	    <td>
+		<a href="{{url_for('admin.user_info', id=tu.user.id)}}">
+		    {{tu.user.first_name}} {{tu.user.last_name}}
+		</a>
+	    </td>
+	    <td>Yes</td>
+	    <td>No</td>
+	</tr>
+	{% endfor %}
+    </tbody>
+</table>
 
 {% endblock %}

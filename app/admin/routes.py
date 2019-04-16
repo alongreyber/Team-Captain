@@ -198,7 +198,7 @@ def task_new():
     task = models.Task()
     task.due = datetime.datetime.now()
     task.save()
-    return redirect(url_for('admin.task_info', id=task.id))
+    return redirect(url_for('admin.task_edit', id=task.id))
 
 
 @admin.route('/task/<id>/edit', methods=['GET', 'POST'])
@@ -218,7 +218,13 @@ def task_edit(id):
         task.content = json.dumps(form.content.data)
         task.due = form.due.data
         task.assigned_roles = [ObjectId(r) for r in form.assigned_roles.data]
-        task.assigned_users = [ObjectId(r) for r in form.assigned_users.data]
+        # Need to create a list of TaskUser objects
+        tu_list = []
+        for r in form.assigned_users.data:
+            tu = models.TaskUser()
+            tu.user = ObjectId(r)
+            tu_list.append(tu)
+        task.assigned_users = tu_list
         task.notify_by_email = form.notify_by_email.data
         task.notify_by_phone = form.notify_by_phone.data
         task.additional_notifications = form.additional_notifications.data
@@ -228,7 +234,7 @@ def task_edit(id):
         flash_errors(form)
     return render_template('admin/task_edit.html', task=task, form=form,
             selected_roles=[role.name for role in task.assigned_roles],
-            selected_users=[user.first_name + " " + user.last_name for user in task.assigned_users])
+            selected_users=[tu.user.first_name + " " + tu.user.last_name for tu in task.assigned_users])
 
 @admin.route('/task/<id>/publish')
 def task_publish(id):
@@ -243,7 +249,9 @@ def task_publish(id):
     for role in task.assigned_roles:
         users_with_role = models.User.objects(roles=role)
         for u in users_with_role:
-            task.assigned_users.append(u)
+            tu = models.TaskUser()
+            tu.user = u
+            task.assigned_users.append(tu)
     task.save()
     # Send out notifications to users
     return redirect(url_for('admin.task_view',id=id))

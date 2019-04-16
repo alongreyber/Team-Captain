@@ -38,14 +38,19 @@ class Event(db.Document):
     end = db.DateTimeField()
     recurrence = db.ReferenceField(RecurringEvent)
 
+class TaskUser(db.EmbeddedDocument):
+    user = db.ReferenceField(User)
+    completed = db.BooleanField(default=False)
+    seen = db.BooleanField(default=False)
+
 class Task(db.Document):
     subject = db.StringField()
     content = db.StringField()
     due = db.DateTimeField()
-    assigned_users = db.ListField(db.ReferenceField(User))
+    assigned_users = db.ListField(db.EmbeddedDocumentField(TaskUser))
     assigned_roles = db.ListField(db.ReferenceField(Role))
     notify_by_email = db.BooleanField(default=False)
     notify_by_phone = db.BooleanField(default=False)
     additional_notifications = db.IntField()
-    has_completed = db.ListField(db.ReferenceField(User))
     is_draft = db.BooleanField(default=False)
+
