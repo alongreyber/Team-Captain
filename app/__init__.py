@@ -34,6 +34,7 @@ gravatar = Gravatar(app,
 
 from app.admin.routes import admin as admin_module
 from app.public.routes import public as public_module
+from app.huey import huey
 
 # Register admin first so that it takes precendence over our domain search
 app.register_blueprint(admin_module, url_prefix='/admin')

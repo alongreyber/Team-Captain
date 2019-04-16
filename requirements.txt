@@ -7,3 +7,5 @@ flask-mongoengine
 hashids
 requests_oauthlib
 dnspython
+huey
+redis

@@ -1,4 +1,4 @@
-from app import models, forms
+from app import models, forms, tasks
 from app.admin import context
 from flask import render_template, request, redirect, flash, session, abort, url_for, Blueprint
 
@@ -207,9 +207,13 @@ def task_edit(id):
     if not task:
         abort(404)
     if not task.is_draft:
-        redirect(url_for('admin.task_view', id=id))
+        return redirect(url_for('admin.task_view', id=id))
+
+    # Queries
+    task.select_related(max_depth=2)
     all_roles = models.Role.objects
     all_users = models.User.objects
+
     form = forms.TaskForm(data=task.to_mongo().to_dict())
     form.assigned_roles.choices = [(str(role.id), role.name) for role in all_roles]
     form.assigned_users.choices = [(str(user.id), user.first_name + " " + user.last_name) for user in all_users]
@@ -229,6 +233,7 @@ def task_edit(id):
         task.notify_by_phone = form.notify_by_phone.data
         task.additional_notifications = form.additional_notifications.data
         task.save()
+        task.reload()
         flash('Changes Saved', 'success')
     if len(form.errors) > 0:
         flash_errors(form)
@@ -239,6 +244,7 @@ def task_edit(id):
 @admin.route('/task/<id>/publish')
 def task_publish(id):
     task = models.Task.objects(id=id).first()
+    task.select_related(max_depth=2)
     if not task:
         abort(404)
     if not task.is_draft:
@@ -251,9 +257,51 @@ def task_publish(id):
         for u in users_with_role:
             tu = models.TaskUser()
             tu.user = u
-            task.assigned_users.append(tu)
+            # have to check if user is already in assigned_users to avoid duplicates
+            add = True
+            print(f"Existing TU objects: {task.assigned_users}")
+            print(f"Trying to add: {u}")
+            for existing_tu in task.assigned_users:
+                if existing_tu.user == u:
+                    add = False
+            if add:
+                print('Added')
+                task.assigned_users.append(tu)
     task.save()
-    # Send out notifications to users
+    task.reload()
+
+    times = []
+    # Add instant notification
+    times.append(datetime.datetime.now())
+
+    # Add notifications on days before due at 5:30PM
+    iter_datetime = datetime.datetime.combine(
+            task.due.date() - datetime.timedelta(days=1),
+            datetime.time(17, 30)) # 5:30
+    # By choosing <=, we ensure that at least one notification before due is sent (unless due date is today)
+    i = 0
+    while iter_datetime > datetime.datetime.now() and i <= task.additional_notifications:
+        times.append(iter_datetime)
+        iter_datetime = iter_datetime - datetime.timedelta(days=1)
+        i += 1
+
+    for tu in task.assigned_users:
+        for time in times:
+            notification = models.PushNotification()
+            notification.user = tu.user
+            notification.text = task.subject
+            notification.date = time
+            notification.link = url_for('public.task_info', id=task.id)
+            notification.send_email = task.notify_by_email
+            notification.send_text  = task.notify_by_phone
+            notification.send_app   = True
+            notification.send_push  = True
+            notification.save()
+            # Schedule task for sending unless it's right now
+            if notification.date <= datetime.datetime.now():
+                tasks.send_notification(notification.id)
+            else:
+                tasks.send_notification.schedule(notification.id, eta=notification.date)
     return redirect(url_for('admin.task_view',id=id))
 
 
@@ -263,7 +311,7 @@ def task_view(id):
     if not task:
         abort(404)
     if task.is_draft:
-        redirect(url_for('admin.task_edit', id=id))
+        return redirect(url_for('admin.task_edit', id=id))
     return render_template('admin/task_view.html', task=task)
 
 def flash_errors(form):

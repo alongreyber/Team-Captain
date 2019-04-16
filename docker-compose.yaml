@@ -17,6 +17,16 @@ services:
     ports:
       - "6379:6379"
     restart: always
+  huey:
+    # Huey needs the same code and packages as the web container (because it runs a lot of the code through import statements)
+    build: .
+    volumes:
+      - .:/code
+        # Not sure what this is exactly but nothing works without it
+      - /dev/shm:/dev/shm
+    command: huey_consumer app.huey
+    depends_on: 
+      - redis
   sass:
     image: danmaq/ruby-sass
     volumes:
