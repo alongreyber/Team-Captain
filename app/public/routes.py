@@ -22,15 +22,37 @@ def meetings_page():
     one_week_from_now = datetime.datetime.now() + datetime.timedelta(days=7)
     return render_template('public/meetings.html', user=current_user, meetings=meetings, one_week_from_now=one_week_from_now)
 
+@public.route('/notification/<id>/redirect')
+@login_required
+def notification_redirect(id):
+    notification = current_user.notifications.filter(id=id).first()
+    if not notification:
+        abort(404)
+    # Log info about when notification was seen
+    # Might be useful in the future
+    return redirect(notification.link)
+
+@public.route('/notification/<id>/dismiss')
+def notification_dismiss(id):
+    notification = current_user.notifications.filter(id=id).first()
+    if not notification:
+        abort(404)
+    notification.delete()
+    # Log info about when notification was dismisised
+    # Might be useful in the future
+    return redirect(request.referrer)
+
 @public.route('/task/<id>')
 @login_required
 def task_info(id):
     task = models.Task.objects(id=id).first()
+    task.select_related(max_depth=2)
     if not task:
         abort(404)
-    if current_user not in task.assigned_to:
-        abort(404)
-    return render_template('public/task_info.html', task=task)
+    for tu in task.assigned_users:
+        if current_user == tu.user:
+            return render_template('public/task_info.html', task=task)
+    abort(404)
 
 @public.route('/rsvp/<id>')
 @login_required

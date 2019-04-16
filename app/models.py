@@ -3,6 +3,7 @@ from app import db, login_manager
 
 from flask_login import UserMixin
 
+from bson import ObjectId
 
 class Role(db.Document):
     name = db.StringField()
@@ -21,12 +22,11 @@ class PushNotification(db.Document):
 
 # Notification that appears in app
 class AppNotification(db.EmbeddedDocument):
-    user = db.ReferenceField('User')
+    id = db.ObjectIdField(required=True, default=ObjectId,
+                    unique=True, primary_key=True)
     text = db.StringField()
     link = db.StringField()
     recieve_date = db.DateTimeField()
-    seen_date = db.DateTimeField()
-    dismissed_date = db.DateTimeField()
 
 class User(db.Document, UserMixin):
     email = db.EmailField(max_length=100)
@@ -35,7 +35,7 @@ class User(db.Document, UserMixin):
     first_name = db.StringField(max_length=50)
     last_name = db.StringField(max_length=50)
     roles = db.ListField(db.ReferenceField(Role))
-    notifications = db.ListField(db.EmbeddedDocumentField(AppNotification))
+    notifications = db.EmbeddedDocumentListField(AppNotification)
 
 @login_manager.user_loader
 def load_user(user_id):

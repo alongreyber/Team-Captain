@@ -291,7 +291,7 @@ def task_publish(id):
             notification.user = tu.user
             notification.text = task.subject
             notification.date = time
-            notification.link = url_for('public.task_info', id=task.id)
+            notification.link = url_for('public.task_info', id=task.id, _external=True)
             notification.send_email = task.notify_by_email
             notification.send_text  = task.notify_by_phone
             notification.send_app   = True
