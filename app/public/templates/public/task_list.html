@@ -1,0 +1,33 @@
+{% extends 'admin/base.html' %}
+{% block admin_content %}
+
+<h1 class="title"> All Tasks </h1>
+
+<table class="table">
+    <thead>
+	<tr>
+	    <th>Subject</th>
+	    <th>Due</th>
+	    <th>Completed?</th>
+	</tr>
+    </thead>
+    <tbody>
+	{% for task in tasks %}    
+	<tr>
+	    <td>
+		<a href="{{url_for('public.task_info', id=task.id)}}">
+			{{task.subject}}
+		</a>
+	    </td>
+	    <td>
+		{{task.due.strftime('%a %B %d')}}
+	    </td>
+	    <td>
+		{{task.has_completed | length}}
+	    </td>
+	</tr>
+	{% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

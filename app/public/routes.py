@@ -37,7 +37,9 @@ def notification_dismiss(id):
     notification = current_user.notifications.filter(id=id).first()
     if not notification:
         abort(404)
-    notification.delete()
+    current_user.notifications.remove(notification)
+    current_user.save()
+    session['open-notifications'] = True
     # Log info about when notification was dismisised
     # Might be useful in the future
     return redirect(request.referrer)
@@ -53,6 +55,12 @@ def task_info(id):
         if current_user == tu.user:
             return render_template('public/task_info.html', task=task)
     abort(404)
+
+@public.route('/tasks')
+@login_required
+def task_list():
+    tasks = models.Task.objects(assigned_users__user=current_user.id)
+    return render_template('public/task_list.html',tasks=tasks)
 
 @public.route('/rsvp/<id>')
 @login_required

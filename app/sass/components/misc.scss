@@ -14,6 +14,15 @@
     margin-bottom: 5px;
 }
 
-.navbar-notification {
-    display: flex;
+.tc-notification {
+  display: flex;
+  justify-content: space-between;
+}
+
+.tc-notification__content {
+  
+}
+
+.tc-notification__dismiss {
+   margin-left: 5px;
 }

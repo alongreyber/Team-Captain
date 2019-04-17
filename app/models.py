@@ -69,5 +69,5 @@ class Task(db.Document):
     notify_by_email = db.BooleanField(default=False)
     notify_by_phone = db.BooleanField(default=False)
     additional_notifications = db.IntField()
-    is_draft = db.BooleanField(default=False)
+    is_draft = db.BooleanField(default=True)
 

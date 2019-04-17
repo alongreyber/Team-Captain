@@ -83,8 +83,8 @@
     </div>
 
     <br />
-    <input class="button is-primary" id="submit" name="submit" type="submit" value="Save">
-    <a href="{{url_for('admin.task_publish', id=task.id)}}" class="button is-success">
+    <input onclick="unsaved = false;" class="button is-primary" id="submit" name="submit" type="submit" value="Save">
+    <a href="{{url_for('admin.task_publish', id=task.id)}}" id="publish" class="button is-success" tooltip="Please save your changes first">
 	Publish
     </a>
 </form>
