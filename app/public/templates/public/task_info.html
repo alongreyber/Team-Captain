@@ -4,7 +4,7 @@
 <h1 class="title">{{task.subject}}</h1>
 <h3 class="title is-3">Due {{task.due.strftime("%m/%d/%Y, %H:%M:%S")}}</h3>
 
-<div id="editor" style="height: 200px"></div>
+<div class="is-size-5" id="editor" style="height: 200px"></div>
 <script>
     $(document).ready(function() {
 	var quill = new Quill('#editor', {
@@ -19,4 +19,9 @@
 	quill.setContents(delta);
     });
 </script>
+
+<br />
+<a class="button is-medium is-primary" href="{{url_for('public.task_complete', id=task.id)}}">
+    I'm done!
+</a>
 {% endblock %}

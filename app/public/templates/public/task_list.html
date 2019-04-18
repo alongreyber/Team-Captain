@@ -3,7 +3,7 @@
 
 <h1 class="title"> All Tasks </h1>
 
-<table class="table">
+<table class="table is-hoverable">
     <thead>
 	<tr>
 	    <th>Subject</th>
@@ -13,17 +13,21 @@
     </thead>
     <tbody>
 	{% for task in tasks %}    
-	<tr>
+	<tr onclick="window.location='{{url_for('public.task_info', id=task.id)}}'">
 	    <td>
-		<a href="{{url_for('public.task_info', id=task.id)}}">
-			{{task.subject}}
-		</a>
+		{{task.subject}}
 	    </td>
 	    <td>
 		{{task.due.strftime('%a %B %d')}}
 	    </td>
-	    <td>
-		{{task.has_completed | length}}
+	    <td style="text-align: center">
+		<div class="icon is-medium" style="display: inline-table;">
+		    {% if task.assigned_users[0].completed %}
+		    <i class="far fa-check-square fa-lg"></i>
+		    {% else %}
+		    <i class="far fa-square fa-lg"></i>
+		    {% endif %}
+		</div>
 	    </td>
 	</tr>
 	{% endfor %}

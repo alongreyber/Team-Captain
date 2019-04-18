@@ -44,22 +44,38 @@ def notification_dismiss(id):
     # Might be useful in the future
     return redirect(request.referrer)
 
+@public.route('/task/<id>/complete')
+@login_required
+def task_complete(id):
+    # Make sure that the task is published and that the user is assigned to it
+    task = models.Task.objects(is_draft=False,id=id,
+            assigned_users__user=current_user.id).first()
+    if not task:
+        abort(404)
+    tu = task.assigned_users.filter(user=current_user.id)
+    tu[0].completed = True
+    task.save()
+    return redirect(url_for('public.task_info', id=task.id))
+
 @public.route('/task/<id>')
 @login_required
 def task_info(id):
-    task = models.Task.objects(id=id).first()
-    task.select_related(max_depth=2)
+    # Make sure that the task is published and that the user is assigned to it
+    task = models.Task.objects(is_draft=False,id=id,
+            assigned_users__user=current_user.id).first()
     if not task:
         abort(404)
-    for tu in task.assigned_users:
-        if current_user == tu.user:
-            return render_template('public/task_info.html', task=task)
-    abort(404)
+    task.select_related(max_depth=2)
+    return render_template('public/task_info.html', task=task)
 
 @public.route('/tasks')
 @login_required
 def task_list():
-    tasks = models.Task.objects(assigned_users__user=current_user.id)
+    # First filter tasks to make sure they're assigned to the user
+    tasks = models.Task.objects.filter(is_draft=False, assigned_users__user=current_user.id)
+    # Then filter assigned_users array in each task to only include the current user
+    tasks = tasks.fields(subject=1,is_draft=1,due=1, assigned_users={'$elemMatch': {'user': current_user.id}})
+    tasks.select_related(max_depth=2)
     return render_template('public/task_list.html',tasks=tasks)
 
 @public.route('/rsvp/<id>')

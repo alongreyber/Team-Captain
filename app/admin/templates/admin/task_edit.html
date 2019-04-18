@@ -16,7 +16,7 @@
     <div class="field">
 	{{ form.content(class_='input', type="hidden", id="quill-form") }}
 	{{ form.content.label(class_='label') }}
-	<div id="editor" style="height: 200px"></div>
+	<div class="is-size-5" id="editor" style="height: 200px"></div>
     </div>
     <br />
     <script>
@@ -83,7 +83,7 @@
     </div>
 
     <br />
-    <input onclick="unsaved = false;" class="button is-primary" id="submit" name="submit" type="submit" value="Save">
+    <input class="button is-primary" id="submit" name="submit" type="submit" value="Save">
     <a href="{{url_for('admin.task_publish', id=task.id)}}" id="publish" class="button is-success" tooltip="Please save your changes first">
 	Publish
     </a>

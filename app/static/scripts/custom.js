@@ -6,6 +6,9 @@ $(document).ready(function() {
 	// Anything with the
 	$("#publish").attr("disabled", true);
     });
+    $("#submit").on('click', function() {
+	unsaved = false;
+    })
 });
 function unloadPage(){ 
     if(unsaved){

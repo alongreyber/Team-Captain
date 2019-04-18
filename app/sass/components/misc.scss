@@ -26,3 +26,8 @@
 .tc-notification__dismiss {
    margin-left: 5px;
 }
+
+// Make tables that are hoverable change mouse to pointer
+table.is-hoverable:hover {
+    cursor: pointer;
+}
