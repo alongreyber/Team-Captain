@@ -222,13 +222,7 @@ def task_edit(id):
         task.content = json.dumps(form.content.data)
         task.due = form.due.data
         task.assigned_roles = [ObjectId(r) for r in form.assigned_roles.data]
-        # Need to create a list of TaskUser objects
-        tu_list = []
-        for r in form.assigned_users.data:
-            tu = models.TaskUser()
-            tu.user = ObjectId(r)
-            tu_list.append(tu)
-        task.assigned_users = tu_list
+        task.assigned_users = [ObjectId(r) for r in form.assigned_users.data]
         task.notify_by_email = form.notify_by_email.data
         task.notify_by_phone = form.notify_by_phone.data
         task.additional_notifications = form.additional_notifications.data
@@ -239,7 +233,7 @@ def task_edit(id):
         flash_errors(form)
     return render_template('admin/task_edit.html', task=task, form=form,
             selected_roles=[role.name for role in task.assigned_roles],
-            selected_users=[tu.user.first_name + " " + tu.user.last_name for tu in task.assigned_users])
+            selected_users=[user.first_name + " " + user.last_name for user in task.assigned_users])
 
 @admin.route('/task/<id>/publish')
 def task_publish(id):
@@ -255,21 +249,14 @@ def task_publish(id):
     for role in task.assigned_roles:
         users_with_role = models.User.objects(roles=role)
         for u in users_with_role:
-            tu = models.TaskUser()
-            tu.user = u
-            # have to check if user is already in assigned_users to avoid duplicates
-            add = True
-            print(f"Existing TU objects: {task.assigned_users}")
-            print(f"Trying to add: {u}")
-            for existing_tu in task.assigned_users:
-                if existing_tu.user == u:
-                    add = False
-            if add:
-                print('Added')
-                task.assigned_users.append(tu)
-    task.save()
-    task.reload()
-
+            task.assigned_users.append(u)
+    # Create TaskUser objects and assignments to user
+    for user in task.assigned_users:
+        tu = models.TaskUser()
+        tu.task = task
+        tu.save()
+        user.assigned_tasks.append(tu)
+        user.save()
     times = []
     # Add instant notification
     times.append(datetime.datetime.now())
@@ -285,10 +272,10 @@ def task_publish(id):
         iter_datetime = iter_datetime - datetime.timedelta(days=1)
         i += 1
 
-    for tu in task.assigned_users:
+    for user in task.assigned_users:
         for time in times:
             notification = models.PushNotification()
-            notification.user = tu.user
+            notification.user = user
             notification.text = task.subject
             notification.date = time
             notification.link = url_for('public.task_info', id=task.id, _external=True)
@@ -302,17 +289,33 @@ def task_publish(id):
                 tasks.send_notification(notification.id)
             else:
                 tasks.send_notification.schedule(notification.id, eta=notification.date)
+    task.assigned_users = []
+    task.save()
     return redirect(url_for('admin.task_view',id=id))
 
 
 @admin.route('/task/<id>/view')
 def task_view(id):
+    # Complex query here, but it's okay because this is an admin interface
     task = models.Task.objects(id=id).first()
+    # First filter users to make sure they're assigned to the task
+    all_users = models.User.objects
+    all_users.select_related(max_depth=2)
+    assigned_users = []
+    for user in all_users:
+        # Filter TaskUser objects to those related to this task (should be 1 or 0)
+        assigned_tasks = []
+        for tu in user.assigned_tasks:
+            if tu.task == task:
+                assigned_tasks.append(tu)
+        user.assigned_tasks = assigned_tasks
+        if len(user.assigned_tasks) > 0:
+            assigned_users.append(user)
     if not task:
         abort(404)
     if task.is_draft:
         return redirect(url_for('admin.task_edit', id=id))
-    return render_template('admin/task_view.html', task=task)
+    return render_template('admin/task_view.html', task=task, assigned_users=assigned_users)
 
 def flash_errors(form):
     """Flash errors from a form at the top of the page"""

@@ -3,6 +3,7 @@ from flask import render_template, request, redirect, flash, session, abort, url
 from flask_login import current_user, login_required
 
 import datetime
+from bson import ObjectId
 
 public = Blueprint('public', __name__, template_folder='templates')
 
@@ -48,35 +49,35 @@ def notification_dismiss(id):
 @login_required
 def task_complete(id):
     # Make sure that the task is published and that the user is assigned to it
-    task = models.Task.objects(is_draft=False,id=id,
-            assigned_users__user=current_user.id).first()
-    if not task:
+    tu_list = list(filter(lambda tu: tu.task.id == ObjectId(id), current_user.assigned_tasks))
+    if len(tu_list) == 0:
         abort(404)
-    tu = task.assigned_users.filter(user=current_user.id)
-    tu[0].completed = True
+    tu = tu_list[0]
+    task = tu.task
+    task.completed = True
     task.save()
-    return redirect(url_for('public.task_info', id=task.id))
+    return redirect(url_for('public.task_info', id=tu.task.id))
 
 @public.route('/task/<id>')
 @login_required
 def task_info(id):
     # Make sure that the task is published and that the user is assigned to it
-    task = models.Task.objects(is_draft=False,id=id,
-            assigned_users__user=current_user.id).first()
-    if not task:
+    tu_list = list(filter(lambda tu: tu.task.id == ObjectId(id), current_user.assigned_tasks))
+    if len(tu_list) == 0:
         abort(404)
-    task.select_related(max_depth=2)
-    return render_template('public/task_info.html', task=task)
+    tu = tu_list[0]
+    if not tu.seen:
+        tu.seen = True
+        tu.save()
+    task = tu.task
+    return render_template('public/task_info.html', tu=tu)
 
 @public.route('/tasks')
 @login_required
 def task_list():
-    # First filter tasks to make sure they're assigned to the user
-    tasks = models.Task.objects.filter(is_draft=False, assigned_users__user=current_user.id)
-    # Then filter assigned_users array in each task to only include the current user
-    tasks = tasks.fields(subject=1,is_draft=1,due=1, assigned_users={'$elemMatch': {'user': current_user.id}})
-    tasks.select_related(max_depth=2)
-    return render_template('public/task_list.html',tasks=tasks)
+    current_user.select_related(max_depth=2)
+    tus = current_user.assigned_tasks
+    return render_template('public/task_list.html',tus=tus)
 
 @public.route('/rsvp/<id>')
 @login_required

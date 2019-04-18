@@ -33,15 +33,15 @@
 	<th>Completed?</th>
     </thead>
     <tbody>
-	{% for tu in task.assigned_users %}
+	{% for user in assigned_users %}
 	<tr>
 	    <td>
-		<a href="{{url_for('admin.user_info', id=tu.user.id)}}">
-		    {{tu.user.first_name}} {{tu.user.last_name}}
+		<a href="{{url_for('admin.user_info', id=user.id)}}">
+		    {{user.first_name}} {{user.last_name}}
 		</a>
 	    </td>
-	    <td>{% if tu.seen      %}Yes{% else %}No{% endif %}</td>
-	    <td>{% if tu.completed %}Yes{% else %}No{% endif %}</td>
+	    <td>{% if user.assigned_tasks[0].seen      %}Yes{% else %}No{% endif %}</td>
+	    <td>{% if user.assigned_tasks[0].completed %}Yes{% else %}No{% endif %}</td>
 	</tr>
 	{% endfor %}
     </tbody>

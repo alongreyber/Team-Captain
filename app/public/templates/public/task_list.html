@@ -12,17 +12,17 @@
 	</tr>
     </thead>
     <tbody>
-	{% for task in tasks %}    
-	<tr onclick="window.location='{{url_for('public.task_info', id=task.id)}}'">
+	{% for tu in tus %}    
+	<tr onclick="window.location='{{url_for('public.task_info', id=tu.task.id)}}'">
 	    <td>
-		{{task.subject}}
+		{{tu.task.subject}}
 	    </td>
 	    <td>
-		{{task.due.strftime('%a %B %d')}}
+		{{tu.task.due.strftime('%a %B %d')}}
 	    </td>
 	    <td style="text-align: center">
 		<div class="icon is-medium" style="display: inline-table;">
-		    {% if task.assigned_users[0].completed %}
+		    {% if tu.completed %}
 		    <i class="far fa-check-square fa-lg"></i>
 		    {% else %}
 		    <i class="far fa-square fa-lg"></i>

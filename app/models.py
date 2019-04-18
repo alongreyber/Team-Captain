@@ -35,6 +35,7 @@ class User(db.Document, UserMixin):
     first_name = db.StringField(max_length=50)
     last_name = db.StringField(max_length=50)
     roles = db.ListField(db.ReferenceField(Role))
+    assigned_tasks = db.ListField(db.ReferenceField('TaskUser'))
     notifications = db.EmbeddedDocumentListField(AppNotification)
 
 @login_manager.user_loader
@@ -55,19 +56,19 @@ class Event(db.Document):
     end = db.DateTimeField()
     recurrence = db.ReferenceField(RecurringEvent)
 
-class TaskUser(db.EmbeddedDocument):
-    user = db.ReferenceField(User)
-    completed = db.BooleanField(default=False)
-    seen = db.BooleanField(default=False)
-
 class Task(db.Document):
     subject = db.StringField()
     content = db.StringField()
     due = db.DateTimeField()
-    assigned_users = db.ListField(db.EmbeddedDocumentField(TaskUser))
-    assigned_roles = db.ListField(db.ReferenceField(Role))
+    assigned_roles = db.ListField(db.ReferenceField(Role), unique=True)
+    # Only used when task is a draft
+    assigned_users = db.ListField(db.ReferenceField(User), unique=True)
     notify_by_email = db.BooleanField(default=False)
     notify_by_phone = db.BooleanField(default=False)
     additional_notifications = db.IntField()
     is_draft = db.BooleanField(default=True)
 
+class TaskUser(db.Document):
+    task = db.ReferenceField(Task)
+    completed = db.BooleanField(default=False)
+    seen = db.BooleanField(default=False)
