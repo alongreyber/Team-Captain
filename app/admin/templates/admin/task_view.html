@@ -1,14 +1,35 @@
 {% extends 'admin/base.html' %}
 
 {% block admin_content %}
-<h1 class="title">Task Info</h1>
+<div class="level">
+    <div class="level-left">
+	<h1 class="title level-item">Task Info</h1>
+    </div>
+
+    <div class="level-right">
+	{% if task.due > now %}
+	<div class="level-item button is-outlined is-success">
+	    In Progress
+	</div>
+	{% else %}
+	<div class="level-item button is-outlined is-danger">
+	    Past Due
+	</div>
+	{% endif %}
+    </div>
+</div>
 
 <h5 class="title is-5">Subject</h5>
 <p>{{task.subject}}</p>
 <br />
 
+<h5 class="title is-5">Due Date</h5>
+<p>{{task.due.strftime('%a %B %d')}}</p>
+<br />
+
+
 <h5 class="title is-5">Content</h5>
-<div id="editor" style="height: 200px"></div>
+<div class="is-size-5" id="editor" style="height: 200px"></div>
 <script>
     $(document).ready(function() {
 	var quill = new Quill('#editor', {
@@ -46,5 +67,12 @@
 	{% endfor %}
     </tbody>
 </table>
+
+<a href="{{url_for('admin.task_delete', id=task.id)}}" class="button is-danger">
+    Delete
+</a>
+<a href="{{url_for('admin.task_duplicate', id=task.id)}}" class="button is-primary">
+    Make a Copy
+</a>
 
 {% endblock %}

@@ -14,7 +14,19 @@ def index():
 @public.route('/profile')
 @login_required
 def user_profile():
-    return render_template('public/user_profile.html', user=current_user)
+    return render_template('public/user_profile.html')
+
+@public.route('/editprofile', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    form = forms.PublicUserForm(data=current_user.to_mongo().to_dict())
+    if form.validate_on_submit():
+        updated_dict = form.data
+        del updated_dict['csrf_token']
+        current_user.modify(**updated_dict)
+        flash('Changes Saved', 'success')
+        return redirect(url_for('public.user_profile'))
+    return render_template('public/edit_profile.html', form=form)
 
 @public.route('/meetings')
 @login_required
@@ -53,9 +65,8 @@ def task_complete(id):
     if len(tu_list) == 0:
         abort(404)
     tu = tu_list[0]
-    task = tu.task
-    task.completed = True
-    task.save()
+    tu.completed = True
+    tu.save()
     return redirect(url_for('public.task_info', id=tu.task.id))
 
 @public.route('/task/<id>')

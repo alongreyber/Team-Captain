@@ -39,6 +39,9 @@
     </div>
 
     <input class="button is-primary" id="submit" name="submit" type="submit" value="Save">
+    <a href="{{url_for('admin.user_delete', id=user.id)}}" class="button is-danger">
+	Delete
+    </a>
 </form>
 
 {% endblock %}

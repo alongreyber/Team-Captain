@@ -14,6 +14,13 @@ class UserForm(FlaskForm):
     barcode = StringField()
     roles = SelectMultipleField('Roles', coerce=str)
 
+class PublicUserForm(FlaskForm):
+    first_name = StringField()
+    last_name = StringField()
+    personal_email = html5.EmailField()
+    phone_number = html5.TelField()
+    bio = TextAreaField()
+
 EventForm = model_form(models.Event, field_args = {
     'start' : {'label' : "Start Date/Time"},
     'end' : {'label' : "End Date/Time"},

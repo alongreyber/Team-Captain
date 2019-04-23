@@ -5,6 +5,7 @@ import datetime
 
 @huey.task()
 def send_notification(notification_id):
+    print("Start of send_notification")
     notification = models.PushNotification.objects(id=notification_id).first()
     if not notification:
         return
@@ -27,3 +28,4 @@ def send_notification(notification_id):
         user.save()
     notification.sent = True
     notification.save()
+    print("End of send_notification")

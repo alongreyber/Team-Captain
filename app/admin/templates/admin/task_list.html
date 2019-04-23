@@ -1,22 +1,27 @@
 {% extends 'admin/base.html' %}
 {% block admin_content %}
 
-<h1 class="title"> All Tasks </h1>
+<h1 class="title is-1"> Tasks </h1>
 
 <a href="{{url_for('admin.task_new')}}" class="button is-primary">
     New
 </a>
+<br />
+<br />
+<br />
+<br />
 
+<h2 class="title is-2"> Drafts    </h2>
 <table class="table">
     <thead>
 	<tr>
 	    <th>Subject</th>
 	    <th>Due</th>
-	    <th>Number Completed</th>
 	</tr>
     </thead>
     <tbody>
 	{% for task in tasks %}    
+	{% if task.is_draft  %}
 	<tr>
 	    <td>
 		<a href="{{url_for('admin.task_edit', id=task.id)}}">
@@ -26,10 +31,51 @@
 	    <td>
 		{{task.due.strftime('%a %B %d')}}
 	    </td>
+	</tr>
+	{% endif %}
+	{% endfor %}
+    </tbody>
+</table>
+
+<br />
+<br />
+<br />
+<br />
+
+<h2 class="title is-2"> Published </h2>
+<table class="table">
+    <thead>
+	<tr>
+	    <th>Subject</th>
+	    <th>Due</th>
+	    <th>Number Assigned</th>
+	    <th>Number Seen</th>
+	    <th>Number Completed</th>
+	</tr>
+    </thead>
+    <tbody>
+	{% for task in tasks %}    
+	{% if not task.is_draft %}
+	<tr>
 	    <td>
-		{{task.has_completed | length}}
+		<a href="{{url_for('admin.task_edit', id=task.id)}}">
+			{{task.subject}}
+		</a>
+	    </td>
+	    <td>
+		{{task.due.strftime('%a %B %d')}}
+	    </td>
+	    <td class="has-text-centered">
+		{{task.number_assigned}}
+	    </td>
+	    <td class="has-text-centered">
+		{{task.number_seen}}
+	    </td>
+	    <td class="has-text-centered">
+		{{task.number_completed}}
 	    </td>
 	</tr>
+	{% endif %}
 	{% endfor %}
     </tbody>
 </table>

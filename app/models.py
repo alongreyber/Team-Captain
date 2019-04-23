@@ -30,6 +30,8 @@ class AppNotification(db.EmbeddedDocument):
 
 class User(db.Document, UserMixin):
     email = db.EmailField(max_length=100)
+    personal_email = db.EmailField(max_length=100)
+    phone_number = db.StringField(max_length=20)
     bio = db.StringField()
     barcode = db.StringField(max_length=100)
     first_name = db.StringField(max_length=50)
@@ -60,9 +62,9 @@ class Task(db.Document):
     subject = db.StringField()
     content = db.StringField()
     due = db.DateTimeField()
-    assigned_roles = db.ListField(db.ReferenceField(Role), unique=True)
+    assigned_roles = db.ListField(db.ReferenceField(Role))
     # Only used when task is a draft
-    assigned_users = db.ListField(db.ReferenceField(User), unique=True)
+    assigned_users = db.ListField(db.ReferenceField(User))
     notify_by_email = db.BooleanField(default=False)
     notify_by_phone = db.BooleanField(default=False)
     additional_notifications = db.IntField()

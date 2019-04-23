@@ -1,4 +1,4 @@
-import os, configparser
+import os, configparser, datetime
 from flask import Flask, redirect
 from flask_mongoengine import MongoEngine
 from flask_login import LoginManager
@@ -35,6 +35,11 @@ gravatar = Gravatar(app,
 from app.admin.routes import admin as admin_module
 from app.public.routes import public as public_module
 from app.huey import huey
+
+# Add current datetime to jinja template
+@app.context_processor
+def inject_datetime():
+    return dict(now=datetime.datetime.now())
 
 # Register admin first so that it takes precendence over our domain search
 app.register_blueprint(admin_module, url_prefix='/admin')

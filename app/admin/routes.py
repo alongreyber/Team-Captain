@@ -51,6 +51,14 @@ def user_info(id):
     return render_template('admin/user_info.html', user=user, form=form,
             selected_roles=[role.name for role in user.roles])
 
+@admin.route('/u/<id>/delete')
+def user_delete(id):
+    user = models.User.objects(id=id).first()
+    for tu in user.assigned_tasks:
+        tu.delete()
+    user.delete()
+    return redirect(url_for('admin.user_list'))
+
 @admin.route('/roles')
 def role_list():
     roles = models.Role.objects
@@ -191,6 +199,23 @@ def event_new():
 @admin.route('/tasks')
 def task_list():
     tasks = models.Task.objects
+    all_users = models.User.objects
+    all_users.select_related(max_depth=2)
+
+    # Complex query, but that's ok because we're in admin interface
+    for task in tasks:
+        task.number_completed = 0
+        task.number_seen = 0
+        task.number_assigned = 0
+        for user in all_users:
+            # Filter TaskUser objects to those related to this task (should be 1 or 0)
+            for tu in user.assigned_tasks:
+                if tu.task == task:
+                    task.number_assigned += 1
+                    if tu.completed:
+                        task.number_completed += 1
+                    if tu.seen:
+                        task.number_seen += 1
     return render_template('admin/task_list.html', tasks=tasks)
 
 @admin.route('/newtask')
@@ -245,11 +270,15 @@ def task_publish(id):
         redirect(url_for('admin.task_edit', id=id))
     # Parse task into viewing format
     task.is_draft = False
+    # Save original list of assigned_users so it's possible to duplicate tasks
+    task.original_assigned_users = task.assigned_users
     # Find all users with role
     for role in task.assigned_roles:
         users_with_role = models.User.objects(roles=role)
         for u in users_with_role:
             task.assigned_users.append(u)
+    # Make sure list of users is unique
+    task.assigned_users = list(set(task.assigned_users))
     # Create TaskUser objects and assignments to user
     for user in task.assigned_users:
         tu = models.TaskUser()
@@ -286,10 +315,10 @@ def task_publish(id):
             notification.save()
             # Schedule task for sending unless it's right now
             if notification.date <= datetime.datetime.now():
-                tasks.send_notification(notification.id)
+                tasks.send_notification((notification.id))
             else:
-                tasks.send_notification.schedule(notification.id, eta=notification.date)
-    task.assigned_users = []
+                tasks.send_notification.schedule((notification.id), eta=notification.date)
+    task.assigned_users = task.original_assigned_users
     task.save()
     return redirect(url_for('admin.task_view',id=id))
 
@@ -298,6 +327,8 @@ def task_publish(id):
 def task_view(id):
     # Complex query here, but it's okay because this is an admin interface
     task = models.Task.objects(id=id).first()
+    if not task:
+        abort(404)
     # First filter users to make sure they're assigned to the task
     all_users = models.User.objects
     all_users.select_related(max_depth=2)
@@ -316,6 +347,42 @@ def task_view(id):
     if task.is_draft:
         return redirect(url_for('admin.task_edit', id=id))
     return render_template('admin/task_view.html', task=task, assigned_users=assigned_users)
+
+@admin.route('/task/<id>/duplicate')
+def task_duplicate(id):
+    task = models.Task.objects(id=id).first()
+    if not task:
+        abort(404)
+    new_task         = models.Task()
+    new_task.subject = task.subject + " Copy"
+    new_task.content = task.content
+    new_task.due     = datetime.datetime.now()
+    new_task.assigned_users = task.assigned_users
+    new_task.assigned_roles = task.assigned_roles
+    new_task.notify_by_phone = task.notify_by_phone
+    new_task.notify_by_email = task.notify_by_email
+    new_task.additional_notifications = task.additional_notifications
+    new_task.save()
+    return redirect(url_for('admin.task_edit', id=new_task.id))
+
+
+@admin.route('/task/<id>/delete')
+def task_delete(id):
+    task = models.Task.objects(id=id).first()
+    if not task:
+        abort(404)
+    if not task.is_draft:
+        # Since tasks have no record of who is assigned we have to delete tu's manually
+        all_users = models.User.objects
+        all_users.select_related(max_depth=2)
+        for user in all_users:
+            for tu in user.assigned_tasks:
+                if tu.task == task:
+                    tu.delete()
+                    user.assigned_tasks.remove(tu)
+            user.save()
+    task.delete()
+    return redirect(url_for('admin.task_list'))
 
 def flash_errors(form):
     """Flash errors from a form at the top of the page"""
