@@ -72,7 +72,7 @@ def role_new():
     if form.validate_on_submit():
         for r in all_roles:
             if r.name == form.data['role'].lower():
-                flash(f'Role already exists', 'warning')
+                flash('Role already exists', 'warning')
                 return redirect(url_for('admin.role_list'))
         new_role = models.Role()
         new_role.name = form.data['role'].lower()
@@ -102,18 +102,28 @@ def remove_role(id, role):
 
 @admin.route('/events')
 def event_list():
-    scheduled_events = models.Event.objects(recurrence=None)
+    scheduled_events = models.Event.objects(is_recurring=False)
     recurring_events = models.RecurringEvent.objects()
     return render_template('admin/event_list.html',
             scheduled_events=scheduled_events,
             recurring_events=recurring_events)
 
-
-@admin.route('/m/<id>', methods=["GET","POST"])
-def scheduled_event_info(id):
-    event = models.Event.objects(id=id, recurrence=None).first()
-    if not event or event.start < datetime.datetime.now():
+@admin.route('/m/<id>/view')
+def scheduled_event_view(id):
+    event = models.Event.objects(id=id, is_recurring=False).first()
+    if not event:
         abort(404)
+    if event.is_draft:
+        redirect(url_for('admin.scheduled_event_edit', id=event.id))
+    return render_template('admin/event_view.html', event=event)
+
+@admin.route('/m/<id>/edit', methods=["GET","POST"])
+def scheduled_event_edit(id):
+    event = models.Event.objects(id=id, is_recurring=False).first()
+    if not event:
+        abort(404)
+    if not event.is_draft:
+        return redirect(url_for('admin.scheduled_event_view', id=event.id))
     form = forms.EventForm(request.form, data=event.to_mongo().to_dict())
     if form.validate_on_submit():
         updated_dict = form.data
@@ -128,15 +138,44 @@ def scheduled_event_info(id):
             event.modify(**updated_dict)
     if len(form.errors) > 0:
         flash_errors(form)
-    return render_template('admin/event_info.html', event=event, form=form)
+    return render_template('admin/event_edit.html', event=event, form=form)
 
-@admin.route('/rm/<id>', methods=["GET","POST"])
-def recurring_event_info(id):
+@admin.route('/m/<id>/publish')
+def scheduled_event_publish(id):
+    event = models.Event.objects(id=id, is_draft=True, is_recurring=False).first()
+    if not event:
+        abort(404)
+    event.is_draft = False
+    event.save()
+    return redirect(url_for('admin.scheduled_event_view', id=event.id))
+
+@admin.route('/newevent')
+def scheduled_event_new():
+    event = models.Event()
+    event.start = datetime.datetime.now() + datetime.timedelta(days=1)
+    event.end = event.start + datetime.timedelta(hours=2)
+    event.is_recurring = False
+    event.save()
+    return redirect(url_for('admin.scheduled_event_edit', id=event.id))
+
+@admin.route('/rm/<id>/view')
+def recurring_event_view(id):
     event = models.RecurringEvent.objects(id=id).first()
     if not event:
         abort(404)
+    if event.is_draft:
+        return redirect(url_for('admin.recurring_event_edit', id=event.id))
+    return render_template('admin/recurring_event_view.html', event=event)
+
+@admin.route('/rm/<id>/edit', methods=["GET","POST"])
+def recurring_event_edit(id):
+    event = models.RecurringEvent.objects(id=id).first()
+    if not event:
+        abort(404)
+    if not event.is_draft:
+        return redirect(url_for('admin.recurring_event_view', id=event.id))
     form = forms.RecurringEventForm(request.form, data=event.to_mongo().to_dict())
-    all_days_of_week = ['S','M','T','W','H','F','S']
+    all_days_of_week = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
     form.days_of_week.choices = list(zip(range(7), all_days_of_week))
     if form.validate_on_submit():
         updated_dict = form.data
@@ -157,25 +196,31 @@ def recurring_event_info(id):
             updated_dict['end_date'] = datetime.datetime.combine(updated_dict['end_date'], datetime.datetime.min.time())
             flash('Changes Saved', 'success')
             event.modify(**updated_dict)
-            # Delete the existing events
-            models.Event.objects(recurrence=event).delete()
-            # Re-add
-            d = event.start_date
-            while d <= event.end_date:
-                d += datetime.timedelta(days=1)
-                if d.weekday() in event.days_of_week:
-                    new_event = models.Event(name=event.name,
-                                                 start=datetime.datetime.combine(d,event.start_time.time()),
-                                                 end=datetime.datetime.combine(d,event.end_time.time()),
-                                                 recurrence = event)
-                    new_event.save()
     if len(form.errors) > 0:
         flash_errors(form)
-    print(event.days_of_week)
-    return render_template('admin/recurring_event_info.html',
+    return render_template('admin/recurring_event_edit.html',
             event=event,
             form=form,
             selected_days_of_week = event.days_of_week)
+
+@admin.route('/rm/<id>/publish')
+def recurring_event_publish(id):
+    event = models.RecurringEvent.objects(id=id, is_draft=True).first()
+    if not event:
+        abort(404)
+    d = event.start_date
+    while d <= event.end_date:
+        d += datetime.timedelta(days=1)
+        if d.weekday() in event.days_of_week:
+            new_event = models.Event(name  = event.name,
+                                     start = datetime.datetime.combine(d,event.start_time.time()),
+                                     end   = datetime.datetime.combine(d,event.end_time.time()))
+            new_event.save()
+            new_event.is_recurring = True
+            event.events.append(new_event)
+    event.is_draft = False
+    event.save()
+    return redirect(url_for('admin.recurring_event_view', id=event.id))
 
 @admin.route('/newrecurringevent')
 def recurring_event_new():
@@ -186,15 +231,7 @@ def recurring_event_new():
     event.end_time = datetime.datetime.combine(datetime.datetime.min.date(), datetime.time(19))
     event.days_of_week = [1,3,5]
     event.save()
-    return redirect(url_for('admin.recurring_event_info', id=event.id))
-
-@admin.route('/newevent')
-def event_new():
-    event = models.Event()
-    event.start = datetime.datetime.now() + datetime.timedelta(days=1)
-    event.end = event.start + datetime.timedelta(hours=2)
-    event.save()
-    return redirect(url_for('admin.scheduled_event_info', id=event.id))
+    return redirect(url_for('admin.recurring_event_edit', id=event.id))
 
 @admin.route('/tasks')
 def task_list():
@@ -244,7 +281,7 @@ def task_edit(id):
     form.assigned_users.choices = [(str(user.id), user.first_name + " " + user.last_name) for user in all_users]
     if form.validate_on_submit():
         task.subject = form.subject.data
-        task.content = json.dumps(form.content.data)
+        task.content = form.content.data
         task.due = form.due.data
         task.assigned_roles = [ObjectId(r) for r in form.assigned_roles.data]
         task.assigned_users = [ObjectId(r) for r in form.assigned_users.data]

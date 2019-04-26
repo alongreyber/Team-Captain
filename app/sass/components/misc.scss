@@ -31,3 +31,9 @@
 table.is-hoverable:hover {
     cursor: pointer;
 }
+
+// Restyle easymde editor to have a smaller height
+.CodeMirror,
+.CodeMirror-scroll {
+    max-height: 300px;
+}

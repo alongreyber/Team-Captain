@@ -44,6 +44,15 @@ class User(db.Document, UserMixin):
 def load_user(user_id):
     return User.objects(id=user_id).first()
 
+class Event(db.Document):
+    name = db.StringField()
+    content = db.StringField()
+    start = db.DateTimeField()
+    end = db.DateTimeField()
+    is_draft = db.BooleanField(default=True)
+    # Duplicate data, lets us keep track of whether this is a recurring event
+    is_recurring = db.BooleanField(default=False)
+
 class RecurringEvent(db.Document):
     name = db.StringField()
     start_date = db.DateTimeField()
@@ -51,12 +60,8 @@ class RecurringEvent(db.Document):
     start_time = db.DateTimeField()
     end_time = db.DateTimeField()
     days_of_week = db.ListField(db.IntField())
-
-class Event(db.Document):
-    name = db.StringField()
-    start = db.DateTimeField()
-    end = db.DateTimeField()
-    recurrence = db.ReferenceField(RecurringEvent)
+    is_draft = db.BooleanField(default=True)
+    events = db.ListField(db.ReferenceField(Event))
 
 class Task(db.Document):
     subject = db.StringField()
@@ -72,5 +77,5 @@ class Task(db.Document):
 
 class TaskUser(db.Document):
     task = db.ReferenceField(Task)
-    completed = db.BooleanField(default=False)
-    seen = db.BooleanField(default=False)
+    completed = db.DateTimeField()
+    seen = db.DateTimeField()

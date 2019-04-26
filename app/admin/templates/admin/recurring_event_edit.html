@@ -37,17 +37,15 @@
     </div>
     <div class="field">
 	{{ form.days_of_week.label(class_='label') }}
-	<div class="control">
-	    <div class="select is-multiple">
-		<select id="days_of_week" name="days_of_week" multiple="multiple">
-		    {% for d in form.days_of_week.choices %}
-			<option value={{d[0]}} {% if d[0] in selected_days_of_week %}selected="selected"{% endif %}>{{d[1]}}</option>
-		    {% endfor %}
-		</select>
-	    </div>
-
-	</div>
+	<select class="select2" id="days_of_week" name="days_of_week" multiple="multiple" style="width: 100%">
+	    {% for d in form.days_of_week.choices %}
+		<option value={{d[0]}} {% if d[0] in selected_days_of_week %}selected="selected"{% endif %}>{{d[1]}}</option>
+	    {% endfor %}
+	</select>
     </div>
-    <input class="btn btn-primary" id="submit" name="submit" type="submit" value="Save">
+    <br />
+    <input class="button is-primary" id="submit" name="submit" type="submit" value="Save">
+    <a href="{{url_for('admin.recurring_event_publish', id=event.id)}}" class="button is-success" id="publish" >Publish</a>
+    <a href="#" class="button is-danger">Delete</a>
 </form>
 {% endblock %}

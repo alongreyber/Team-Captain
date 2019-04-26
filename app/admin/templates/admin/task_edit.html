@@ -13,26 +13,8 @@
 	</div>
     </div>
 
-    <div class="field">
-	{{ form.content(class_='input', type="hidden", id="quill-form") }}
-	{{ form.content.label(class_='label') }}
-	<div class="is-size-5" id="editor" style="height: 200px"></div>
-    </div>
+    {{ form.content(id="editor") }}
     <br />
-    <script>
-	$(document).ready(function() {
-	    var quill = new Quill('#editor', {
-		theme: 'snow',
-	    });
-	    // Save contents on form submission
-	    $("#task-form").on("submit", function() {
-		$("#quill-form").val(JSON.stringify(quill.getContents()));
-	    });
-	    // Load contents from server
-	    var delta = JSON.parse({% if task.content %}{{task.content|safe}}{% else %}"{}"{% endif %});
-	    quill.setContents(delta);
-	})
-    </script>
     <div class="field">
 	{{ form.due.label(class_='label') }}
 	<div class="control">

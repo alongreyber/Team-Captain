@@ -16,7 +16,7 @@ def index():
 def user_profile():
     return render_template('public/user_profile.html')
 
-@public.route('/editprofile', methods=['GET', 'POST'])
+@public.route('/profileedit', methods=['GET', 'POST'])
 @login_required
 def edit_profile():
     form = forms.PublicUserForm(data=current_user.to_mongo().to_dict())
@@ -65,8 +65,9 @@ def task_complete(id):
     if len(tu_list) == 0:
         abort(404)
     tu = tu_list[0]
-    tu.completed = True
-    tu.save()
+    if not tu.completed:
+        tu.completed = datetime.datetime.now()
+        tu.save()
     return redirect(url_for('public.task_info', id=tu.task.id))
 
 @public.route('/task/<id>')
@@ -78,7 +79,7 @@ def task_info(id):
         abort(404)
     tu = tu_list[0]
     if not tu.seen:
-        tu.seen = True
+        tu.seen = datetime.datetime.now()
         tu.save()
     task = tu.task
     return render_template('public/task_info.html', tu=tu)

@@ -1,4 +1,4 @@
-import os, configparser, datetime
+import os, configparser, datetime, json
 from flask import Flask, redirect
 from flask_mongoengine import MongoEngine
 from flask_login import LoginManager
@@ -40,6 +40,10 @@ from app.huey import huey
 @app.context_processor
 def inject_datetime():
     return dict(now=datetime.datetime.now())
+
+@app.context_processor
+def inject_json():
+    return dict(to_json=json.dumps)
 
 # Register admin first so that it takes precendence over our domain search
 app.register_blueprint(admin_module, url_prefix='/admin')

@@ -29,7 +29,7 @@ EventForm = model_form(models.Event, field_args = {
 
 class TaskForm(FlaskForm):
     subject = StringField()
-    content = StringField()
+    content = TextAreaField()
     due = html5.DateTimeLocalField(format='%Y-%m-%dT%H:%M', validators=[required()])
     assigned_roles = SelectMultipleField('Roles')
     assigned_users = SelectMultipleField('Users')

@@ -1,74 +1,94 @@
 {% import 'helpers.html' as helpers %}
 {% extends 'admin/base.html' %}
 {% block admin_content %}
-<h1 class="title"> Events </h1>
-
-<div class="events-page">
-    <div class="events-page__recurring">
-	<h3 class="title is-4">Recurring Events</h3>
-	<a href="{{url_for('admin.recurring_event_new')}}" class="button">New</a>
-	<table class="table is-hoverable">
-	    <thead>
-		<th>Name</th>
-		<th>Dates</th>
-		<th>Times</th>
-		<th>Days of Week</th>
-	    </thead>
-	    <tbody>
-		{% for m in recurring_events %}
-		<tr class="hoverable" {{helpers.onclick(url_for('admin.recurring_event_info', id=m.id))}}>
-		    <td>
-			{{m.name}}
-		    </td>
-		    <td>
-			{{m.start_date.strftime('%a %B %d')}} - {{m.end_date.strftime('%a %B %d')}}
-		    </td>
-		    <td>
-			{{m.start_time.strftime('%I:%M %p')}} - {{m.end_time.strftime('%I:%M %p')}}
-		    </td>
-		    <td>
-			{% for d in m.days_of_week %}
-			    {{d | day_of_week_letter }}
-			{% endfor %}
-		    </td>
-		</tr>
-		{% endfor %}
-	    </tbody>
-	</table>
-    </div>
-    <div class="events-page__scheduled">
-	<h3 class="title is-4"> One Time Events </h3>
-	<a href="{{url_for('admin.event_new')}}" class="button">New</a>
-	<table class="table">
-	    <thead>
-		<th>Name</th>
-		<th>Times</th>
-		<th>Date</th>
-		<th>Edit</th>
-	    </thead>
-	    <tbody>
-		{% for m in scheduled_events %}
-		<tr>
-		    <td>
-			{{m.name}}
-		    </td>
-		    <td>
-			{{m.start.strftime('%I:%M %p')}} - {{m.end.strftime('%I:%M %p')}}
-		    </td>
-		    <td>
-			{{m.start.strftime('%a %B %d')}}
-		    </td>
-		    <td>
-			<a href="{{url_for('admin.scheduled_event_info', id=m.id)}}">
-			    <span class="icon is-small">
-				<i class="fas fa-pencil-alt"></i>
-			    </span>
-			</a>
-		    </td>
-		</tr>
-		{% endfor %}
-	    </tbody>
-	</table>
-    </div>
+<h1 class="title is-1"> Events </h1>
+<br />
+<br />
+<div style="display: flex">
+    <h3 class="title is-3">Recurring</h3>
+    <a style="margin-left: 20px" class="button is-primary" href="{{url_for('admin.recurring_event_new')}}">New</a>
 </div>
+<br />
+<table class="table is-hoverable">
+    <thead>
+	<th>Draft</th>
+	<th>Name</th>
+	<th>Dates</th>
+	<th>Times</th>
+	<th>Days of Week</th>
+    </thead>
+    <tbody>
+	{% for m in recurring_events %}
+	{# url points to view but we'll be redirected to edit if needed #}
+	<tr {{helpers.onclick(url_for('admin.recurring_event_view', id=m.id))}}>
+	    <td style="text-align: center">
+		<div class="icon is-medium" style="display: inline-table">
+		    {% if m.is_draft %}
+		    <i class="fas fa-pencil-ruler fa-lg"></i>
+		    {% else %}
+		    <i class="fas fa-pencil-ruler fa-lg" style="color: #dddddd"></i>
+		    {% endif %}
+		</div>
+	    </td>
+	    <td>
+		{{m.name}}
+	    </td>
+	    <td>
+		{{m.start_date.strftime('%a %m/%d/%y')}} - {{m.end_date.strftime('%a %m/%d/%y')}}
+	    </td>
+	    <td>
+		{{m.start_time.strftime('%I:%M %p')}} - {{m.end_time.strftime('%I:%M %p')}}
+	    </td>
+	    <td>
+		{% for d in m.days_of_week %}
+		{{d | day_of_week_letter }}
+		{% endfor %}
+	    </td>
+	</tr>
+	{% endfor %}
+    </tbody>
+</table>
+<br />
+<br />
+<br />
+<br />
+<div style="display: flex">
+    <h3 class="title is-3">One Time</h3>
+    <a style="margin-left: 20px" class="button is-primary" href="{{url_for('admin.scheduled_event_new')}}">New</a>
+</div>
+<table class="table is-hoverable">
+    <thead>
+	<th>Draft</th>
+	<th>Name</th>
+	<th>Times</th>
+	<th>Date</th>
+    </thead>
+    <tbody>
+	{% for m in scheduled_events %}
+	<tr {{helpers.onclick(url_for('admin.scheduled_event_view', id=m.id))}}>
+	    <td style="text-align: center">
+		<div class="icon is-medium" style="display: inline-table">
+		    {% if m.is_draft %}
+		    <i class="fas fa-pencil-ruler fa-lg"></i>
+		    {% else %}
+		    <i class="fas fa-pencil-ruler fa-lg" style="color: #dddddd"></i>
+		    {% endif %}
+		</div>
+	    </td>
+	    <td>
+		{{m.name}}
+	    </td>
+	    <td>
+		{{m.start.strftime('%I:%M %p')}} - {{m.end.strftime('%I:%M %p')}}
+	    </td>
+	    <td>
+		{{m.start.strftime('%a %B %d')}}
+	    </td>
+	</tr>
+	{% endfor %}
+    </tbody>
+</table>
+
+<br />
+<br />
 {% endblock %}
