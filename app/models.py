@@ -46,6 +46,7 @@ def load_user(user_id):
 
 class Event(db.Document):
     name = db.StringField()
+    # Not filled in if this is a recurring event
     content = db.StringField()
     start = db.DateTimeField()
     end = db.DateTimeField()
@@ -55,10 +56,9 @@ class Event(db.Document):
 
 class RecurringEvent(db.Document):
     name = db.StringField()
-    start_date = db.DateTimeField()
-    end_date = db.DateTimeField()
-    start_time = db.DateTimeField()
-    end_time = db.DateTimeField()
+    content = db.StringField()
+    start = db.DateTimeField()
+    end = db.DateTimeField()
     days_of_week = db.ListField(db.IntField())
     is_draft = db.BooleanField(default=True)
     events = db.ListField(db.ReferenceField(Event))

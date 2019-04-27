@@ -21,11 +21,13 @@ class PublicUserForm(FlaskForm):
     phone_number = html5.TelField()
     bio = TextAreaField()
 
-EventForm = model_form(models.Event, field_args = {
-    'start' : {'label' : "Start Date/Time"},
-    'end' : {'label' : "End Date/Time"},
-    'name' : {'label' : "Name"}
-})
+class EventForm(FlaskForm):
+    start = html5.DateTimeLocalField(format='%Y-%m-%dT%H:%M')
+    end = html5.DateTimeLocalField(format='%Y-%m-%dT%H:%M')
+    content = TextAreaField('Description (Markdown)')
+    name = StringField()
+
+
 
 class TaskForm(FlaskForm):
     subject = StringField()
@@ -42,6 +44,7 @@ class RoleForm(FlaskForm):
 
 class RecurringEventForm(FlaskForm):
     name = StringField()
+    content = TextAreaField(label="Description (Markdown)")
     start_date = html5.DateField('Start Date', validators=[required()])
     end_date = html5.DateField('End Date', validators=[required()])
     start_time = html5.TimeField('Start Time', validators=[required()])

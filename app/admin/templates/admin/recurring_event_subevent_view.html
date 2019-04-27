@@ -1,0 +1,16 @@
+{% extends 'admin/base.html' %}
+
+{% block admin_content %}
+<h1 class="title is-1">Event</h1>
+
+<p>{{event.name}}</p>
+
+<div class="content is-medium" id="content-div" style="border: 1px solid gray; padding: 20px"></div>
+<script>
+    var md = window.markdownit();
+    var input = {{to_json(recurring_event.content)|safe}};
+    var result = md.render(input);
+    $('#content-div').html(result);
+</script>
+
+{% endblock %}

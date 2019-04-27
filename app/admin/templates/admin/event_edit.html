@@ -29,6 +29,6 @@
 	</div>
     </div>
     <input class="button is-primary" id="submit" name="submit" type="submit" value="Save">
-    <a href="{{url_for('admin.scheduled_event_publish', id=event.id)}}" class="button is-success">Publish</a>
+    <a href="{{url_for('admin.scheduled_event_publish', id=event.id)}}" class="button is-success" id="publish" >Publish</a>
 </form>
 {% endblock %}

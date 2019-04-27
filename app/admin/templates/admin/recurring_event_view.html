@@ -1,7 +1,44 @@
+{% import 'helpers.html' as helpers %}
 {% extends 'admin/base.html' %}
 
 {% block admin_content %}
-<h1 class="title is-1">Event</h1>
+<h1 class="title is-1">Event Info</h1>
+<br />
 
-{{event.name}}
+<h5 class="title is-5">Name</h5>
+<p>{{event.name}}</p>
+<br />
+
+<h5 class="title is-5">Dates</h5>
+<table class="table is-hoverable">
+    <thead>
+	<th>Date</th>
+	<th>Time</th>
+	<th>Status</th>
+    </thead>
+    <tbody>
+	{% for e in event.events %}
+	<tr {{helpers.onclick(url_for('admin.recurring_event_subevent_view', id=event.id, eid=e.id))}}>
+	    <td>
+		{{e.start.strftime('%a %B %d')}}
+	    </td>
+	    <td>
+		{{e.start.strftime('%I:%M %p')}} - {{e.end.strftime('%I:%M %p')}}
+	    </td>
+	    <td>
+		{% if e.start < now and e.end < now %}
+		<div class="button is-danger">Past</div>
+		{% elif e.start > now and e.end < now %}
+		<div class="button is-warning">In Progress</div>
+		{% else %}
+		<div class="button is-success">Upcoming</div>
+		{% endif %}
+	    </td>
+	</tr>
+	{% endfor %}
+    </tbody>
+</table>
+
+<br/>
+
 {% endblock %}

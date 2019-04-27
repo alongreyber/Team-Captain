@@ -161,11 +161,22 @@ def scheduled_event_new():
 @admin.route('/rm/<id>/view')
 def recurring_event_view(id):
     event = models.RecurringEvent.objects(id=id).first()
+    raise
     if not event:
         abort(404)
     if event.is_draft:
         return redirect(url_for('admin.recurring_event_edit', id=event.id))
     return render_template('admin/recurring_event_view.html', event=event)
+
+@admin.route('/rm/<id>/subevent/<eid>')
+def recurring_event_subevent_view(id, eid):
+    recurring_event = models.RecurringEvent.objects(id=id).first()
+    if not recurring_event or recurring_event.is_draft:
+        abort(404)
+    event = models.Event.objects(id=eid).first()
+    if not event or not event.is_recurring:
+        abort(404)
+    return render_template('admin/recurring_event_subevent_view.html', recurring_event=recurring_event, event=event)
 
 @admin.route('/rm/<id>/edit', methods=["GET","POST"])
 def recurring_event_edit(id):
@@ -174,28 +185,30 @@ def recurring_event_edit(id):
         abort(404)
     if not event.is_draft:
         return redirect(url_for('admin.recurring_event_view', id=event.id))
-    form = forms.RecurringEventForm(request.form, data=event.to_mongo().to_dict())
+    form_data = {'name' : event.name,
+            'content': event.content,
+            'start_date' : event.start.date(), 'start_time':event.start.time(),
+            'end_date':event.end.date(),       'end_time':event.end.time()}
+    form = forms.RecurringEventForm(data=form_data)
     all_days_of_week = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
     form.days_of_week.choices = list(zip(range(7), all_days_of_week))
     if form.validate_on_submit():
-        updated_dict = form.data
-        # The dates/times need to be converted to datetime objects
-        updated_dict['start_time'] = datetime.datetime.combine(datetime.datetime.min.date(), updated_dict['start_time'])
-        updated_dict['end_time'] = datetime.datetime.combine(datetime.datetime.min.date(), updated_dict['end_time'])
-        del updated_dict['csrf_token']
-        if updated_dict['end_time'] <= updated_dict['start_time']:
-            flash('Start of event cannot be before end!', 'warning')
-        elif updated_dict['end_date'] <= updated_dict['start_date']:
-            flash('Start of recurring event cannot be before end!', 'warning')
-        elif updated_dict['start_date'] < datetime.datetime.now().date():
+        if form.end_time.data <= form.start_time.data:
+            flash('Start time of event cannot be before end!', 'warning')
+        elif form.end_date.data <= form.start_date.data:
+            flash('Start date of event cannot be before end!', 'warning')
+        elif form.start_date.data < datetime.datetime.now().date():
             flash('Events cannot start in the past!', 'warning')
-        elif len(updated_dict['days_of_week']) == 0:
+        elif len(form.days_of_week.data) == 0:
             flash('Event must happen at least one day a week!', 'warning')
         else:
-            updated_dict['start_date'] = datetime.datetime.combine(updated_dict['start_date'], datetime.datetime.min.time())
-            updated_dict['end_date'] = datetime.datetime.combine(updated_dict['end_date'], datetime.datetime.min.time())
+            event.start = datetime.datetime.combine(form.start_date.data, form.start_time.data)
+            event.end = datetime.datetime.combine(form.end_date.data, form.end_time.data)
+            event.name = form.name.data
+            event.content = form.content.data
+            event.days_of_week = form.days_of_week.data
+            event.save()
             flash('Changes Saved', 'success')
-            event.modify(**updated_dict)
     if len(form.errors) > 0:
         flash_errors(form)
     return render_template('admin/recurring_event_edit.html',
@@ -208,15 +221,15 @@ def recurring_event_publish(id):
     event = models.RecurringEvent.objects(id=id, is_draft=True).first()
     if not event:
         abort(404)
-    d = event.start_date
-    while d <= event.end_date:
+    d = event.start.date()
+    while d <= event.end.date():
         d += datetime.timedelta(days=1)
         if d.weekday() in event.days_of_week:
             new_event = models.Event(name  = event.name,
-                                     start = datetime.datetime.combine(d,event.start_time.time()),
-                                     end   = datetime.datetime.combine(d,event.end_time.time()))
-            new_event.save()
+                                     start = datetime.datetime.combine(d,event.start.time()),
+                                     end   = datetime.datetime.combine(d,event.end.time()))
             new_event.is_recurring = True
+            new_event.save()
             event.events.append(new_event)
     event.is_draft = False
     event.save()
@@ -225,10 +238,14 @@ def recurring_event_publish(id):
 @admin.route('/newrecurringevent')
 def recurring_event_new():
     event = models.RecurringEvent()
-    event.start_date = datetime.datetime.now()
-    event.end_date = datetime.datetime.now() + datetime.timedelta(days=1) 
-    event.start_time = datetime.datetime.combine(datetime.datetime.min.date(), datetime.time(17))
-    event.end_time = datetime.datetime.combine(datetime.datetime.min.date(), datetime.time(19))
+    event.start = datetime.datetime.combine(
+            datetime.date.today(),
+            datetime.time(17, 0)
+            )
+    event.end = datetime.datetime.combine(
+            datetime.date.today() + datetime.timedelta(days=7),
+            datetime.time(19, 0)
+            )
     event.days_of_week = [1,3,5]
     event.save()
     return redirect(url_for('admin.recurring_event_edit', id=event.id))

@@ -5,6 +5,8 @@ from flask_login import current_user, login_required
 import datetime
 from bson import ObjectId
 
+import pytz
+
 public = Blueprint('public', __name__, template_folder='templates')
 
 @public.route('/home')
@@ -27,6 +29,17 @@ def edit_profile():
         flash('Changes Saved', 'success')
         return redirect(url_for('public.user_profile'))
     return render_template('public/edit_profile.html', form=form)
+
+@public.route('/submittimezone', methods=['POST'])
+@login_required
+def timezone_submit():
+    try:
+        tz = pytz.timezone(request.json)
+    except:
+        tz = timezone('America/New_York')
+    # This isn't stored in db
+    current_user.tz = tz
+    return "Success",200
 
 @public.route('/meetings')
 @login_required
