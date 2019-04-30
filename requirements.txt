@@ -9,4 +9,4 @@ requests_oauthlib
 dnspython
 huey
 redis
-pytz
+pendulum

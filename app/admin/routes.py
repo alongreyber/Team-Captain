@@ -6,6 +6,7 @@ from flask_login import current_user
 
 import datetime, json
 
+import pendulum
 from bson import ObjectId
 
 admin = Blueprint('admin', __name__, template_folder='templates')
@@ -124,18 +125,26 @@ def scheduled_event_edit(id):
         abort(404)
     if not event.is_draft:
         return redirect(url_for('admin.scheduled_event_view', id=event.id))
-    form = forms.EventForm(request.form, data=event.to_mongo().to_dict())
+    form_data = event.to_mongo().to_dict()
+    # Localize start and end to user's location
+    form_data['start'] = form_data['start'].in_tz(current_user.tz)
+    form_data['end'] = form_data['end'].in_tz(current_user.tz)
+    form = forms.EventForm(request.form, data=form_data)
     if form.validate_on_submit():
-        updated_dict = form.data
-        # The dates/times need to be converted to datetime objects
-        del updated_dict['csrf_token']
-        if updated_dict['end'] <= updated_dict['start']:
-            flash('Start of event cannot be before end!', 'warning')
-        elif updated_dict['start'] <= datetime.datetime.now():
+        # Convert times to UTC
+        start = pendulum.instance(form.start.data, tz=current_user.tz).in_tz('UTC')
+        end = pendulum.instance(form.end.data, tz=current_user.tz).in_tz('UTC')
+        if start >= end:
+            flash('Start of event cannot be after end!', 'warning')
+        elif start <= pendulum.now('UTC'):
             flash('Event cannot start in the past', 'warning')
         else:
             flash('Changes Saved', 'success')
-            event.modify(**updated_dict)
+            event.start = start
+            event.end = end
+            event.content = form.content.data
+            event.name = form.name.data
+            event.save()
     if len(form.errors) > 0:
         flash_errors(form)
     return render_template('admin/event_edit.html', event=event, form=form)
@@ -152,8 +161,8 @@ def scheduled_event_publish(id):
 @admin.route('/newevent')
 def scheduled_event_new():
     event = models.Event()
-    event.start = datetime.datetime.now() + datetime.timedelta(days=1)
-    event.end = event.start + datetime.timedelta(hours=2)
+    event.start = pendulum.now('UTC')
+    event.end = pendulum.now('UTC').add(hours=2)
     event.is_recurring = False
     event.save()
     return redirect(url_for('admin.scheduled_event_edit', id=event.id))
@@ -161,7 +170,6 @@ def scheduled_event_new():
 @admin.route('/rm/<id>/view')
 def recurring_event_view(id):
     event = models.RecurringEvent.objects(id=id).first()
-    raise
     if not event:
         abort(404)
     if event.is_draft:

@@ -1,7 +1,7 @@
 import os, configparser, datetime, json
 from flask import Flask, redirect
 from flask_mongoengine import MongoEngine
-from flask_login import LoginManager
+from flask_login import LoginManager, current_user
 from flask_gravatar import Gravatar
 
 mongo_settings = configparser.ConfigParser()
@@ -41,9 +41,11 @@ from app.huey import huey
 def inject_datetime():
     return dict(now=datetime.datetime.now())
 
-@app.context_processor
-def inject_json():
-    return dict(to_json=json.dumps)
+@app.template_filter('localize_dt')
+def localize_dt(dt):
+    local_tz = pytz.timezone(current_user.tz)
+    local_dt = pytz.utc.localize(dt)
+    return local_dt.astimezone(local_tz)
 
 # Register admin first so that it takes precendence over our domain search
 app.register_blueprint(admin_module, url_prefix='/admin')

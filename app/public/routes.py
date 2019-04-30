@@ -5,7 +5,6 @@ from flask_login import current_user, login_required
 import datetime
 from bson import ObjectId
 
-import pytz
 
 public = Blueprint('public', __name__, template_folder='templates')
 
@@ -38,7 +37,8 @@ def timezone_submit():
     except:
         tz = timezone('America/New_York')
     # This isn't stored in db
-    current_user.tz = tz
+    current_user.tz = tz.zone
+    current_user.save()
     return "Success",200
 
 @public.route('/meetings')
