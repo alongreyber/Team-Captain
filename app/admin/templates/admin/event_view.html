@@ -8,7 +8,7 @@
 <div class="content is-medium" id="content-div" style="border: 1px solid gray; padding: 20px"></div>
 <script>
     var md = window.markdownit();
-    var input = {{to_json(event.content)|safe}};
+    var input = {{event.content|tojson|safe}};
     var result = md.render(input);
     $('#content-div').html(result);
 </script>

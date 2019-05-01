@@ -115,7 +115,7 @@ def scheduled_event_view(id):
     if not event:
         abort(404)
     if event.is_draft:
-        redirect(url_for('admin.scheduled_event_edit', id=event.id))
+        return redirect(url_for('admin.scheduled_event_edit', id=event.id))
     return render_template('admin/event_view.html', event=event)
 
 @admin.route('/m/<id>/edit', methods=["GET","POST"])
@@ -161,8 +161,8 @@ def scheduled_event_publish(id):
 @admin.route('/newevent')
 def scheduled_event_new():
     event = models.Event()
-    event.start = pendulum.now('UTC')
-    event.end = pendulum.now('UTC').add(hours=2)
+    event.start = pendulum.now('UTC').add(days=1)
+    event.end = event.start.add(hours=2)
     event.is_recurring = False
     event.save()
     return redirect(url_for('admin.scheduled_event_edit', id=event.id))
@@ -193,10 +193,7 @@ def recurring_event_edit(id):
         abort(404)
     if not event.is_draft:
         return redirect(url_for('admin.recurring_event_view', id=event.id))
-    form_data = {'name' : event.name,
-            'content': event.content,
-            'start_date' : event.start.date(), 'start_time':event.start.time(),
-            'end_date':event.end.date(),       'end_time':event.end.time()}
+    form_data = event.to_mongo().to_dict()
     form = forms.RecurringEventForm(data=form_data)
     all_days_of_week = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
     form.days_of_week.choices = list(zip(range(7), all_days_of_week))
@@ -205,13 +202,13 @@ def recurring_event_edit(id):
             flash('Start time of event cannot be before end!', 'warning')
         elif form.end_date.data <= form.start_date.data:
             flash('Start date of event cannot be before end!', 'warning')
-        elif form.start_date.data < datetime.datetime.now().date():
-            flash('Events cannot start in the past!', 'warning')
         elif len(form.days_of_week.data) == 0:
             flash('Event must happen at least one day a week!', 'warning')
         else:
-            event.start = datetime.datetime.combine(form.start_date.data, form.start_time.data)
-            event.end = datetime.datetime.combine(form.end_date.data, form.end_time.data)
+            event.start_date = datetime.datetime.combine(form.start_date.data, datetime.datetime.min.time())
+            event.end_date   = datetime.datetime.combine(form.end_date.data, datetime.datetime.min.time())
+            event.start_time = datetime.datetime.combine(datetime.datetime.min.date(), form.start_time.data)
+            event.end_time   = datetime.datetime.combine(datetime.datetime.min.date(), form.end_time.data)
             event.name = form.name.data
             event.content = form.content.data
             event.days_of_week = form.days_of_week.data
@@ -229,13 +226,18 @@ def recurring_event_publish(id):
     event = models.RecurringEvent.objects(id=id, is_draft=True).first()
     if not event:
         abort(404)
-    d = event.start.date()
-    while d <= event.end.date():
-        d += datetime.timedelta(days=1)
-        if d.weekday() in event.days_of_week:
+    start_date = pendulum.instance(event.start_date, tz=current_user.tz)
+    end_date = pendulum.instance(event.end_date, tz=current_user.tz)
+    period = end_date - start_date
+    for dt in period.range('days'):
+        if dt.day_of_week in event.days_of_week:
+            start = dt.at(event.start_time.hour, event.start_time.minute)
+            start = start.in_tz('UTC')
+            end = dt.at(event.end_time.hour, event.end_time.minute)
+            end = end.in_tz('UTC')
             new_event = models.Event(name  = event.name,
-                                     start = datetime.datetime.combine(d,event.start.time()),
-                                     end   = datetime.datetime.combine(d,event.end.time()))
+                                     start = start,
+                                     end   = end)
             new_event.is_recurring = True
             new_event.save()
             event.events.append(new_event)
@@ -246,14 +248,10 @@ def recurring_event_publish(id):
 @admin.route('/newrecurringevent')
 def recurring_event_new():
     event = models.RecurringEvent()
-    event.start = datetime.datetime.combine(
-            datetime.date.today(),
-            datetime.time(17, 0)
-            )
-    event.end = datetime.datetime.combine(
-            datetime.date.today() + datetime.timedelta(days=7),
-            datetime.time(19, 0)
-            )
+    event.start_date = pendulum.today().naive()
+    event.end_date = pendulum.today().add(weeks=1).naive()
+    event.start_time = pendulum.naive(2010,1,1, 17, 0)
+    event.end_time = pendulum.naive(2010,1,1, 19, 0)
     event.days_of_week = [1,3,5]
     event.save()
     return redirect(url_for('admin.recurring_event_edit', id=event.id))
@@ -283,7 +281,7 @@ def task_list():
 @admin.route('/newtask')
 def task_new():
     task = models.Task()
-    task.due = datetime.datetime.now()
+    task.due = pendulum.now('UTC').add(days=7)
     task.save()
     return redirect(url_for('admin.task_edit', id=task.id))
 
@@ -301,21 +299,26 @@ def task_edit(id):
     all_roles = models.Role.objects
     all_users = models.User.objects
 
-    form = forms.TaskForm(data=task.to_mongo().to_dict())
+    form_data = task.to_mongo().to_dict()
+    form_data['due'] = form_data['due'].in_tz(current_user.tz)
+    form = forms.TaskForm(data=form_data)
     form.assigned_roles.choices = [(str(role.id), role.name) for role in all_roles]
     form.assigned_users.choices = [(str(user.id), user.first_name + " " + user.last_name) for user in all_users]
     if form.validate_on_submit():
         task.subject = form.subject.data
         task.content = form.content.data
-        task.due = form.due.data
-        task.assigned_roles = [ObjectId(r) for r in form.assigned_roles.data]
-        task.assigned_users = [ObjectId(r) for r in form.assigned_users.data]
-        task.notify_by_email = form.notify_by_email.data
-        task.notify_by_phone = form.notify_by_phone.data
-        task.additional_notifications = form.additional_notifications.data
-        task.save()
-        task.reload()
-        flash('Changes Saved', 'success')
+        task.due = pendulum.instance(form.due.data, tz=current_user.tz).in_tz('UTC')
+        if task.due < pendulum.now('UTC'):
+            flash('Task cannot be due in the past', 'warning')
+        else:
+            task.assigned_roles = [ObjectId(r) for r in form.assigned_roles.data]
+            task.assigned_users = [ObjectId(r) for r in form.assigned_users.data]
+            task.notify_by_email = form.notify_by_email.data
+            task.notify_by_phone = form.notify_by_phone.data
+            task.additional_notifications = form.additional_notifications.data
+            task.save()
+            task.reload()
+            flash('Changes Saved', 'success')
     if len(form.errors) > 0:
         flash_errors(form)
     return render_template('admin/task_edit.html', task=task, form=form,
@@ -349,19 +352,19 @@ def task_publish(id):
         user.assigned_tasks.append(tu)
         user.save()
     times = []
-    # Add instant notification
-    times.append(datetime.datetime.now())
 
-    # Add notifications on days before due at 5:30PM
-    iter_datetime = datetime.datetime.combine(
-            task.due.date() - datetime.timedelta(days=1),
-            datetime.time(17, 30)) # 5:30
-    # By choosing <=, we ensure that at least one notification before due is sent (unless due date is today)
-    i = 0
-    while iter_datetime > datetime.datetime.now() and i <= task.additional_notifications:
-        times.append(iter_datetime)
-        iter_datetime = iter_datetime - datetime.timedelta(days=1)
-        i += 1
+    # Create a period and use the range to iterate over it
+    period = pendulum.period(pendulum.now('UTC'), task.due)
+    for dt in period.range('days'):
+        times.append(dt.at(17,30))
+
+    # Only take the end n notifications
+    if not task.additional_notifications == 0:
+        if len(times) > task.additional_notifications:
+            times = times[task.additional_notifications-1:]
+
+    # Add instant notification
+    times.append(pendulum.now('UTC'))
 
     for user in task.assigned_users:
         for time in times:
@@ -376,10 +379,12 @@ def task_publish(id):
             notification.send_push  = True
             notification.save()
             # Schedule task for sending unless it's right now
-            if notification.date <= datetime.datetime.now():
+            if notification.date <= pendulum.now('UTC'):
                 tasks.send_notification((notification.id))
             else:
-                tasks.send_notification.schedule((notification.id), eta=notification.date)
+                # Notify user at their most recent time zone
+                eta = notification.date.in_tz(notification.user.tz)
+                tasks.send_notification.schedule((notification.id), eta=eta)
     task.assigned_users = task.original_assigned_users
     task.save()
     return redirect(url_for('admin.task_view',id=id))
@@ -418,7 +423,7 @@ def task_duplicate(id):
     new_task         = models.Task()
     new_task.subject = task.subject + " Copy"
     new_task.content = task.content
-    new_task.due     = datetime.datetime.now()
+    new_task.due     = pendulum.now('UTC')
     new_task.assigned_users = task.assigned_users
     new_task.assigned_roles = task.assigned_roles
     new_task.notify_by_phone = task.notify_by_phone

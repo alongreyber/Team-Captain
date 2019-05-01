@@ -2,7 +2,7 @@ from app import models, forms, oauth
 from flask import render_template, request, redirect, flash, session, abort, url_for, Blueprint
 from flask_login import current_user, login_required
 
-import datetime
+import pendulum
 from bson import ObjectId
 
 
@@ -32,12 +32,11 @@ def edit_profile():
 @public.route('/submittimezone', methods=['POST'])
 @login_required
 def timezone_submit():
-    try:
-        tz = pytz.timezone(request.json)
-    except:
-        tz = timezone('America/New_York')
     # This isn't stored in db
-    current_user.tz = tz.zone
+    if request.json:
+        current_user.tz = request.json
+    else:
+        current_user.tz = 'America/New_York'
     current_user.save()
     return "Success",200
 
@@ -45,7 +44,7 @@ def timezone_submit():
 @login_required
 def meetings_page():
     meetings = models.Meeting.objects()
-    one_week_from_now = datetime.datetime.now() + datetime.timedelta(days=7)
+    one_week_from_now = pendulum.now('UTC') + datetime.timedelta(days=7)
     return render_template('public/meetings.html', user=current_user, meetings=meetings, one_week_from_now=one_week_from_now)
 
 @public.route('/notification/<id>/redirect')
@@ -79,7 +78,7 @@ def task_complete(id):
         abort(404)
     tu = tu_list[0]
     if not tu.completed:
-        tu.completed = datetime.datetime.now()
+        tu.completed = pendulum.now('UTC')
         tu.save()
     return redirect(url_for('public.task_info', id=tu.task.id))
 
@@ -92,7 +91,7 @@ def task_info(id):
         abort(404)
     tu = tu_list[0]
     if not tu.seen:
-        tu.seen = datetime.datetime.now()
+        tu.seen = pendulum.now('UTC')
         tu.save()
     task = tu.task
     return render_template('public/task_info.html', tu=tu)

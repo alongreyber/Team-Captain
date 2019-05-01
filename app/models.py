@@ -82,8 +82,13 @@ class Event(db.Document):
 class RecurringEvent(db.Document):
     name = db.StringField()
     content = db.StringField()
-    start = PendulumField()
-    end = PendulumField()
+    # NOTE
+    # These are not in UTC. They are naive objects that are turned
+    # into real times when the event is published
+    start_date = db.DateTimeField()
+    start_time = db.DateTimeField()
+    end_date = db.DateTimeField()
+    end_time = db.DateTimeField()
     days_of_week = db.ListField(db.IntField())
     is_draft = db.BooleanField(default=True)
     events = db.ListField(db.ReferenceField(Event))

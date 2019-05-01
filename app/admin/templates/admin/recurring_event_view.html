@@ -20,10 +20,10 @@
 	{% for e in event.events %}
 	<tr {{helpers.onclick(url_for('admin.recurring_event_subevent_view', id=event.id, eid=e.id))}}>
 	    <td>
-		{{e.start.strftime('%a %B %d')}}
+		{{e.start|localize|format("MM/DD/YY")}}
 	    </td>
 	    <td>
-		{{e.start.strftime('%I:%M %p')}} - {{e.end.strftime('%I:%M %p')}}
+		{{e.start|localize|format("hh:mm A")}} - {{e.end|localize|format("hh:mm A")}}
 	    </td>
 	    <td>
 		{% if e.start < now and e.end < now %}

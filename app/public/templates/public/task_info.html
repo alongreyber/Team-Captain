@@ -8,10 +8,10 @@
 <table>
     <tr style="height: 50px">
 	<td>
-	    <h3 class="title is-3">Due:</h3>
+	    <h3 class="title is-3">Due:&nbsp;</h3>
 	</td>
 	<td>
-	    <h3 class="title is-3">{{tu.task.due.strftime("%m/%d/%Y, %H:%M")}}</h3>
+	    <h3 class="title is-3">{{tu.task.due|localize|format}}</h3>
 	</td>
     </tr>
     {% if tu.completed %}
@@ -20,7 +20,7 @@
 	    <h3 class="title is-3">Completed:&nbsp;&nbsp;&nbsp;</h3>
 	</td>
 	<td>
-	    <h3 class="title is-3">{{tu.completed.strftime("%m/%d/%Y, %H:%M")}}</h3>
+	    <h3 class="title is-3">{{tu.completed|localize|format}}</h3>
 	</td>
     </tr>
     {% endif %}
@@ -32,7 +32,7 @@
 <div class="content is-medium" id="content-div" style="border: 1px solid gray; padding: 20px"></div>
 <script>
     var md = window.markdownit();
-    var input = {{to_json(tu.task.content)|safe}};
+    var input = {{tu.task.content|tojson}};
     var result = md.render(input);
     $('#content-div').html(result);
 </script>

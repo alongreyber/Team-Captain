@@ -32,10 +32,10 @@
 		{{m.name}}
 	    </td>
 	    <td>
-		{{m.start.strftime('%a %m/%d/%y')}} - {{m.end.strftime('%a %m/%d/%y')}}
+		{{m.start_date.strftime('%a %m/%d/%y')}} - {{m.end_date.strftime('%a %m/%d/%y')}}
 	    </td>
 	    <td>
-		{{m.start.strftime('%I:%M %p')}} - {{m.end.strftime('%I:%M %p')}}
+		{{m.start_time.strftime('%I:%M %p')}} - {{m.end_time.strftime('%I:%M %p')}}
 	    </td>
 	    <td>
 		{% for d in m.days_of_week %}
@@ -75,10 +75,10 @@
 		{{m.name}}
 	    </td>
 	    <td>
-		{{m.start.strftime('%I:%M %p')}} - {{m.end.strftime('%I:%M %p')}}
+		{{m.start|localize|format("hh:mm A")}} - {{m.end|localize|format("hh:mm A")}}
 	    </td>
 	    <td>
-		{{m.start.strftime('%a %B %d')}}
+		{{m.start|localize|format("ddd MM/DD/YY")}}
 	    </td>
 	</tr>
 	{% endfor %}

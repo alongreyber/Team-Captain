@@ -25,12 +25,12 @@ class EventForm(FlaskForm):
     start = html5.DateTimeLocalField(format='%Y-%m-%dT%H:%M')
     end = html5.DateTimeLocalField(format='%Y-%m-%dT%H:%M')
     content = TextAreaField('Description (Markdown)')
-    name = StringField()
+    name = StringField(validators=[required()])
 
 
 
 class TaskForm(FlaskForm):
-    subject = StringField()
+    subject = StringField(validators=[required()])
     content = TextAreaField()
     due = html5.DateTimeLocalField(format='%Y-%m-%dT%H:%M', validators=[required()])
     assigned_roles = SelectMultipleField('Roles')
@@ -43,7 +43,7 @@ class RoleForm(FlaskForm):
     role = StringField(label="Add")
 
 class RecurringEventForm(FlaskForm):
-    name = StringField()
+    name = StringField(validators=[required()])
     content = TextAreaField(label="Description (Markdown)")
     start_date = html5.DateField('Start Date', validators=[required()])
     end_date = html5.DateField('End Date', validators=[required()])

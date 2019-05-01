@@ -18,7 +18,7 @@
 		{{tu.task.subject}}
 	    </td>
 	    <td>
-		{{tu.task.due.strftime('%a %B %d')}}
+		{{tu.task.due|localize|format}}
 	    </td>
 	    <td style="text-align: center">
 		<div class="icon is-medium" style="display: inline-table;">

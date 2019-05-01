@@ -1,8 +1,10 @@
-import os, configparser, datetime, json
+import os, configparser, json
 from flask import Flask, redirect
 from flask_mongoengine import MongoEngine
 from flask_login import LoginManager, current_user
 from flask_gravatar import Gravatar
+
+import pendulum
 
 mongo_settings = configparser.ConfigParser()
 mongo_settings.read('mongo-credentials.ini')
@@ -39,13 +41,15 @@ from app.huey import huey
 # Add current datetime to jinja template
 @app.context_processor
 def inject_datetime():
-    return dict(now=datetime.datetime.now())
+    return dict(now=pendulum.now('UTC'))
 
-@app.template_filter('localize_dt')
-def localize_dt(dt):
-    local_tz = pytz.timezone(current_user.tz)
-    local_dt = pytz.utc.localize(dt)
-    return local_dt.astimezone(local_tz)
+@app.template_filter('localize')
+def localize(dt):
+    return dt.in_tz(current_user.tz)
+
+@app.template_filter('format')
+def format(dt, fmt_string="MM/DD/YY h:mm A"):
+    return dt.format(fmt_string)
 
 # Register admin first so that it takes precendence over our domain search
 app.register_blueprint(admin_module, url_prefix='/admin')

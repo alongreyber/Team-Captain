@@ -1,7 +1,7 @@
 from app.huey import huey
 from app import models, send_email
 
-import datetime
+import pendulum
 
 @huey.task()
 def send_notification(notification_id):
@@ -21,7 +21,7 @@ def send_notification(notification_id):
         app_notification.user = notification.user
         app_notification.text = notification.text
         app_notification.link = notification.link
-        app_notification.recieve_date = datetime.datetime.now()
+        app_notification.recieve_date = pendulum.now('UTC')
 
         user = notification.user
         user.notifications.append(app_notification)
