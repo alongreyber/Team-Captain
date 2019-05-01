@@ -40,12 +40,28 @@ def timezone_submit():
     current_user.save()
     return "Success",200
 
-@public.route('/meetings')
+@public.route('/events')
 @login_required
-def meetings_page():
-    meetings = models.Meeting.objects()
-    one_week_from_now = pendulum.now('UTC') + datetime.timedelta(days=7)
-    return render_template('public/meetings.html', user=current_user, meetings=meetings, one_week_from_now=one_week_from_now)
+def events_list():
+    events = models.Event.objects()
+    events_for_fullcalendar = []
+    for e in events:
+        e_new = {}
+        e_new['title']  = e.name
+        e_new['start']  = e.start.isoformat()
+        e_new['end']    = e.end.isoformat()
+        e_new['url']    = url_for('public.event_info', id=e.id)
+        e_new['allDay'] = False
+
+        e_new['backgroundColor'] = "rgb(55, 136, 216)" if e.is_recurring else "rgb(216, 55, 76)"
+        e_new['borderColor'] = e_new['backgroundColor']
+        events_for_fullcalendar.append(e_new)
+    return render_template('public/event_list.html', user=current_user, events=events, events_for_fullcalendar=events_for_fullcalendar)
+
+@public.route('/event/<id>')
+@login_required
+def event_info(id):
+    return "Hi"
 
 @public.route('/notification/<id>/redirect')
 @login_required

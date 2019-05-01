@@ -11,6 +11,8 @@ from bson import ObjectId
 
 admin = Blueprint('admin', __name__, template_folder='templates')
 
+protected_roles = ['everyone', 'admin']
+
 @admin.before_request
 def require_authorization():
     if not current_user.is_authenticated:
@@ -35,16 +37,18 @@ def user_list():
 def user_info(id):
     user = models.User.objects(id=id).first()
     all_roles = models.Role.objects
+    everyone_role = models.Role.objects(name='everyone').first()
     if not user:
         abort(404)
     form = forms.UserForm(request.form, data=user.to_mongo().to_dict())
-    form.roles.choices = [(str(role.id), role.name) for role in all_roles]
+    form.roles.choices = [(str(role.id), role.name) for role in all_roles if role != everyone_role]
     if form.validate_on_submit():
         user.first_name = form.first_name.data
         user.last_name = form.last_name.data
         user.email = form.email.data
         user.barcode = form.barcode.data
         user.roles = [ObjectId(r) for r in form.roles.data]
+        user.roles.append(everyone_role)
         user.save()
         flash('Changes Saved', 'success')
     if len(form.errors) > 0:
@@ -64,7 +68,7 @@ def user_delete(id):
 def role_list():
     roles = models.Role.objects
     role_form = forms.RoleForm()
-    return render_template('admin/role_list.html', roles=roles, role_form=role_form)
+    return render_template('admin/role_list.html', roles=roles, role_form=role_form, protected_roles=protected_roles)
 
 @admin.route('/newrole', methods=['POST'])
 def role_new():
@@ -86,20 +90,30 @@ def role_new():
 @admin.route('/role/<id>/remove')
 def role_delete(id):
     role = models.Role.objects(id=id).first()
-    role.delete()
-    flash('Deleted Role', 'success')
+    if role.name in protected_roles:
+        flash('Cannot delete this role', 'danger')
+    else:
+        for user in models.User.objects:
+            user.roles.remove(role)
+            user.save()
+        role.delete()
+        flash('Deleted Role', 'success')
     return redirect(url_for('admin.role_list'))
 
+'''
 @admin.route('/u/<id>/role/remove/<role>')
 def remove_role(id, role):
     user = models.User.objects(id=id).first()
     if role not in user.roles:
         flash('Role not found!', 'warning')
+    if role.name == 'everyone':
+        flash('Cannot remove this role', 'danger')
     else:
         user.roles.remove(role)
         user.save()
         flash('Role Removed', 'success')
     return redirect(url_for('admin.user_info', id=user.id))
+'''
 
 @admin.route('/events')
 def event_list():
@@ -121,6 +135,8 @@ def scheduled_event_view(id):
 @admin.route('/m/<id>/edit', methods=["GET","POST"])
 def scheduled_event_edit(id):
     event = models.Event.objects(id=id, is_recurring=False).first()
+    all_roles = models.Role.objects
+    all_users = models.User.objects
     if not event:
         abort(404)
     if not event.is_draft:
@@ -130,6 +146,8 @@ def scheduled_event_edit(id):
     form_data['start'] = form_data['start'].in_tz(current_user.tz)
     form_data['end'] = form_data['end'].in_tz(current_user.tz)
     form = forms.EventForm(request.form, data=form_data)
+    form.assigned_roles.choices = [(str(role.id), role.name) for role in all_roles]
+    form.assigned_users.choices = [(str(user.id), user.first_name + " " + user.last_name) for user in all_users]
     if form.validate_on_submit():
         # Convert times to UTC
         start = pendulum.instance(form.start.data, tz=current_user.tz).in_tz('UTC')
@@ -140,6 +158,8 @@ def scheduled_event_edit(id):
             flash('Event cannot start in the past', 'warning')
         else:
             flash('Changes Saved', 'success')
+            event.assigned_roles = [ObjectId(r) for r in form.assigned_roles.data]
+            event.assigned_users = [ObjectId(r) for r in form.assigned_users.data]
             event.start = start
             event.end = end
             event.content = form.content.data
@@ -147,7 +167,9 @@ def scheduled_event_edit(id):
             event.save()
     if len(form.errors) > 0:
         flash_errors(form)
-    return render_template('admin/event_edit.html', event=event, form=form)
+    return render_template('admin/event_edit.html', event=event, form=form, 
+            selected_roles=[role.name for role in event.assigned_roles],
+            selected_users=[user.first_name + " " + user.last_name for user in event.assigned_users])
 
 @admin.route('/m/<id>/publish')
 def scheduled_event_publish(id):
@@ -160,10 +182,13 @@ def scheduled_event_publish(id):
 
 @admin.route('/newevent')
 def scheduled_event_new():
+    everyone_role = models.Role.objects(name='everyone').first()
+
     event = models.Event()
     event.start = pendulum.now('UTC').add(days=1)
     event.end = event.start.add(hours=2)
     event.is_recurring = False
+    event.assigned_roles = [everyone_role]
     event.save()
     return redirect(url_for('admin.scheduled_event_edit', id=event.id))
 

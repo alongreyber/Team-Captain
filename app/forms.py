@@ -26,6 +26,8 @@ class EventForm(FlaskForm):
     end = html5.DateTimeLocalField(format='%Y-%m-%dT%H:%M')
     content = TextAreaField('Description (Markdown)')
     name = StringField(validators=[required()])
+    assigned_roles = SelectMultipleField('Roles')
+    assigned_users = SelectMultipleField('Users')
 
 
 

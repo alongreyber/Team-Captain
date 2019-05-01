@@ -61,6 +61,8 @@ def callback():
             user.name = user_data['name']
             #user.tokens = json.dumps(token)
             #user.avatar = user_data['picture']
+            everyone_role = models.Role(name='everyone')
+            user.roles.append(everyone_role)
             user.save()
             login_user(user)
             return redirect(url_for('public.index'))

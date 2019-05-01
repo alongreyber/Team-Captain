@@ -15,8 +15,9 @@
 		{{r.name|capitalize}}
 	    </td>
 	    <td>
-		<a href="{{url_for('admin.role_delete', id=r.id)}}">
-		    <button class="button is-primary">
+		<a href="{{url_for('admin.role_delete', id=r.id) if not r.name in protected_roles else '#'}}">
+		    <button class="button is-primary" {% if r.name in protected_roles %}disabled{% endif %}>
+	
 			<span class="icon is-medium badge">
 			    <i class="far fa-trash-alt"></i>
 			</span>

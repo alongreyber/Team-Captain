@@ -1,32 +1,34 @@
 {% extends 'public/base.html' %}
 
 {% block public_content %}
-<h1 class="title">Meetings</h1>
-<h3 class="title is-3">RSVP</h3>
+<h1 class="title">Events</h1>
 
-<div class="rsvp-selector-list">
-    {% for m in meetings if m.start > now and m.start < one_week_from_now %}
-    <div class="rsvp-selector">
-	<p>
-	    <strong>
-		{{m.name}}
-	    </strong>
-	    <br />
-	    {{m.date.strftime('%a %B %d')}}
-	    <br />
-	    {{m.start_time.strftime('%I:%M %p')}} - {{m.end_time.strftime('%I:%M %p')}}
-	</p>
-	<a href="{{url_for('public.rsvp_for_meeting', id=m.id, r='y')}}" class="button is-large is-success {% if not user in m.rsvp_yes %}is-outlined{% endif %}">
-	    Yes
-	</a>
-	<a href="{{url_for('public.rsvp_for_meeting', id=m.id, r='m')}}" class="button is-large is-warning {% if user in m.rsvp_yes or user in m.rsvp_no %}is-outlined{% endif %}">
-	    Maybe
-	</a>
-	<a href="{{url_for('public.rsvp_for_meeting', id=m.id, r='n')}}" class="button is-large is-danger {% if not user in m.rsvp_no %}is-outlined{% endif %}" >
-	    No
-	</a>
-    </div>
-    {% endfor %}
+{# Initialize fullcalendar #}
+<link href='https://unpkg.com/@fullcalendar/core/main.min.css' rel='stylesheet' />
+<link href='https://unpkg.com/@fullcalendar/daygrid/main.min.css' rel='stylesheet' />
+<link href='https://unpkg.com/@fullcalendar/timegrid/main.min.css' rel='stylesheet' />
+
+<script src='https://unpkg.com/@fullcalendar/core@4.1.0/main.min.js'></script>
+<script src='https://unpkg.com/@fullcalendar/daygrid/main.min.js'></script>
+<script src='https://unpkg.com/@fullcalendar/timegrid/main.min.js'></script>
+
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+      header: { center: 'dayGridMonth,timeGridWeek' },
+      plugins: [ 'dayGrid', 'timeGrid' ],
+      events: {{events_for_fullcalendar|tojson}},
+      aspectRatio: 1.8
+    });
+
+    calendar.render();
+  });
+
+</script>
+
+<div id="calendar">
 </div>
-
 {% endblock %}

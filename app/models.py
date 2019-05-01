@@ -78,6 +78,8 @@ class Event(db.Document):
     is_draft = db.BooleanField(default=True)
     # Duplicate data, lets us keep track of whether this is a recurring event
     is_recurring = db.BooleanField(default=False)
+    assigned_roles = db.ListField(db.ReferenceField(Role))
+    assigned_users = db.ListField(db.ReferenceField(User))
 
 class RecurringEvent(db.Document):
     name = db.StringField()
@@ -109,3 +111,7 @@ class TaskUser(db.Document):
     task = db.ReferenceField(Task)
     completed = PendulumField()
     seen = PendulumField()
+
+class EventUser(db.Document):
+    event = db.ReferenceField(Event)
+    rsvp = db.BooleanField()
