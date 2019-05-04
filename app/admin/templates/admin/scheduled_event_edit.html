@@ -52,6 +52,45 @@
 	    {{ form.enable_rsvp(class_='checkbox') }}
 	</div>
     </div>
+    <script>
+	// Only show date picker if RSVP is enabled
+	$(document).ready(function() {
+	    var onRSVPEnabledChange = function() {
+		if($("#enable_rsvp").is(":checked")) {
+		    $("#rsvp-reminders").show();
+		} else {
+		    $("#rsvp-reminders").hide();
+		}
+	    };
+	    $("#enable_rsvp").change(onRSVPEnabledChange);
+	    onRSVPEnabledChange();
+	});
+    </script>
+    <div id="rsvp-reminders">
+	<div class="field">
+	    <div class="control">
+		{{ form.notification_dates.label(class_='label') }}
+		<input type='hidden' id="notification_dates" name="notification_dates"  />
+		<script>
+		    var selectedDateStrings = {{selected_dates|tojson}};
+		    var datePickerSelector = "#notification_dates";
+		    var maxDateSelector = "#start";
+		</script>
+	    </div>
+	</div>
+	<div class="field">
+	    {{ form.notify_by_phone.label(class_='label') }}
+	    <div class="control">
+		{{ form.notify_by_phone(class_='checkbox') }}
+	    </div>
+	</div>
+	<div class="field">
+	    {{ form.notify_by_email.label(class_='label') }}
+	    <div class="control">
+		{{ form.notify_by_email(class_='checkbox') }}
+	    </div>
+	</div>
+    </div>
     <div class="field">
 	{{ form.enable_attendance.label(class_='label') }}
 	<div class="control">

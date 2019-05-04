@@ -68,6 +68,20 @@ def event_info(id):
     eu = eu_list[0]
     return render_template('public/event_info.html', eu=eu)
 
+@public.route('/eu/<id>/rsvp/<r>')
+@login_required
+def rsvp_for_event(id, r):
+    eu = None
+    for my_eu in current_user.assigned_events:
+        if my_eu.id == ObjectId(id):
+            eu = my_eu
+    if not eu:
+        abort(404)
+    if r in ['y', 'n', 'm']: 
+        eu.rsvp = r
+        eu.save()
+    return redirect(request.referrer)
+
 @public.route('/notification/<id>/redirect')
 @login_required
 def notification_redirect(id):

@@ -29,3 +29,17 @@ def send_notification(notification_id):
     notification.sent = True
     notification.save()
     print("End of send_notification")
+
+# When an object with ID is modified we check if there are any tasks associated with that object
+@huey.task()
+def check_automatic_task_completion(document_id):
+    tus = models.TaskUser.objects
+    for tu in tus:
+        if not tu.completed \
+           and tu.watch_object \
+           and tu.watch_object.id == document_id:
+
+            obj = tu.watch_object.fetch()
+            if obj:
+                tu.completed = pendulum.now('UTC')
+                tu.save()

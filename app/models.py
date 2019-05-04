@@ -2,6 +2,7 @@ import datetime
 from app import db, login_manager
 
 from mongoengine.base import BaseField
+from mongoengine import signals
 
 from flask_login import UserMixin
 
@@ -83,6 +84,9 @@ class Event(db.Document):
     assigned_users = db.ListField(db.ReferenceField(User))
     enable_rsvp = db.BooleanField(default=False)
     enable_attendance = db.BooleanField(default=False)
+    notification_dates = db.ListField(PendulumField())
+    notify_by_email = db.BooleanField(default=False)
+    notify_by_phone = db.BooleanField(default=False)
 
 class RecurringEvent(db.Document):
     name = db.StringField()
@@ -101,23 +105,56 @@ class RecurringEvent(db.Document):
     assigned_roles = db.ListField(db.ReferenceField(Role))
     assigned_users = db.ListField(db.ReferenceField(User))
 
-class Task(db.Document):
+class Task(db.EmbeddedDocument):
+    text = db.StringField()
+    notification_dates = db.ListField(PendulumField())
+    notify_by_email = db.BooleanField(default=False)
+    notify_by_phone = db.BooleanField(default=False)
+    notify_by_push  = db.BooleanField(default=False)
+    notify_by_app   = db.BooleanField(default=False)
+    # Update from a form with a task FormField
+    def update_from_form(self, form, tz):
+        self.notification_dates = []
+        for dt_string in form.task.notification_dates.data.split(","):
+            dt = pendulum.from_format(dt_string.strip(), "MM/DD/YYYY", tz=tz).in_tz('UTC')
+            self.notification_dates.append(dt)
+        self.notify_by_email = form.task.notify_by_email.data
+        self.notify_by_phone = form.task.notify_by_phone.data
+        self.notify_by_push = form.task.notify_by_push.data
+        self.notify_by_app = form.task.notify_by_app.data
+        
+
+# Visible to users
+class TaskUser(db.Document):
+    text = db.StringField()
+    due = PendulumField()
+    link = db.StringField()
+
+    seen = PendulumField()
+    completed = PendulumField()
+    # Which object to watch for changes
+    watch_object = db.GenericLazyReferenceField()
+    # Which field on that object to check
+    watch_field = db.StringField()
+
+class Assignment(db.Document):
     subject = db.StringField()
     content = db.StringField()
     due = PendulumField()
-    assigned_roles = db.ListField(db.ReferenceField(Role))
-    # Only used when task is a draft
-    assigned_users = db.ListField(db.ReferenceField(User))
-    notify_by_email = db.BooleanField(default=False)
-    notify_by_phone = db.BooleanField(default=False)
-    additional_notifications = db.IntField()
     is_draft = db.BooleanField(default=True)
-
-class TaskUser(db.Document):
-    task = db.ReferenceField(Task)
-    completed = PendulumField()
-    seen = PendulumField()
+    assigned_roles = db.ListField(db.ReferenceField(Role))
+    assigned_users  = db.ListField(db.ReferenceField(User))
+    task = db.EmbeddedDocumentField(Task)
 
 class EventUser(db.Document):
     event = db.ReferenceField(Event)
-    rsvp = db.BooleanField()
+    # Has to be string so we can store y or n or m or not yet
+    rsvp = db.StringField()
+    sign_in = PendulumField()
+    sign_out = PendulumField()
+
+from app import tasks
+def check_for_automatic_task(sender, document, created):
+    tasks.check_automatic_task_completion((document.id))
+
+signals.post_save.connect(check_for_automatic_task)

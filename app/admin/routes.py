@@ -115,7 +115,21 @@ def scheduled_event_view(id):
         abort(404)
     if event.is_draft:
         return redirect(url_for('admin.scheduled_event_edit', id=event.id))
-    return render_template('admin/scheduled_event_view.html', event=event)
+    # Complex query here, but it's okay because this is an admin interface
+    # First filter users to make sure they're assigned to the task
+    all_users = models.User.objects
+    all_users.select_related(max_depth=2)
+    assigned_users = []
+    for user in all_users:
+        # Filter TaskUser objects to those related to this task (should be 1 or 0)
+        assigned_events = []
+        for eu in user.assigned_events:
+            if eu.event == event:
+                assigned_events.append(eu)
+        user.assigned_events = assigned_events
+        if len(user.assigned_events) > 0:
+            assigned_users.append(user)
+    return render_template('admin/scheduled_event_view.html', event=event, assigned_users=assigned_users)
 
 @admin.route('/m/<id>/delete')
 def scheduled_event_delete(id):
@@ -170,12 +184,23 @@ def scheduled_event_edit(id):
             event.name = form.name.data
             event.enable_rsvp = form.enable_rsvp.data
             event.enable_attendance = form.enable_attendance.data
+            event.notify_by_email = form.notify_by_email.data
+            event.notify_by_phone = form.notify_by_phone.data
+            for dt_string in form.notification_dates.data.split(","):
+                # Convert to UTC
+                # This check is to prevent it from breaking if the list is empty
+                if dt_string:
+                    dt = pendulum.from_format(dt_string.strip(), "MM/DD/YYYY", tz=current_user.tz).at(17,30,0).in_tz('UTC')
+                    event.notification_dates.append(dt)
+            print("Calling save")
             event.save()
     if len(form.errors) > 0:
         flash_errors(form)
     return render_template('admin/scheduled_event_edit.html', event=event, form=form, 
             selected_roles=[role.name for role in event.assigned_roles],
-            selected_users=[user.first_name + " " + user.last_name for user in event.assigned_users])
+            selected_users=[user.first_name + " " + user.last_name for user in event.assigned_users],
+
+            selected_dates=[dt.in_tz(current_user.tz).isoformat() for dt in event.notification_dates])
 
 @admin.route('/m/<id>/publish')
 def scheduled_event_publish(id):
@@ -193,16 +218,59 @@ def scheduled_event_publish(id):
             event.assigned_users.append(u)
     # Make sure list of users is unique
     event.assigned_users = list(set(event.assigned_users))
+    if event.enable_rsvp:
+        task = models.Task()
+        task.subject = "RSVP for event" + event.name
+        task.is_draft = False
+        task.due = event.start
+        task.save()
     # Create EventUser objects and assignments to user
+    # Also create TaskUser objects 
     for user in event.assigned_users:
         eu = models.EventUser()
         eu.event = event
         eu.save()
         user.assigned_events.append(eu)
+
+        if event.enable_rsvp:
+            tu = models.TaskUser()
+            tu.task = task
+            tu.watch_object = eu
+            tu.watch_field = "rsvp"
+            tu.save()
+            user.assigned_tasks.append(tu)
+
         user.save()
     event.assigned_users = original_assigned_users
     event.is_draft = False
     event.save()
+
+    # Create task to RSVP
+    return redirect(url_for('admin.scheduled_event_view', id=event.id))
+
+@admin.route('/m/<id>/send_reminder')
+def scheduled_event_send_reminder(id):
+    event = models.Event.objects(id=id).first()
+    if not event or event.is_draft:
+        abort(404)
+    all_users = models.User.objects
+    for user in all_users:
+        send_reminder = False
+        for eu in user.assigned_events:
+            if eu.event == event and not eu.rsvp:
+                send_reminder = True
+        if send_reminder:
+            notification = models.PushNotification()
+            notification.user = user
+            notification.text = "RSVP Reminder : " + event.name
+            notification.link = url_for('public.event_info', id=event.id, _external=True)
+            notification.send_email = False
+            notification.send_text  = False
+            notification.send_app   = True
+            notification.send_push  = False
+            notification.save()
+            tasks.send_notification((notification.id))
+    flash('Sent notification to users', 'success')
     return redirect(url_for('admin.scheduled_event_view', id=event.id))
 
 @admin.route('/newevent')
@@ -366,74 +434,65 @@ def recurring_event_new():
     event.save()
     return redirect(url_for('admin.recurring_event_edit', id=event.id))
 
-@admin.route('/tasks')
-def task_list():
-    tasks = models.Task.objects
+@admin.route('/assignments')
+def assignment_list():
+    assignments = models.Assignment.objects
     all_users = models.User.objects
     all_users.select_related(max_depth=2)
 
-    # Complex query, but that's ok because we're in admin interface
-    for task in tasks:
-        task.number_completed = 0
-        task.number_seen = 0
-        task.number_assigned = 0
-        for user in all_users:
-            # Filter TaskUser objects to those related to this task (should be 1 or 0)
-            for tu in user.assigned_tasks:
-                if tu.task == task:
-                    task.number_assigned += 1
-                    if tu.completed:
-                        task.number_completed += 1
-                    if tu.seen:
-                        task.number_seen += 1
-    return render_template('admin/task_list.html', tasks=tasks)
+    return render_template('admin/task_list.html', assignments=assignments)
 
-@admin.route('/newtask')
-def task_new():
+@admin.route('/newassignment')
+def assignment_new():
+    everyone_role = models.Role.objects(name='everyone').first()
+    assignment = models.Assignment()
     task = models.Task()
-    task.due = pendulum.now('UTC').add(days=7)
-    task.save()
-    return redirect(url_for('admin.task_edit', id=task.id))
+    assignment.task = task
+    assignment.due = pendulum.now('UTC').add(days=7)
+    assignment.task.notification_dates.append(pendulum.today(tz=current_user.tz).at(17,0).in_tz('UTC'))
+    assignment.assigned_roles = [everyone_role]
+    assignment.save()
+    return redirect(url_for('admin.assignment_edit', id=assignment.id))
 
 
-@admin.route('/task/<id>/edit', methods=['GET', 'POST'])
-def task_edit(id):
-    task = models.Task.objects(id=id).first()
-    if not task:
+@admin.route('/assignment/<id>/edit', methods=['GET', 'POST'])
+def assignment_edit(id):
+    assignment = models.Assignment.objects(id=id).first()
+    if not assignment:
         abort(404)
-    if not task.is_draft:
-        return redirect(url_for('admin.task_view', id=id))
+    if not assignment.is_draft:
+        return redirect(url_for('admin.assignment_view', id=id))
 
     # Queries
-    task.select_related(max_depth=2)
+    assignment.select_related(max_depth=2)
     all_roles = models.Role.objects
     all_users = models.User.objects
 
-    form_data = task.to_mongo().to_dict()
+    form_data = assignment.to_mongo().to_dict()
     form_data['due'] = form_data['due'].in_tz(current_user.tz)
-    form = forms.TaskForm(data=form_data)
+    form = forms.AssignmentForm(data=form_data)
     form.assigned_roles.choices = [(str(role.id), role.name) for role in all_roles]
     form.assigned_users.choices = [(str(user.id), user.first_name + " " + user.last_name) for user in all_users]
     if form.validate_on_submit():
-        task.subject = form.subject.data
-        task.content = form.content.data
-        task.due = pendulum.instance(form.due.data, tz=current_user.tz).in_tz('UTC')
-        if task.due < pendulum.now('UTC'):
+        assignment.subject = form.subject.data
+        assignment.content = form.content.data
+        assignment.due = pendulum.instance(form.due.data, tz=current_user.tz).in_tz('UTC')
+        if assignment.due < pendulum.now('UTC'):
             flash('Task cannot be due in the past', 'warning')
         else:
-            task.assigned_roles = [ObjectId(r) for r in form.assigned_roles.data]
-            task.assigned_users = [ObjectId(r) for r in form.assigned_users.data]
-            task.notify_by_email = form.notify_by_email.data
-            task.notify_by_phone = form.notify_by_phone.data
-            task.additional_notifications = form.additional_notifications.data
-            task.save()
-            task.reload()
+            assignment.assigned_roles = [ObjectId(r) for r in form.assigned_roles.data]
+            assignment.assigned_users = [ObjectId(r) for r in form.assigned_users.data]
+            # Update task
+            assignment.task.update_from_form(form, current_user.tz)
+            assignment.save()
+            assignment.reload()
             flash('Changes Saved', 'success')
     if len(form.errors) > 0:
         flash_errors(form)
-    return render_template('admin/task_edit.html', task=task, form=form,
-            selected_roles=[role.name for role in task.assigned_roles],
-            selected_users=[user.first_name + " " + user.last_name for user in task.assigned_users])
+    return render_template('admin/assignment_edit.html', assignment=assignment, form=form,
+            selected_roles=[role.name for role in assignment.assigned_roles],
+            selected_users=[user.first_name + " " + user.last_name for user in assignment.assigned_users],
+            selected_dates=[dt.in_tz(current_user.tz).isoformat() for dt in assignment.task.notification_dates])
 
 @admin.route('/task/<id>/publish')
 def task_publish(id):
@@ -461,23 +520,11 @@ def task_publish(id):
         tu.save()
         user.assigned_tasks.append(tu)
         user.save()
-    times = []
 
-    # Create a period and use the range to iterate over it
-    period = pendulum.period(pendulum.now('UTC'), task.due)
-    for dt in period.range('days'):
-        times.append(dt.at(17,30))
-
-    # Only take the end n notifications
-    if not task.additional_notifications == 0:
-        if len(times) > task.additional_notifications:
-            times = times[task.additional_notifications-1:]
-
-    # Add instant notification
-    times.append(pendulum.now('UTC'))
-
+    # Add notification right now
+    task.notification_dates.append(pendulum.now('UTC'))
     for user in task.assigned_users:
-        for time in times:
+        for time in task.notification_dates:
             notification = models.PushNotification()
             notification.user = user
             notification.text = task.subject
@@ -502,10 +549,12 @@ def task_publish(id):
 
 @admin.route('/task/<id>/view')
 def task_view(id):
-    # Complex query here, but it's okay because this is an admin interface
     task = models.Task.objects(id=id).first()
     if not task:
         abort(404)
+    if task.is_draft:
+        return redirect(url_for('admin.task_edit', id=id))
+    # Complex query here, but it's okay because this is an admin interface
     # First filter users to make sure they're assigned to the task
     all_users = models.User.objects
     all_users.select_related(max_depth=2)
@@ -519,10 +568,6 @@ def task_view(id):
         user.assigned_tasks = assigned_tasks
         if len(user.assigned_tasks) > 0:
             assigned_users.append(user)
-    if not task:
-        abort(404)
-    if task.is_draft:
-        return redirect(url_for('admin.task_edit', id=id))
     return render_template('admin/task_view.html', task=task, assigned_users=assigned_users)
 
 @admin.route('/task/<id>/duplicate')

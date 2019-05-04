@@ -30,18 +30,24 @@ class EventForm(FlaskForm):
     assigned_users = SelectMultipleField('Users')
     enable_rsvp = BooleanField('Enable RSVP')
     enable_attendance = BooleanField('Enable Attendance Tracking')
-
-
-
-class TaskForm(FlaskForm):
-    subject = StringField(validators=[required()])
-    content = TextAreaField()
-    due = html5.DateTimeLocalField(format='%Y-%m-%dT%H:%M', validators=[required()])
-    assigned_roles = SelectMultipleField('Roles')
-    assigned_users = SelectMultipleField('Users')
+    notification_dates = StringField()
     notify_by_email = BooleanField('Notify by Email?')
     notify_by_phone = BooleanField('Notify by Phone?')
-    additional_notifications = IntegerField('Number of additional notifications', validators=[NumberRange(min=0)], default=0)
+
+class TaskForm(FlaskForm):
+    notify_by_email = BooleanField('Notify by Email?')
+    notify_by_phone = BooleanField('Notify by Phone?')
+    notify_by_push = BooleanField('Notify by Phone?')
+    notify_by_app = BooleanField('Notify by Phone?')
+    notification_dates = StringField()
+
+class AssignmentForm(FlaskForm):
+    subject = StringField(validators=[required()])
+    content = TextAreaField()
+    assigned_roles = SelectMultipleField('Roles')
+    assigned_users = SelectMultipleField('Users')
+    due = html5.DateTimeLocalField(format='%Y-%m-%dT%H:%M', validators=[required()])
+    task = FormField(TaskForm)
 
 class RoleForm(FlaskForm):
     role = StringField(label="Add")

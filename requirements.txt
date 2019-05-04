@@ -10,3 +10,4 @@ dnspython
 huey
 redis
 pendulum
+blinker

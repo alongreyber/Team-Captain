@@ -40,36 +40,26 @@
 	</select>
     </div>
 
-    <h3 class="title is-3">Notification Options</h3>
+    <br />
     <div class="field">
 	<div class="control">
-	    <label class="checkbox" for="notify_by_email">
-		{{ form.notify_by_email() }}
-		Notify by Email?
-	    </label>
-	</div>
-    </div>
-    <div class="field">
-	<div class="control">
-	    <label class="checkbox" for="notify_by_phone">
-		{{ form.notify_by_phone(class_='checkbox') }}
-		Notify by Text?
-	    </label>
-	</div>
-    </div>
-    <div class="field">
-	{{ form.additional_notifications.label(class_='label') }}
-	<div class="control">
-	{{ form.additional_notifications(class_='input') }}
+	    {{ form.task.hidden_tag() }}
+	    {{ form.task.notification_dates.label(class_='label') }}
+	    <input type='hidden' id="task-notification_dates" name="task-notification_dates"  />
+	    <script>
+		var selectedDateStrings = {{selected_dates|tojson}};
+		var datePickerSelector = "#task-notification_dates";
+		var maxDateSelector = "#due";
+	    </script>
 	</div>
     </div>
 
     <br />
     <input class="button is-primary" id="submit" name="submit" type="submit" value="Save">
-    <a href="{{url_for('admin.task_publish', id=task.id)}}" id="publish" class="button is-success" tooltip="Please save your changes first">
+    <a href="{{url_for('admin.task_publish', id=assignment.id)}}" id="publish" class="button is-success" tooltip="Please save your changes first">
 	Publish
     </a>
-    <a href="{{url_for('admin.task_delete', id=task.id)}}" class="button is-danger">
+    <a href="{{url_for('admin.task_delete', id=assignment.id)}}" class="button is-danger">
 	Delete
     </a>
 </form>

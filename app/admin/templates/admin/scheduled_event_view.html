@@ -13,6 +13,36 @@
     $('#content-div').html(result);
 </script>
 
+<h5 class="title is-5">Assigned Users</h5>
+<table class="table">
+    <thead>
+	<th>User Name</th>
+	<th>RSVP</th>
+    </thead>
+    <tbody>
+	{% for user in assigned_users %}
+	<tr>
+	    <td>
+		<a href="{{url_for('admin.user_info', id=user.id)}}">
+		    {{user.first_name}} {{user.last_name}}
+		</a>
+	    </td>
+	    <td>
+		{% if user.assigned_events[0].rsvp == 'y' %}
+		Yes
+		{% elif user.assigned_events[0].rsvp == 'm' %}
+		Maybe
+		{% elif user.assigned_events[0].rsvp == 'n' %}
+		No
+		{% else %}
+		{% endif %}
+	    </td>
+	</tr>
+	{% endfor %}
+    </tbody>
+</table>
+
+<a href="{{url_for('admin.scheduled_event_send_reminder', id=event.id)}}" class="button is-success" >Send Reminder</a>
 <a href="{{url_for('admin.scheduled_event_delete', id=event.id)}}" class="button is-danger">Delete</a>
 
 {% endblock %}
