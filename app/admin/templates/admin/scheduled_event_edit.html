@@ -28,6 +28,8 @@
 	    {{ form.end(class_='input') }}
 	</div>
     </div>
+    <br />
+    <h4 class="title is-4">Visible To</h4>
     <div class="field">
 	{{ form.assigned_roles.label(class_='label') }}
 	<select id="assigned_roles" class="select2" name="assigned_roles" multiple="multiple" style="width: 100%">
@@ -44,7 +46,21 @@
 	    {% endfor %}
 	</select>
     </div>
+    <div class="field">
+	{{ form.enable_rsvp.label(class_='label') }}
+	<div class="control">
+	    {{ form.enable_rsvp(class_='checkbox') }}
+	</div>
+    </div>
+    <div class="field">
+	{{ form.enable_attendance.label(class_='label') }}
+	<div class="control">
+	    {{ form.enable_attendance(class_='checkbox') }}
+	</div>
+    </div>
+    <br />
     <input class="button is-primary" id="submit" name="submit" type="submit" value="Save">
     <a href="{{url_for('admin.scheduled_event_publish', id=event.id)}}" class="button is-success" id="publish" >Publish</a>
+    <a href="{{url_for('admin.scheduled_event_delete', id=event.id)}}" class="button is-danger" >Delete</a>
 </form>
 {% endblock %}

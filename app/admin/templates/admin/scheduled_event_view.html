@@ -13,4 +13,6 @@
     $('#content-div').html(result);
 </script>
 
+<a href="{{url_for('admin.scheduled_event_delete', id=event.id)}}" class="button is-danger">Delete</a>
+
 {% endblock %}

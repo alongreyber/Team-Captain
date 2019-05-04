@@ -42,26 +42,31 @@ def timezone_submit():
 
 @public.route('/events')
 @login_required
-def events_list():
-    events = models.Event.objects()
+def event_list():
+    events = current_user.assigned_events
     events_for_fullcalendar = []
     for e in events:
         e_new = {}
-        e_new['title']  = e.name
-        e_new['start']  = e.start.isoformat()
-        e_new['end']    = e.end.isoformat()
-        e_new['url']    = url_for('public.event_info', id=e.id)
+        e_new['title']  = e.event.name
+        e_new['start']  = e.event.start.isoformat()
+        e_new['end']    = e.event.end.isoformat()
+        e_new['url']    = url_for('public.event_info', id=e.event.id)
         e_new['allDay'] = False
 
-        e_new['backgroundColor'] = "rgb(55, 136, 216)" if e.is_recurring else "rgb(216, 55, 76)"
+        e_new['backgroundColor'] = "rgb(55, 136, 216)" if e.event.is_recurring else "rgb(216, 55, 76)"
         e_new['borderColor'] = e_new['backgroundColor']
         events_for_fullcalendar.append(e_new)
-    return render_template('public/event_list.html', user=current_user, events=events, events_for_fullcalendar=events_for_fullcalendar)
+    return render_template('public/event_list.html', events=events, events_for_fullcalendar=events_for_fullcalendar)
 
 @public.route('/event/<id>')
 @login_required
 def event_info(id):
-    return "Hi"
+    # Make sure that the event is published and that the user is assigned to it
+    eu_list = list(filter(lambda eu: eu.event.id == ObjectId(id), current_user.assigned_events))
+    if len(eu_list) == 0:
+        abort(404)
+    eu = eu_list[0]
+    return render_template('public/event_info.html', eu=eu)
 
 @public.route('/notification/<id>/redirect')
 @login_required

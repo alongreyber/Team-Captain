@@ -47,9 +47,29 @@
 	    {% endfor %}
 	</select>
     </div>
+
+    <br />
+    <h4 class="title is-4">Visible To</h4>
+    <div class="field">
+	{{ form.assigned_roles.label(class_='label') }}
+	<select id="assigned_roles" class="select2" name="assigned_roles" multiple="multiple" style="width: 100%">
+	    {% for r in form.assigned_roles.choices %}
+		<option value="{{r[0]}}" {% if r[1] in selected_roles %}selected="selected"{% endif %}>{{r[1] | capitalize}}</option>
+	    {% endfor %}
+	</select>
+    </div>
+    <div class="field">
+	{{ form.assigned_users.label(class_='label') }}
+	<select id="assigned_users" class="select2" name="assigned_users" multiple="multiple" style="width: 100%">
+	    {% for r in form.assigned_users.choices %}
+		<option value="{{r[0]}}" {% if r[1] in selected_users %}selected="selected"{% endif %}>{{r[1]}}</option>
+	    {% endfor %}
+	</select>
+    </div>
+
     <br />
     <input class="button is-primary" id="submit" name="submit" type="submit" value="Save">
     <a href="{{url_for('admin.recurring_event_publish', id=event.id)}}" class="button is-success" id="publish" >Publish</a>
-    <a href="#" class="button is-danger">Delete</a>
+    <a href="{{url_for('admin.recurring_event_delete', id=event.id)}}" class="button is-danger">Delete</a>
 </form>
 {% endblock %}

@@ -63,6 +63,7 @@ class User(db.Document, UserMixin):
     last_name = db.StringField(max_length=50)
     roles = db.ListField(db.ReferenceField(Role))
     assigned_tasks = db.ListField(db.ReferenceField('TaskUser'))
+    assigned_events = db.ListField(db.ReferenceField('EventUser'))
     notifications = db.EmbeddedDocumentListField(AppNotification)
 
 @login_manager.user_loader
@@ -80,6 +81,8 @@ class Event(db.Document):
     is_recurring = db.BooleanField(default=False)
     assigned_roles = db.ListField(db.ReferenceField(Role))
     assigned_users = db.ListField(db.ReferenceField(User))
+    enable_rsvp = db.BooleanField(default=False)
+    enable_attendance = db.BooleanField(default=False)
 
 class RecurringEvent(db.Document):
     name = db.StringField()
@@ -94,6 +97,9 @@ class RecurringEvent(db.Document):
     days_of_week = db.ListField(db.IntField())
     is_draft = db.BooleanField(default=True)
     events = db.ListField(db.ReferenceField(Event))
+    # Only used when task is a draft
+    assigned_roles = db.ListField(db.ReferenceField(Role))
+    assigned_users = db.ListField(db.ReferenceField(User))
 
 class Task(db.Document):
     subject = db.StringField()

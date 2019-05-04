@@ -100,21 +100,6 @@ def role_delete(id):
         flash('Deleted Role', 'success')
     return redirect(url_for('admin.role_list'))
 
-'''
-@admin.route('/u/<id>/role/remove/<role>')
-def remove_role(id, role):
-    user = models.User.objects(id=id).first()
-    if role not in user.roles:
-        flash('Role not found!', 'warning')
-    if role.name == 'everyone':
-        flash('Cannot remove this role', 'danger')
-    else:
-        user.roles.remove(role)
-        user.save()
-        flash('Role Removed', 'success')
-    return redirect(url_for('admin.user_info', id=user.id))
-'''
-
 @admin.route('/events')
 def event_list():
     scheduled_events = models.Event.objects(is_recurring=False)
@@ -130,7 +115,26 @@ def scheduled_event_view(id):
         abort(404)
     if event.is_draft:
         return redirect(url_for('admin.scheduled_event_edit', id=event.id))
-    return render_template('admin/event_view.html', event=event)
+    return render_template('admin/scheduled_event_view.html', event=event)
+
+@admin.route('/m/<id>/delete')
+def scheduled_event_delete(id):
+    event = models.Event.objects(id=id, is_recurring=False).first()
+    if not event:
+        abort(404)
+    if not event.is_draft:
+        # Have to iterate over users and delete references manually
+        all_users = models.User.objects
+        all_users.select_related(max_depth=2)
+        for user in all_users:
+            for eu in user.assigned_events:
+                if eu.event == event:
+                    eu.delete()
+                    user.assigned_events.remove(eu)
+            user.save()
+    event.delete()
+    flash('Deleted Event', 'success')
+    return redirect(url_for('admin.event_list'))
 
 @admin.route('/m/<id>/edit', methods=["GET","POST"])
 def scheduled_event_edit(id):
@@ -164,10 +168,12 @@ def scheduled_event_edit(id):
             event.end = end
             event.content = form.content.data
             event.name = form.name.data
+            event.enable_rsvp = form.enable_rsvp.data
+            event.enable_attendance = form.enable_attendance.data
             event.save()
     if len(form.errors) > 0:
         flash_errors(form)
-    return render_template('admin/event_edit.html', event=event, form=form, 
+    return render_template('admin/scheduled_event_edit.html', event=event, form=form, 
             selected_roles=[role.name for role in event.assigned_roles],
             selected_users=[user.first_name + " " + user.last_name for user in event.assigned_users])
 
@@ -176,6 +182,25 @@ def scheduled_event_publish(id):
     event = models.Event.objects(id=id, is_draft=True, is_recurring=False).first()
     if not event:
         abort(404)
+    if not event.is_draft:
+        redirect(url_for('admin.event_edit', id=id))
+    # Save original list of assigned_users so it's possible to duplicate tasks
+    original_assigned_users = event.assigned_users
+    # Find all users with role
+    for role in event.assigned_roles:
+        users_with_role = models.User.objects(roles=role)
+        for u in users_with_role:
+            event.assigned_users.append(u)
+    # Make sure list of users is unique
+    event.assigned_users = list(set(event.assigned_users))
+    # Create EventUser objects and assignments to user
+    for user in event.assigned_users:
+        eu = models.EventUser()
+        eu.event = event
+        eu.save()
+        user.assigned_events.append(eu)
+        user.save()
+    event.assigned_users = original_assigned_users
     event.is_draft = False
     event.save()
     return redirect(url_for('admin.scheduled_event_view', id=event.id))
@@ -214,6 +239,8 @@ def recurring_event_subevent_view(id, eid):
 @admin.route('/rm/<id>/edit', methods=["GET","POST"])
 def recurring_event_edit(id):
     event = models.RecurringEvent.objects(id=id).first()
+    all_roles = models.Role.objects
+    all_users = models.User.objects
     if not event:
         abort(404)
     if not event.is_draft:
@@ -222,6 +249,8 @@ def recurring_event_edit(id):
     form = forms.RecurringEventForm(data=form_data)
     all_days_of_week = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
     form.days_of_week.choices = list(zip(range(7), all_days_of_week))
+    form.assigned_roles.choices = [(str(role.id), role.name) for role in all_roles]
+    form.assigned_users.choices = [(str(user.id), user.first_name + " " + user.last_name) for user in all_users]
     if form.validate_on_submit():
         if form.end_time.data <= form.start_time.data:
             flash('Start time of event cannot be before end!', 'warning')
@@ -234,6 +263,8 @@ def recurring_event_edit(id):
             event.end_date   = datetime.datetime.combine(form.end_date.data, datetime.datetime.min.time())
             event.start_time = datetime.datetime.combine(datetime.datetime.min.date(), form.start_time.data)
             event.end_time   = datetime.datetime.combine(datetime.datetime.min.date(), form.end_time.data)
+            event.assigned_roles = [ObjectId(r) for r in form.assigned_roles.data]
+            event.assigned_users = [ObjectId(r) for r in form.assigned_users.data]
             event.name = form.name.data
             event.content = form.content.data
             event.days_of_week = form.days_of_week.data
@@ -244,16 +275,34 @@ def recurring_event_edit(id):
     return render_template('admin/recurring_event_edit.html',
             event=event,
             form=form,
-            selected_days_of_week = event.days_of_week)
+            selected_days_of_week = event.days_of_week,
+            selected_roles=[role.name for role in event.assigned_roles],
+            selected_users=[user.first_name + " " + user.last_name for user in event.assigned_users])
 
 @admin.route('/rm/<id>/publish')
 def recurring_event_publish(id):
     event = models.RecurringEvent.objects(id=id, is_draft=True).first()
     if not event:
         abort(404)
+    if not event.is_draft:
+        redirect(url_for('admin.recurring_event_edit', id=id))
+
+    # Save original list of assigned_users so it's possible to duplicate tasks
+    original_assigned_users = event.assigned_users
+    # Find all users with role
+    for role in event.assigned_roles:
+        users_with_role = models.User.objects(roles=role)
+        for u in users_with_role:
+            event.assigned_users.append(u)
+    # Make sure list of users is unique
+    event.assigned_users = list(set(event.assigned_users))
+
     start_date = pendulum.instance(event.start_date, tz=current_user.tz)
     end_date = pendulum.instance(event.end_date, tz=current_user.tz)
     period = end_date - start_date
+    # Create individual instances of Event class (subevents)
+    # Each one contains duplicated data of the recurring event
+    # which allows for quicker access to that data from the public site
     for dt in period.range('days'):
         if dt.day_of_week in event.days_of_week:
             start = dt.at(event.start_time.hour, event.start_time.minute)
@@ -264,15 +313,51 @@ def recurring_event_publish(id):
                                      start = start,
                                      end   = end)
             new_event.is_recurring = True
+            new_event.content = event.content
+            new_event.name = event.name
+            new_event.assigned_users = event.assigned_users
+            new_event.is_draft = False
             new_event.save()
             event.events.append(new_event)
+            # Create EventUser objects and assign to users
+            for user in new_event.assigned_users:
+                eu = models.EventUser()
+                eu.event = new_event
+                eu.save()
+                user.assigned_events.append(eu)
+                user.save()
     event.is_draft = False
     event.save()
     return redirect(url_for('admin.recurring_event_view', id=event.id))
 
+@admin.route('/rm/<id>/delete')
+def recurring_event_delete(id):
+    event = models.RecurringEvent.objects(id=id).first()
+    all_users = models.User.objects
+    if not event:
+        abort(404)
+    if not event.is_draft:
+        # Delete associated recurring events
+        for e in event.events:
+            # Have to iterate over users and delete references manually
+            for user in all_users:
+                for eu in user.assigned_events:
+                    if eu.event == e:
+                        eu.delete()
+                        user.assigned_events.remove(eu)
+                user.save()
+            e.delete()
+    event.delete()
+    flash('Deleted Event', 'success')
+    return redirect(url_for('admin.event_list'))
+
+
 @admin.route('/newrecurringevent')
 def recurring_event_new():
+    everyone_role = models.Role.objects(name='everyone').first()
     event = models.RecurringEvent()
+
+    event.assigned_roles = [everyone_role]
     event.start_date = pendulum.today().naive()
     event.end_date = pendulum.today().add(weeks=1).naive()
     event.start_time = pendulum.naive(2010,1,1, 17, 0)
@@ -361,7 +446,7 @@ def task_publish(id):
     # Parse task into viewing format
     task.is_draft = False
     # Save original list of assigned_users so it's possible to duplicate tasks
-    task.original_assigned_users = task.assigned_users
+    original_assigned_users = task.assigned_users
     # Find all users with role
     for role in task.assigned_roles:
         users_with_role = models.User.objects(roles=role)
@@ -410,7 +495,7 @@ def task_publish(id):
                 # Notify user at their most recent time zone
                 eta = notification.date.in_tz(notification.user.tz)
                 tasks.send_notification.schedule((notification.id), eta=eta)
-    task.assigned_users = task.original_assigned_users
+    task.assigned_users = original_assigned_users
     task.save()
     return redirect(url_for('admin.task_view',id=id))
 

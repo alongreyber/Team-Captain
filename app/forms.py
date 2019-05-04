@@ -28,6 +28,8 @@ class EventForm(FlaskForm):
     name = StringField(validators=[required()])
     assigned_roles = SelectMultipleField('Roles')
     assigned_users = SelectMultipleField('Users')
+    enable_rsvp = BooleanField('Enable RSVP')
+    enable_attendance = BooleanField('Enable Attendance Tracking')
 
 
 
@@ -52,3 +54,5 @@ class RecurringEventForm(FlaskForm):
     start_time = html5.TimeField('Start Time', validators=[required()])
     end_time = html5.TimeField('End Time', validators=[required()])
     days_of_week = SelectMultipleField('Days of Week', coerce=int)
+    assigned_roles = SelectMultipleField('Roles')
+    assigned_users = SelectMultipleField('Users')

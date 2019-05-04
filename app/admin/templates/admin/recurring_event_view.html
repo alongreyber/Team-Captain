@@ -41,4 +41,13 @@
 
 <br/>
 
+<h5 class="title is-5">Visible To</h5>
+{% for u in event.assigned_users %}
+<button class="button is-rounded">{{ u.first_name }}&nbsp;{{ u.last_name }}</button>
+{% endfor %}
+<br/>
+<br/>
+<br/>
+
+<a href="{{url_for('admin.recurring_event_delete', id=event.id)}}" class="button is-danger">Delete</a>
 {% endblock %}
