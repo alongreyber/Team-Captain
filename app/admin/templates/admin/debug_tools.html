@@ -1,0 +1,11 @@
+{% extends 'admin/base.html' %}
+{% block admin_content %}
+<h1 class="title is-1"> Debug Tools </h1>
+
+<a href="{{url_for('admin.clear_db')}}" class="button is-danger is-large">Clear Database</a>
+<br />
+<br />
+<p class="is-size-5">
+    Clears everything except for roles and users
+</p>
+{% endblock %}

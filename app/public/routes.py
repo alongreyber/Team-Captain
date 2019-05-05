@@ -104,35 +104,43 @@ def notification_dismiss(id):
     # Might be useful in the future
     return redirect(request.referrer)
 
-@public.route('/task/<id>/complete')
+@public.route('/assignment/<id>/complete')
 @login_required
-def task_complete(id):
-    # Make sure that the task is published and that the user is assigned to it
-    tu_list = list(filter(lambda tu: tu.task.id == ObjectId(id), current_user.assigned_tasks))
-    if len(tu_list) == 0:
+def assignment_complete(id):
+    # Make sure that the assignment is published and that the user is assigned to it
+    au_list = list(filter(lambda au: au.assignment.id == ObjectId(id), current_user.assigned_assignments))
+    if len(au_list) == 0:
         abort(404)
-    tu = tu_list[0]
-    if not tu.completed:
-        tu.completed = pendulum.now('UTC')
-        tu.save()
-    return redirect(url_for('public.task_info', id=tu.task.id))
+    au = au_list[0]
+    if not au.completed:
+        au.completed = True
+        au.save()
+    return redirect(url_for('public.assignment_info', id=au.assignment.id))
+
+@public.route('/assignment/<id>')
+@login_required
+def assignment_info(id):
+    # Make sure that the assignment is published and that the user is assigned to it
+    au_list = list(filter(lambda au: au.assignment.id == ObjectId(id), current_user.assigned_assignments))
+    if len(au_list) == 0:
+        abort(404)
+    au = au_list[0]
+    assignment = au.assignment
+    return render_template('public/assignment_info.html', au=au)
 
 @public.route('/task/<id>')
-@login_required
-def task_info(id):
-    # Make sure that the task is published and that the user is assigned to it
-    tu_list = list(filter(lambda tu: tu.task.id == ObjectId(id), current_user.assigned_tasks))
+def task_redirect(id):
+    # Make sure that the task is in the user assigned task list
+    tu_list = list(filter(lambda tu: tu.id == ObjectId(id), current_user.assigned_tasks))
     if len(tu_list) == 0:
         abort(404)
     tu = tu_list[0]
     if not tu.seen:
         tu.seen = pendulum.now('UTC')
         tu.save()
-    task = tu.task
-    return render_template('public/task_info.html', tu=tu)
+    return redirect(tu.link)
 
 @public.route('/tasks')
-@login_required
 def task_list():
     current_user.select_related(max_depth=2)
     tus = current_user.assigned_tasks

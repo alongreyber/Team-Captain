@@ -21,11 +21,14 @@
 	    <a href="{{url_for('admin.event_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/event') }}">
 		Events
 	    </a>
-	    <a href="{{url_for('admin.assignment_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/tasks') }}">
-		Tasks
+	    <a href="{{url_for('admin.assignment_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/assignment') }}">
+		Assignments
 	    </a>
 	    <a href="{{url_for('admin.role_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/role') }}">
 		Roles
+	    </a>
+	    <a href="{{url_for('admin.debug_tools')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/debug') }}">
+		Debug Tools
 	    </a>
 	</div>
 	<div class="navbar-end">

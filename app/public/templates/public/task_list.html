@@ -1,7 +1,7 @@
 {% extends 'public/base.html' %}
 {% block public_content %}
 
-<h1 class="title is-1"> All Tasks </h1>
+<h1 class="title is-1"> My Tasks </h1>
 
 <table class="table is-hoverable">
     <thead>
@@ -13,9 +13,9 @@
     </thead>
     <tbody>
 	{% for tu in tus %}    
-	<tr onclick="window.location='{{url_for('public.task_info', id=tu.task.id)}}'">
+	<tr onclick="window.location='{{url_for('public.task_redirect', id=tu.id)}}'">
 	    <td>
-		{{tu.task.subject}}
+		{{tu.task.text}}
 	    </td>
 	    <td>
 		{{tu.task.due|localize|format}}

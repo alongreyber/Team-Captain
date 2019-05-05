@@ -40,6 +40,6 @@ def check_automatic_task_completion(document_id):
            and tu.watch_object.id == document_id:
 
             obj = tu.watch_object.fetch()
-            if obj:
+            if obj[tu.watch_field]:
                 tu.completed = pendulum.now('UTC')
                 tu.save()

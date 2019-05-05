@@ -1,5 +1,7 @@
 import datetime
-from app import db, login_manager
+from app import db, login_manager, tasks
+
+from flask import url_for
 
 from mongoengine.base import BaseField
 from mongoengine import signals
@@ -65,6 +67,7 @@ class User(db.Document, UserMixin):
     roles = db.ListField(db.ReferenceField(Role))
     assigned_tasks = db.ListField(db.ReferenceField('TaskUser'))
     assigned_events = db.ListField(db.ReferenceField('EventUser'))
+    assigned_assignments = db.ListField(db.ReferenceField('AssignmentUser'))
     notifications = db.EmbeddedDocumentListField(AppNotification)
 
 @login_manager.user_loader
@@ -105,13 +108,15 @@ class RecurringEvent(db.Document):
     assigned_roles = db.ListField(db.ReferenceField(Role))
     assigned_users = db.ListField(db.ReferenceField(User))
 
-class Task(db.EmbeddedDocument):
-    text = db.StringField()
+class Task(db.Document):
     notification_dates = db.ListField(PendulumField())
     notify_by_email = db.BooleanField(default=False)
     notify_by_phone = db.BooleanField(default=False)
     notify_by_push  = db.BooleanField(default=False)
     notify_by_app   = db.BooleanField(default=False)
+    text = db.StringField()
+    due = PendulumField()
+
     # Update from a form with a task FormField
     def update_from_form(self, form, tz):
         self.notification_dates = []
@@ -122,15 +127,38 @@ class Task(db.EmbeddedDocument):
         self.notify_by_phone = form.task.notify_by_phone.data
         self.notify_by_push = form.task.notify_by_push.data
         self.notify_by_app = form.task.notify_by_app.data
-        
+    # Send notifications to user
+    def send_notifications(self, users):
+        self.notification_dates.append(pendulum.now('UTC'))
+        for user in users:
+            for time in self.notification_dates:
+                notification = PushNotification()
+                notification.user = user
+                notification.text = self.text
+                notification.date = time
+                notification.link = url_for('public.task_redirect', id=self.id)
+                notification.send_email = self.notify_by_email
+                notification.send_text  = self.notify_by_phone
+                notification.send_app   = self.notify_by_app
+                notification.send_push  = self.notify_by_push
+                notification.save()
+                # Schedule assignment for sending unless it's right now
+                if notification.date <= pendulum.now('UTC'):
+                    tasks.send_notification((notification.id))
+                else:
+                    # Notify user at their most recent time zone
+                    eta = notification.date.in_tz(notification.user.tz)
+                    tasks.send_notification.schedule((notification.id), eta=eta)
 
 # Visible to users
 class TaskUser(db.Document):
-    text = db.StringField()
-    due = PendulumField()
+    task = db.ReferenceField(Task)
+    # Link to follow when task is clicked on
     link = db.StringField()
 
+    # Whether the user has seen the task
     seen = PendulumField()
+    # Whether the user has completed task. Updated automatically
     completed = PendulumField()
     # Which object to watch for changes
     watch_object = db.GenericLazyReferenceField()
@@ -144,7 +172,11 @@ class Assignment(db.Document):
     is_draft = db.BooleanField(default=True)
     assigned_roles = db.ListField(db.ReferenceField(Role))
     assigned_users  = db.ListField(db.ReferenceField(User))
-    task = db.EmbeddedDocumentField(Task)
+    task = db.ReferenceField(Task)
+
+class AssignmentUser(db.Document):
+    assignment = db.ReferenceField(Assignment)
+    completed = db.BooleanField(default=False)
 
 class EventUser(db.Document):
     event = db.ReferenceField(Event)
@@ -153,7 +185,6 @@ class EventUser(db.Document):
     sign_in = PendulumField()
     sign_out = PendulumField()
 
-from app import tasks
 def check_for_automatic_task(sender, document, created):
     tasks.check_automatic_task_completion((document.id))
 

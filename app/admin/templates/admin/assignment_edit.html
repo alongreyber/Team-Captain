@@ -3,7 +3,7 @@
 {% block admin_content %}
 <h1 class="title">Edit Task</h1>
 <h3 class="title is-3">Task Details</h3>
-<form id="task-form" submit="return false;" action="" method="post">
+<form id="assignment-form" submit="return false;" action="" method="post">
     {{ form.hidden_tag() }}
 
     <div class="field">
@@ -56,10 +56,10 @@
 
     <br />
     <input class="button is-primary" id="submit" name="submit" type="submit" value="Save">
-    <a href="{{url_for('admin.task_publish', id=assignment.id)}}" id="publish" class="button is-success" tooltip="Please save your changes first">
+    <a href="{{url_for('admin.assignment_publish', id=assignment.id)}}" id="publish" class="button is-success" tooltip="Please save your changes first">
 	Publish
     </a>
-    <a href="{{url_for('admin.task_delete', id=assignment.id)}}" class="button is-danger">
+    <a href="{{url_for('admin.assignment_delete', id=assignment.id)}}" class="button is-danger">
 	Delete
     </a>
 </form>

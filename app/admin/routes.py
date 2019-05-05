@@ -440,18 +440,20 @@ def assignment_list():
     all_users = models.User.objects
     all_users.select_related(max_depth=2)
 
-    return render_template('admin/task_list.html', assignments=assignments)
+    return render_template('admin/assignment_list.html', assignments=assignments)
 
 @admin.route('/newassignment')
 def assignment_new():
     everyone_role = models.Role.objects(name='everyone').first()
     assignment = models.Assignment()
     task = models.Task()
+    task.save()
     assignment.task = task
     assignment.due = pendulum.now('UTC').add(days=7)
     assignment.task.notification_dates.append(pendulum.today(tz=current_user.tz).at(17,0).in_tz('UTC'))
     assignment.assigned_roles = [everyone_role]
     assignment.save()
+    assignment.task.save()
     return redirect(url_for('admin.assignment_edit', id=assignment.id))
 
 
@@ -484,6 +486,9 @@ def assignment_edit(id):
             assignment.assigned_users = [ObjectId(r) for r in form.assigned_users.data]
             # Update task
             assignment.task.update_from_form(form, current_user.tz)
+            assignment.task.text = assignment.subject
+            assignment.task.due = assignment.due
+            assignment.task.save()
             assignment.save()
             assignment.reload()
             flash('Changes Saved', 'success')
@@ -494,117 +499,137 @@ def assignment_edit(id):
             selected_users=[user.first_name + " " + user.last_name for user in assignment.assigned_users],
             selected_dates=[dt.in_tz(current_user.tz).isoformat() for dt in assignment.task.notification_dates])
 
-@admin.route('/task/<id>/publish')
-def task_publish(id):
-    task = models.Task.objects(id=id).first()
-    task.select_related(max_depth=2)
-    if not task:
+@admin.route('/assignment/<id>/publish')
+def assignment_publish(id):
+    assignment = models.Assignment.objects(id=id).first()
+    assignment.select_related(max_depth=2)
+    if not assignment:
         abort(404)
-    if not task.is_draft:
-        redirect(url_for('admin.task_edit', id=id))
-    # Parse task into viewing format
-    task.is_draft = False
-    # Save original list of assigned_users so it's possible to duplicate tasks
-    original_assigned_users = task.assigned_users
+    if not assignment.is_draft:
+        redirect(url_for('admin.assignment_edit', id=id))
+    # Parse assignment into viewing format
+    assignment.is_draft = False
+    # Save original list of assigned_users so it's possible to duplicate assignments
+    original_assigned_users = assignment.assigned_users
     # Find all users with role
-    for role in task.assigned_roles:
+    for role in assignment.assigned_roles:
         users_with_role = models.User.objects(roles=role)
         for u in users_with_role:
-            task.assigned_users.append(u)
+            assignment.assigned_users.append(u)
     # Make sure list of users is unique
-    task.assigned_users = list(set(task.assigned_users))
+    assignment.assigned_users = list(set(assignment.assigned_users))
     # Create TaskUser objects and assignments to user
-    for user in task.assigned_users:
+    for user in assignment.assigned_users:
+        au = models.AssignmentUser()
+        au.assignment = assignment
+        au.save()
+
         tu = models.TaskUser()
-        tu.task = task
+        tu.task = assignment.task
+        tu.link = url_for('public.assignment_info', id=assignment.id)
+        tu.watch_object = au
+        tu.watch_field = 'completed'
         tu.save()
+
+        user.assigned_assignments.append(au)
         user.assigned_tasks.append(tu)
         user.save()
 
-    # Add notification right now
-    task.notification_dates.append(pendulum.now('UTC'))
-    for user in task.assigned_users:
-        for time in task.notification_dates:
-            notification = models.PushNotification()
-            notification.user = user
-            notification.text = task.subject
-            notification.date = time
-            notification.link = url_for('public.task_info', id=task.id, _external=True)
-            notification.send_email = task.notify_by_email
-            notification.send_text  = task.notify_by_phone
-            notification.send_app   = True
-            notification.send_push  = True
-            notification.save()
-            # Schedule task for sending unless it's right now
-            if notification.date <= pendulum.now('UTC'):
-                tasks.send_notification((notification.id))
-            else:
-                # Notify user at their most recent time zone
-                eta = notification.date.in_tz(notification.user.tz)
-                tasks.send_notification.schedule((notification.id), eta=eta)
-    task.assigned_users = original_assigned_users
-    task.save()
-    return redirect(url_for('admin.task_view',id=id))
+    # Create notifications
+    assignment.save()
+    assignment.task.send_notifications(assignment.assigned_users)
+    return redirect(url_for('admin.assignment_view',id=id))
 
 
-@admin.route('/task/<id>/view')
-def task_view(id):
-    task = models.Task.objects(id=id).first()
-    if not task:
+@admin.route('/assignment/<id>/view')
+def assignment_view(id):
+    assignment = models.Assignment.objects(id=id).first()
+    if not assignment:
         abort(404)
-    if task.is_draft:
-        return redirect(url_for('admin.task_edit', id=id))
+    if assignment.is_draft:
+        return redirect(url_for('admin.assignment_edit', id=id))
     # Complex query here, but it's okay because this is an admin interface
-    # First filter users to make sure they're assigned to the task
+    # First filter users to make sure they're assigned to the assignment
     all_users = models.User.objects
     all_users.select_related(max_depth=2)
     assigned_users = []
     for user in all_users:
-        # Filter TaskUser objects to those related to this task (should be 1 or 0)
-        assigned_tasks = []
-        for tu in user.assigned_tasks:
-            if tu.task == task:
-                assigned_tasks.append(tu)
-        user.assigned_tasks = assigned_tasks
-        if len(user.assigned_tasks) > 0:
+        # Filter TaskUser objects to those related to this assignment (should be 1 or 0)
+        assigned_assignments = []
+        for au in user.assigned_assignments:
+            if au.assignment == assignment:
+                assigned_assignments.append(au)
+        user.assigned_assignments = assigned_assignments
+        if len(user.assigned_assignments) > 0:
             assigned_users.append(user)
-    return render_template('admin/task_view.html', task=task, assigned_users=assigned_users)
+    return render_template('admin/assignment_view.html', assignment=assignment, assigned_users=assigned_users)
 
-@admin.route('/task/<id>/duplicate')
-def task_duplicate(id):
-    task = models.Task.objects(id=id).first()
-    if not task:
+@admin.route('/assignment/<id>/duplicate')
+def assignment_duplicate(id):
+    assignment = models.Assignment.objects(id=id).first()
+    if not assignment:
         abort(404)
-    new_task         = models.Task()
-    new_task.subject = task.subject + " Copy"
-    new_task.content = task.content
-    new_task.due     = pendulum.now('UTC')
-    new_task.assigned_users = task.assigned_users
-    new_task.assigned_roles = task.assigned_roles
-    new_task.notify_by_phone = task.notify_by_phone
-    new_task.notify_by_email = task.notify_by_email
-    new_task.additional_notifications = task.additional_notifications
-    new_task.save()
-    return redirect(url_for('admin.task_edit', id=new_task.id))
+    new_assignment         = models.Assignment()
+    new_assignment.subject = assignment.subject + " Copy"
+    new_assignment.content = assignment.content
+    new_assignment.assigned_roles = assignment.assigned_roles
+    new_assignment.assigned_users = assignment.assigned_users
+    new_assignment.due     = pendulum.tomorrow('UTC')
+    new_assignment.task    = assignment.task
+    # Clear notification dates in case they are outside the range
+    new_assignment.task.notification_dates = []
+    new_assignment.save()
+    return redirect(url_for('admin.assignment_edit', id=new_assignment.id))
 
 
-@admin.route('/task/<id>/delete')
-def task_delete(id):
-    task = models.Task.objects(id=id).first()
-    if not task:
+@admin.route('/assignment/<id>/delete')
+def assignment_delete(id):
+    assignment = models.Assignment.objects(id=id).first()
+    if not assignment:
         abort(404)
-    if not task.is_draft:
-        # Since tasks have no record of who is assigned we have to delete tu's manually
+    if not assignment.is_draft:
+        # Since assignments have no record of who is assigned we have to delete au's manually
+        # Same with tus
         all_users = models.User.objects
         all_users.select_related(max_depth=2)
         for user in all_users:
+            for au in user.assigned_assignments:
+                if au.assignment == assignment:
+                    au.delete()
+                    user.assigned_assignments.remove(au)
             for tu in user.assigned_tasks:
-                if tu.task == task:
+                if tu.task == assignment.task:
                     tu.delete()
                     user.assigned_tasks.remove(tu)
             user.save()
-    task.delete()
-    return redirect(url_for('admin.task_list'))
+    assignment.delete()
+    assignment.task.delete()
+    return redirect(url_for('admin.assignment_list'))
+
+@admin.route('/debug')
+def debug_tools():
+    return render_template('admin/debug_tools.html')
+
+@admin.route('/debug/clear_db')
+def clear_db():
+    models.PushNotification.drop_collection()
+    models.Event.drop_collection()
+    models.EventUser.drop_collection()
+    models.RecurringEvent.drop_collection()
+    models.Task.drop_collection()
+    models.TaskUser.drop_collection()
+    models.Assignment.drop_collection()
+    models.AssignmentUser.drop_collection()
+
+    for user in models.User.objects:
+        user.assigned_tasks = []
+        user.assigned_events = []
+        user.assigned_assignments = []
+        user.notifications = []
+        user.save()
+
+    flash('Cleared DB', 'success')
+    return redirect(url_for('admin.debug_tools'))
 
 def flash_errors(form):
     """Flash errors from a form at the top of the page"""

@@ -3,7 +3,7 @@
 
 <h1 class="title is-1"> Tasks </h1>
 
-<a href="{{url_for('admin.task_new')}}" class="button is-primary">
+<a href="{{url_for('admin.assignment_new')}}" class="button is-primary">
     New
 </a>
 <br />
@@ -20,16 +20,16 @@
 	</tr>
     </thead>
     <tbody>
-	{% for task in tasks %}    
-	{% if task.is_draft  %}
+	{% for assignment in assignments %}    
+	{% if assignment.is_draft  %}
 	<tr>
 	    <td>
-		<a href="{{url_for('admin.task_edit', id=task.id)}}">
-			{{task.subject}}
+		<a href="{{url_for('admin.assignment_edit', id=assignment.id)}}">
+			{{assignment.subject}}
 		</a>
 	    </td>
 	    <td>
-		{{task.due.strftime('%a %B %d')}}
+		{{assignment.due.strftime('%a %B %d')}}
 	    </td>
 	</tr>
 	{% endif %}
@@ -54,25 +54,25 @@
 	</tr>
     </thead>
     <tbody>
-	{% for task in tasks %}    
-	{% if not task.is_draft %}
+	{% for assignment in assignments %}    
+	{% if not assignment.is_draft %}
 	<tr>
 	    <td>
-		<a href="{{url_for('admin.task_edit', id=task.id)}}">
-			{{task.subject}}
+		<a href="{{url_for('admin.assignment_edit', id=assignment.id)}}">
+			{{assignment.subject}}
 		</a>
 	    </td>
 	    <td>
-		{{task.due.strftime('%a %B %d')}}
+		{{assignment.due.strftime('%a %B %d')}}
 	    </td>
 	    <td class="has-text-centered">
-		{{task.number_assigned}}
+		{{assignment.number_assigned}}
 	    </td>
 	    <td class="has-text-centered">
-		{{task.number_seen}}
+		{{assignment.number_seen}}
 	    </td>
 	    <td class="has-text-centered">
-		{{task.number_completed}}
+		{{assignment.number_completed}}
 	    </td>
 	</tr>
 	{% endif %}
