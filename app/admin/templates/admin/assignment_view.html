@@ -24,7 +24,7 @@
 <br />
 
 <h5 class="title is-5">Due Date</h5>
-<p>{{assignment.due.strftime('%a %B %d')}}</p>
+<p>{{assignment.due|localize|format}}</p>
 <br />
 
 
@@ -53,8 +53,16 @@
 		    {{user.first_name}} {{user.last_name}}
 		</a>
 	    </td>
-	    <td>{% if user.assigned_assignments[0].seen      %}{{user.assigned_assignments[0].seen.strftime('%m/%d/%Y %H:%M')}}{% else %}No{% endif %}</td>
-	    <td>{% if user.assigned_assignments[0].completed %}Yes{% else %}No{% endif %}</td>
+	    <td>
+		{% if user.tu.seen %}
+		    {{user.tu.seen|localize|format}}
+		{% else %}No{% endif %}
+	    </td>
+	    <td>
+		{% if user.tu.completed %}
+		    {{user.tu.completed|localize|format}}
+		{% else %}No{% endif %}
+	    </td>
 	</tr>
 	{% endfor %}
     </tbody>

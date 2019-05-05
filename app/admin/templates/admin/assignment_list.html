@@ -29,7 +29,7 @@
 		</a>
 	    </td>
 	    <td>
-		{{assignment.due.strftime('%a %B %d')}}
+		{{assignment.due|localize|format}}
 	    </td>
 	</tr>
 	{% endif %}
@@ -63,7 +63,7 @@
 		</a>
 	    </td>
 	    <td>
-		{{assignment.due.strftime('%a %B %d')}}
+		{{assignment.due|localize|format}}
 	    </td>
 	    <td class="has-text-centered">
 		{{assignment.number_assigned}}

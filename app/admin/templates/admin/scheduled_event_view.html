@@ -17,7 +17,10 @@
 <table class="table">
     <thead>
 	<th>User Name</th>
+	{% if event.enable_rsvp %}
+	<th>Seen RSVP</th>
 	<th>RSVP</th>
+	{% endif %}
     </thead>
     <tbody>
 	{% for user in assigned_users %}
@@ -27,16 +30,23 @@
 		    {{user.first_name}} {{user.last_name}}
 		</a>
 	    </td>
+	    {% if event.enable_rsvp %}
 	    <td>
-		{% if user.assigned_events[0].rsvp == 'y' %}
+		{% if user.tu.seen %}
+		    {{user.tu.seen|localize|format}}
+		{% else %}No{% endif %}
+	    </td>
+	    <td>
+		{% if user.eu.rsvp == 'y' %}
 		Yes
-		{% elif user.assigned_events[0].rsvp == 'm' %}
+		{% elif user.eu.rsvp == 'm' %}
 		Maybe
-		{% elif user.assigned_events[0].rsvp == 'n' %}
+		{% elif user.eu.rsvp == 'n' %}
 		No
 		{% else %}
 		{% endif %}
 	    </td>
+	    {% endif %}
 	</tr>
 	{% endfor %}
     </tbody>

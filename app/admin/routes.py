@@ -116,18 +116,21 @@ def scheduled_event_view(id):
     if event.is_draft:
         return redirect(url_for('admin.scheduled_event_edit', id=event.id))
     # Complex query here, but it's okay because this is an admin interface
-    # First filter users to make sure they're assigned to the task
     all_users = models.User.objects
     all_users.select_related(max_depth=2)
     assigned_users = []
+    assigned_users = []
     for user in all_users:
-        # Filter TaskUser objects to those related to this task (should be 1 or 0)
-        assigned_events = []
+        # Filter AssignmentUser objects to those related to this assignment (should be 1 or 0)
         for eu in user.assigned_events:
-            if eu.event == event:
-                assigned_events.append(eu)
-        user.assigned_events = assigned_events
-        if len(user.assigned_events) > 0:
+            # This is true if the user is assigned to the assignment
+            if eu.event.id == event.id:
+                # Find associated TaskUser object and attach it
+                for tu in user.assigned_tasks:
+                    if eu.id == tu.watch_object.id:
+                        user.tu = tu
+                user.eu = eu
+        if user.eu:
             assigned_users.append(user)
     return render_template('admin/scheduled_event_view.html', event=event, assigned_users=assigned_users)
 
@@ -145,7 +148,14 @@ def scheduled_event_delete(id):
                 if eu.event == event:
                     eu.delete()
                     user.assigned_events.remove(eu)
+            if event.enable_rsvp:
+                for tu in user.assigned_tasks:
+                    if tu.task == event.rsvp_task:
+                        tu.delete()
+                        user.assigned_tasks.remove(tu)
             user.save()
+    if event.enable_rsvp:
+        event.rsvp_task.delete()
     event.delete()
     flash('Deleted Event', 'success')
     return redirect(url_for('admin.event_list'))
@@ -184,15 +194,13 @@ def scheduled_event_edit(id):
             event.name = form.name.data
             event.enable_rsvp = form.enable_rsvp.data
             event.enable_attendance = form.enable_attendance.data
-            event.notify_by_email = form.notify_by_email.data
-            event.notify_by_phone = form.notify_by_phone.data
-            for dt_string in form.notification_dates.data.split(","):
-                # Convert to UTC
-                # This check is to prevent it from breaking if the list is empty
-                if dt_string:
-                    dt = pendulum.from_format(dt_string.strip(), "MM/DD/YYYY", tz=current_user.tz).at(17,30,0).in_tz('UTC')
-                    event.notification_dates.append(dt)
-            print("Calling save")
+
+            # Update task
+            event.rsvp_task.update_from_form(form.rsvp_task, current_user.tz)
+            event.rsvp_task.text = "RSVP for " + event.name
+            event.rsvp_task.due = event.start
+            event.rsvp_task.save()
+
             event.save()
     if len(form.errors) > 0:
         flash_errors(form)
@@ -200,7 +208,7 @@ def scheduled_event_edit(id):
             selected_roles=[role.name for role in event.assigned_roles],
             selected_users=[user.first_name + " " + user.last_name for user in event.assigned_users],
 
-            selected_dates=[dt.in_tz(current_user.tz).isoformat() for dt in event.notification_dates])
+            selected_dates=[dt.in_tz(current_user.tz).isoformat() for dt in event.rsvp_task.notification_dates])
 
 @admin.route('/m/<id>/publish')
 def scheduled_event_publish(id):
@@ -218,12 +226,6 @@ def scheduled_event_publish(id):
             event.assigned_users.append(u)
     # Make sure list of users is unique
     event.assigned_users = list(set(event.assigned_users))
-    if event.enable_rsvp:
-        task = models.Task()
-        task.subject = "RSVP for event" + event.name
-        task.is_draft = False
-        task.due = event.start
-        task.save()
     # Create EventUser objects and assignments to user
     # Also create TaskUser objects 
     for user in event.assigned_users:
@@ -234,13 +236,18 @@ def scheduled_event_publish(id):
 
         if event.enable_rsvp:
             tu = models.TaskUser()
-            tu.task = task
+            tu.task = event.rsvp_task
             tu.watch_object = eu
+            tu.link = url_for('public.event_info', id=event.id)
             tu.watch_field = "rsvp"
             tu.save()
             user.assigned_tasks.append(tu)
 
         user.save()
+
+    # Create notifications
+    if event.enable_rsvp:
+        event.rsvp_task.send_notifications(event.assigned_users)
     event.assigned_users = original_assigned_users
     event.is_draft = False
     event.save()
@@ -280,6 +287,9 @@ def scheduled_event_new():
     event = models.Event()
     event.start = pendulum.now('UTC').add(days=1)
     event.end = event.start.add(hours=2)
+    task = models.Task()
+    task.save()
+    event.rsvp_task = task
     event.is_recurring = False
     event.assigned_roles = [everyone_role]
     event.save()
@@ -333,6 +343,13 @@ def recurring_event_edit(id):
             event.end_time   = datetime.datetime.combine(datetime.datetime.min.date(), form.end_time.data)
             event.assigned_roles = [ObjectId(r) for r in form.assigned_roles.data]
             event.assigned_users = [ObjectId(r) for r in form.assigned_users.data]
+
+            # Update task
+            event.task.update_from_form(form, current_user.tz)
+            event.task.text = event.name
+            event.task.due = event.start
+            event.task.save()
+
             event.name = form.name.data
             event.content = form.content.data
             event.days_of_week = form.days_of_week.data
@@ -345,7 +362,8 @@ def recurring_event_edit(id):
             form=form,
             selected_days_of_week = event.days_of_week,
             selected_roles=[role.name for role in event.assigned_roles],
-            selected_users=[user.first_name + " " + user.last_name for user in event.assigned_users])
+            selected_users=[user.first_name + " " + user.last_name for user in event.assigned_users],
+            selected_dates=[dt.in_tz(current_user.tz).isoformat() for dt in event.task.notification_dates])
 
 @admin.route('/rm/<id>/publish')
 def recurring_event_publish(id):
@@ -439,7 +457,23 @@ def assignment_list():
     assignments = models.Assignment.objects
     all_users = models.User.objects
     all_users.select_related(max_depth=2)
-
+    for assignment in assignments:
+        assignment.number_assigned = 0
+        assignment.number_seen = 0
+        assignment.number_completed = 0
+        for user in all_users:
+            # Filter AssignmentUser objects to those related to this assignment (should be 1 or 0)
+            for au in user.assigned_assignments:
+                # This is true if the user is assigned to the assignment
+                if au.assignment.id == assignment.id:
+                    assignment.number_assigned += 1
+                    # Find associated TaskUser object
+                    for tu in user.assigned_tasks:
+                        if au.id == tu.watch_object.id:
+                            if tu.seen:
+                                assignment.number_seen += 1
+                            if tu.completed:
+                                assignment.number_completed += 1
     return render_template('admin/assignment_list.html', assignments=assignments)
 
 @admin.route('/newassignment')
@@ -485,7 +519,7 @@ def assignment_edit(id):
             assignment.assigned_roles = [ObjectId(r) for r in form.assigned_roles.data]
             assignment.assigned_users = [ObjectId(r) for r in form.assigned_users.data]
             # Update task
-            assignment.task.update_from_form(form, current_user.tz)
+            assignment.task.update_from_form(form.task, current_user.tz)
             assignment.task.text = assignment.subject
             assignment.task.due = assignment.due
             assignment.task.save()
@@ -554,13 +588,16 @@ def assignment_view(id):
     all_users.select_related(max_depth=2)
     assigned_users = []
     for user in all_users:
-        # Filter TaskUser objects to those related to this assignment (should be 1 or 0)
-        assigned_assignments = []
+        # Filter AssignmentUser objects to those related to this assignment (should be 1 or 0)
         for au in user.assigned_assignments:
-            if au.assignment == assignment:
-                assigned_assignments.append(au)
-        user.assigned_assignments = assigned_assignments
-        if len(user.assigned_assignments) > 0:
+            # This is true if the user is assigned to the assignment
+            if au.assignment.id == assignment.id:
+                # Find associated TaskUser object and attach it
+                for tu in user.assigned_tasks:
+                    if au.id == tu.watch_object.id:
+                        user.tu = tu
+                user.au = au
+        if user.au:
             assigned_users.append(user)
     return render_template('admin/assignment_view.html', assignment=assignment, assigned_users=assigned_users)
 

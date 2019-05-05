@@ -74,40 +74,6 @@ class User(db.Document, UserMixin):
 def load_user(user_id):
     return User.objects(id=user_id).first()
 
-class Event(db.Document):
-    name = db.StringField()
-    # Not filled in if this is a recurring event
-    content = db.StringField()
-    start = PendulumField()
-    end = PendulumField()
-    is_draft = db.BooleanField(default=True)
-    # Duplicate data, lets us keep track of whether this is a recurring event
-    is_recurring = db.BooleanField(default=False)
-    assigned_roles = db.ListField(db.ReferenceField(Role))
-    assigned_users = db.ListField(db.ReferenceField(User))
-    enable_rsvp = db.BooleanField(default=False)
-    enable_attendance = db.BooleanField(default=False)
-    notification_dates = db.ListField(PendulumField())
-    notify_by_email = db.BooleanField(default=False)
-    notify_by_phone = db.BooleanField(default=False)
-
-class RecurringEvent(db.Document):
-    name = db.StringField()
-    content = db.StringField()
-    # NOTE
-    # These are not in UTC. They are naive objects that are turned
-    # into real times when the event is published
-    start_date = db.DateTimeField()
-    start_time = db.DateTimeField()
-    end_date = db.DateTimeField()
-    end_time = db.DateTimeField()
-    days_of_week = db.ListField(db.IntField())
-    is_draft = db.BooleanField(default=True)
-    events = db.ListField(db.ReferenceField(Event))
-    # Only used when task is a draft
-    assigned_roles = db.ListField(db.ReferenceField(Role))
-    assigned_users = db.ListField(db.ReferenceField(User))
-
 class Task(db.Document):
     notification_dates = db.ListField(PendulumField())
     notify_by_email = db.BooleanField(default=False)
@@ -118,15 +84,16 @@ class Task(db.Document):
     due = PendulumField()
 
     # Update from a form with a task FormField
-    def update_from_form(self, form, tz):
+    def update_from_form(self, task_form, tz):
         self.notification_dates = []
-        for dt_string in form.task.notification_dates.data.split(","):
-            dt = pendulum.from_format(dt_string.strip(), "MM/DD/YYYY", tz=tz).in_tz('UTC')
-            self.notification_dates.append(dt)
-        self.notify_by_email = form.task.notify_by_email.data
-        self.notify_by_phone = form.task.notify_by_phone.data
-        self.notify_by_push = form.task.notify_by_push.data
-        self.notify_by_app = form.task.notify_by_app.data
+        for dt_string in task_form.notification_dates.data.split(","):
+            if dt_string:
+                dt = pendulum.from_format(dt_string.strip(), "MM/DD/YYYY", tz=tz).in_tz('UTC')
+                self.notification_dates.append(dt)
+        self.notify_by_email = task_form.notify_by_email.data
+        self.notify_by_phone = task_form.notify_by_phone.data
+        self.notify_by_push = task_form.notify_by_push.data
+        self.notify_by_app = task_form.notify_by_app.data
     # Send notifications to user
     def send_notifications(self, users):
         self.notification_dates.append(pendulum.now('UTC'))
@@ -164,6 +131,39 @@ class TaskUser(db.Document):
     watch_object = db.GenericLazyReferenceField()
     # Which field on that object to check
     watch_field = db.StringField()
+
+
+class Event(db.Document):
+    name = db.StringField()
+    # Not filled in if this is a recurring event
+    content = db.StringField()
+    start = PendulumField()
+    end = PendulumField()
+    is_draft = db.BooleanField(default=True)
+    # Duplicate data, lets us keep track of whether this is a recurring event
+    is_recurring = db.BooleanField(default=False)
+    assigned_roles = db.ListField(db.ReferenceField(Role))
+    assigned_users = db.ListField(db.ReferenceField(User))
+    enable_rsvp = db.BooleanField(default=False)
+    rsvp_task = db.ReferenceField(Task)
+    enable_attendance = db.BooleanField(default=False)
+
+class RecurringEvent(db.Document):
+    name = db.StringField()
+    content = db.StringField()
+    # NOTE
+    # These are not in UTC. They are naive objects that are turned
+    # into real times when the event is published
+    start_date = db.DateTimeField()
+    start_time = db.DateTimeField()
+    end_date = db.DateTimeField()
+    end_time = db.DateTimeField()
+    days_of_week = db.ListField(db.IntField())
+    is_draft = db.BooleanField(default=True)
+    events = db.ListField(db.ReferenceField(Event))
+    # Only used when task is a draft
+    assigned_roles = db.ListField(db.ReferenceField(Role))
+    assigned_users = db.ListField(db.ReferenceField(User))
 
 class Assignment(db.Document):
     subject = db.StringField()

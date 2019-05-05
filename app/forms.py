@@ -21,6 +21,13 @@ class PublicUserForm(FlaskForm):
     phone_number = html5.TelField()
     bio = TextAreaField()
 
+class TaskForm(FlaskForm):
+    notify_by_email = BooleanField('Notify by Email?')
+    notify_by_phone = BooleanField('Notify by Phone?')
+    notify_by_push = BooleanField('Notify by Push?')
+    notify_by_app = BooleanField('Notify in App?')
+    notification_dates = StringField()
+
 class EventForm(FlaskForm):
     start = html5.DateTimeLocalField(format='%Y-%m-%dT%H:%M')
     end = html5.DateTimeLocalField(format='%Y-%m-%dT%H:%M')
@@ -29,17 +36,8 @@ class EventForm(FlaskForm):
     assigned_roles = SelectMultipleField('Roles')
     assigned_users = SelectMultipleField('Users')
     enable_rsvp = BooleanField('Enable RSVP')
+    rsvp_task = FormField(TaskForm)
     enable_attendance = BooleanField('Enable Attendance Tracking')
-    notification_dates = StringField()
-    notify_by_email = BooleanField('Notify by Email?')
-    notify_by_phone = BooleanField('Notify by Phone?')
-
-class TaskForm(FlaskForm):
-    notify_by_email = BooleanField('Notify by Email?')
-    notify_by_phone = BooleanField('Notify by Phone?')
-    notify_by_push = BooleanField('Notify by Phone?')
-    notify_by_app = BooleanField('Notify by Phone?')
-    notification_dates = StringField()
 
 class AssignmentForm(FlaskForm):
     subject = StringField(validators=[required()])

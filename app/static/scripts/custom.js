@@ -61,24 +61,26 @@ $.ajax({
 });
 
 $(document).ready(function() {
-    var dueDate = new Date($(maxDateSelector)[0].value);
-    var datepicker = $(datePickerSelector).datepicker({
-	language: "en",
-	position: "right top",
-	inline: true,
-	multipleDates: true,
-	multipleDatesSeparator: ", ",
-	minDate: new Date(), // Today
-	maxDate: dueDate
-    }).data('datepicker');
-    // Select the dates that were previously selected
-    const selectedDates = selectedDateStrings.map(st => new Date(st));
-    datepicker.selectDate(selectedDates);
-    // When the due date changes, reload this widget with correct
-    // date constraints
-    $(maxDateSelector).change(function() {
+    if( typeof datePickerSelector !== 'undefined' && $(datePickerSelector).length ) {
 	var dueDate = new Date($(maxDateSelector)[0].value);
-	datepicker.update({ maxDate: dueDate });
-	datepicker.clear();
-    });
+	var datepicker = $(datePickerSelector).datepicker({
+	    language: "en",
+	    position: "right top",
+	    inline: true,
+	    multipleDates: true,
+	    multipleDatesSeparator: ", ",
+	    minDate: new Date(), // Today
+	    maxDate: dueDate
+	}).data('datepicker');
+	// Select the dates that were previously selected
+	const selectedDates = selectedDateStrings.map(st => new Date(st));
+	datepicker.selectDate(selectedDates);
+	// When the due date changes, reload this widget with correct
+	// date constraints
+	$(maxDateSelector).change(function() {
+	    var dueDate = new Date($(maxDateSelector)[0].value);
+	    datepicker.update({ maxDate: dueDate });
+	    datepicker.clear();
+	});
+    }
 });

@@ -41,16 +41,41 @@
     </div>
 
     <br />
-    <div class="field">
-	<div class="control">
-	    {{ form.task.hidden_tag() }}
-	    {{ form.task.notification_dates.label(class_='label') }}
-	    <input type='hidden' id="task-notification_dates" name="task-notification_dates"  />
-	    <script>
-		var selectedDateStrings = {{selected_dates|tojson}};
-		var datePickerSelector = "#task-notification_dates";
-		var maxDateSelector = "#due";
-	    </script>
+
+    <h5 class="title is-5">Notification Settings</h5>
+    <div class="columns">
+	<div class="column is-one-quarter">
+	    <div class="field">
+		{{ form.task.hidden_tag() }}
+		<div class="control">
+		    <input type='hidden' id="task-notification_dates" name="task-notification_dates"  />
+		    <script>
+			var selectedDateStrings = {{selected_dates|tojson}};
+			var datePickerSelector = "#task-notification_dates";
+			var maxDateSelector = "#due";
+		    </script>
+		</div>
+	    </div>
+	</div>
+	<div class="column">
+	    <br />
+	    <br />
+	    <div class="field">
+		{{ form.task.notify_by_app(class_='is-checkradio') }}
+		{{ form.task.notify_by_app.label(class_='label') }}
+	    </div>
+	    <div class="field">
+		{{ form.task.notify_by_email(class_='is-checkradio') }}
+		{{ form.task.notify_by_email.label(class_='label') }}
+	    </div>
+	    <div class="field">
+		{{ form.task.notify_by_push(class_='is-checkradio') }}
+		{{ form.task.notify_by_push.label(class_='label') }}
+	    </div>
+	    <div class="field">
+		{{ form.task.notify_by_phone(class_='is-checkradio') }}
+		{{ form.task.notify_by_phone.label(class_='label') }}
+	    </div>
 	</div>
     </div>
 
