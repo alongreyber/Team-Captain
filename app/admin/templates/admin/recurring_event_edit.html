@@ -68,6 +68,70 @@
     </div>
 
     <br />
+    <div class="field">
+	{{ form.enable_rsvp(class_='is-checkradio is-block is-primary is-medium') }}
+	{{ form.enable_rsvp.label(class_='label') }}
+    </div>
+    <script>
+	// Only show date picker if RSVP is enabled
+	$(document).ready(function() {
+	    var onRSVPEnabledChange = function() {
+		if($("#enable_rsvp").is(":checked")) {
+		    $("#rsvp-reminders").show();
+		} else {
+		    $("#rsvp-reminders").hide();
+		}
+	    };
+	    $("#enable_rsvp").change(onRSVPEnabledChange);
+	    onRSVPEnabledChange();
+	});
+    </script>
+    <div id="rsvp-reminders">
+	<h5 class="title is-5">RSVP Reminder Settings</h5>
+	<div class="columns">
+	    <div class="column is-one-quarter">
+		<div class="field">
+		    {{ form.rsvp_task.hidden_tag() }}
+		    <div class="control">
+			<input type='hidden' id="rsvp_task-notification_dates" name="rsvp_task-notification_dates"  />
+			<script>
+			    var selectedDateStrings = {{selected_dates|tojson}};
+			    var datePickerSelector = "#rsvp_task-notification_dates";
+			    var maxDateSelector = "#end_date";
+			</script>
+		    </div>
+		</div>
+	    </div>
+	    <div class="column">
+		<br />
+		<br />
+		<div class="field">
+		    {{ form.rsvp_task.notify_by_app(class_='is-checkradio') }}
+		    {{ form.rsvp_task.notify_by_app.label(class_='label') }}
+		</div>
+		<div class="field">
+		    {{ form.rsvp_task.notify_by_email(class_='is-checkradio') }}
+		    {{ form.rsvp_task.notify_by_email.label(class_='label') }}
+		</div>
+		<div class="field">
+		    {{ form.rsvp_task.notify_by_push(class_='is-checkradio') }}
+		    {{ form.rsvp_task.notify_by_push.label(class_='label') }}
+		</div>
+		<div class="field">
+		    {{ form.rsvp_task.notify_by_phone(class_='is-checkradio') }}
+		    {{ form.rsvp_task.notify_by_phone.label(class_='label') }}
+		</div>
+	    </div>
+	</div>
+    </div>
+    <br />
+    <br />
+    <div class="field">
+	{{ form.enable_attendance(class_='is-checkradio is-block is-primary is-medium') }}
+	{{ form.enable_attendance.label(class_='label') }}
+    </div>
+
+    <br />
     <input class="button is-primary" id="submit" name="submit" type="submit" value="Save">
     <a href="{{url_for('admin.recurring_event_publish', id=event.id)}}" class="button is-success" id="publish" >Publish</a>
     <a href="{{url_for('admin.recurring_event_delete', id=event.id)}}" class="button is-danger">Delete</a>

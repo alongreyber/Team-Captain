@@ -45,12 +45,18 @@ def timezone_submit():
 def event_list():
     events = current_user.assigned_events
     events_for_fullcalendar = []
+    all_recurring_events = models.RecurringEvent.objects
     for e in events:
         e_new = {}
         e_new['title']  = e.event.name
         e_new['start']  = e.event.start.isoformat()
         e_new['end']    = e.event.end.isoformat()
-        e_new['url']    = url_for('public.event_info', id=e.event.id)
+        if e.event.is_recurring:
+            for recurring_event in all_recurring_events:
+                if e.event in recurring_event.events:
+                    e_new['url']    = url_for('public.recurring_event_info', id=recurring_event.id)
+        else:
+            e_new['url']    = url_for('public.scheduled_event_info', id=e.event.id)
         e_new['allDay'] = False
 
         e_new['backgroundColor'] = "rgb(55, 136, 216)" if e.event.is_recurring else "rgb(216, 55, 76)"
@@ -60,13 +66,29 @@ def event_list():
 
 @public.route('/event/<id>')
 @login_required
-def event_info(id):
+def scheduled_event_info(id):
     # Make sure that the event is published and that the user is assigned to it
     eu_list = list(filter(lambda eu: eu.event.id == ObjectId(id), current_user.assigned_events))
     if len(eu_list) == 0:
         abort(404)
     eu = eu_list[0]
     return render_template('public/event_info.html', eu=eu)
+
+@public.route('/recurringevent/<id>')
+@login_required
+def recurring_event_info(id):
+    recurring_event = models.RecurringEvent.objects(id=id).first()
+    if not recurring_event:
+        abort(404)
+    # Filter list of assigned_events down to events that are part of this recurring event
+    eu_list = []
+    for eu in current_user.assigned_events:
+        if eu.event in recurring_event.events:
+            eu_list.append(eu)
+    if len(eu_list) == 0:
+        abort(404)
+    return render_template('public/recurring_event_info.html', recurring_event=recurring_event, eu_list=eu_list)
+
 
 @public.route('/eu/<id>/rsvp/<r>')
 @login_required

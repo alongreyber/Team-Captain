@@ -18,7 +18,7 @@
     </thead>
     <tbody>
 	{% for e in event.events %}
-	<tr {{helpers.onclick(url_for('admin.recurring_event_subevent_view', id=event.id, eid=e.id))}}>
+	<tr {{helpers.onclick(url_for('admin.scheduled_event_view', id=e.id))}}>
 	    <td>
 		{{e.start|localize|format("MM/DD/YY")}}
 	    </td>

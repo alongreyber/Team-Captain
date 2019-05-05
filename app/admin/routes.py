@@ -110,7 +110,7 @@ def event_list():
 
 @admin.route('/m/<id>/view')
 def scheduled_event_view(id):
-    event = models.Event.objects(id=id, is_recurring=False).first()
+    event = models.Event.objects(id=id).first()
     if not event:
         abort(404)
     if event.is_draft:
@@ -304,16 +304,6 @@ def recurring_event_view(id):
         return redirect(url_for('admin.recurring_event_edit', id=event.id))
     return render_template('admin/recurring_event_view.html', event=event)
 
-@admin.route('/rm/<id>/subevent/<eid>')
-def recurring_event_subevent_view(id, eid):
-    recurring_event = models.RecurringEvent.objects(id=id).first()
-    if not recurring_event or recurring_event.is_draft:
-        abort(404)
-    event = models.Event.objects(id=eid).first()
-    if not event or not event.is_recurring:
-        abort(404)
-    return render_template('admin/recurring_event_subevent_view.html', recurring_event=recurring_event, event=event)
-
 @admin.route('/rm/<id>/edit', methods=["GET","POST"])
 def recurring_event_edit(id):
     event = models.RecurringEvent.objects(id=id).first()
@@ -343,16 +333,17 @@ def recurring_event_edit(id):
             event.end_time   = datetime.datetime.combine(datetime.datetime.min.date(), form.end_time.data)
             event.assigned_roles = [ObjectId(r) for r in form.assigned_roles.data]
             event.assigned_users = [ObjectId(r) for r in form.assigned_users.data]
-
-            # Update task
-            event.task.update_from_form(form, current_user.tz)
-            event.task.text = event.name
-            event.task.due = event.start
-            event.task.save()
-
             event.name = form.name.data
             event.content = form.content.data
             event.days_of_week = form.days_of_week.data
+            event.enable_rsvp = form.enable_rsvp.data
+            event.enable_attendance = form.enable_attendance.data
+
+            # Update task
+            event.rsvp_task.update_from_form(form.rsvp_task, current_user.tz)
+            event.rsvp_task.text = "RSVP for " + event.name
+            event.rsvp_task.save()
+
             event.save()
             flash('Changes Saved', 'success')
     if len(form.errors) > 0:
@@ -363,7 +354,7 @@ def recurring_event_edit(id):
             selected_days_of_week = event.days_of_week,
             selected_roles=[role.name for role in event.assigned_roles],
             selected_users=[user.first_name + " " + user.last_name for user in event.assigned_users],
-            selected_dates=[dt.in_tz(current_user.tz).isoformat() for dt in event.task.notification_dates])
+            selected_dates=[dt.in_tz(current_user.tz).isoformat() for dt in event.rsvp_task.notification_dates])
 
 @admin.route('/rm/<id>/publish')
 def recurring_event_publish(id):
@@ -402,16 +393,43 @@ def recurring_event_publish(id):
             new_event.content = event.content
             new_event.name = event.name
             new_event.assigned_users = event.assigned_users
+            new_event.enable_rsvp = event.enable_rsvp
+            new_event.enable_attendance = event.enable_attendance
             new_event.is_draft = False
             new_event.save()
             event.events.append(new_event)
+
+            # Create a separate task for each subevent
+            if event.enable_rsvp:
+                new_task = models.Task()
+                new_task.text = event.rsvp_task.text + " on " + start.format('MM/DD/YYYY')
+                new_task.notify_by_email = event.rsvp_task.notify_by_email
+                new_task.notify_by_phone = event.rsvp_task.notify_by_phone
+                new_task.notify_by_app = event.rsvp_task.notify_by_app
+                new_task.notify_by_push = event.rsvp_task.notify_by_push
+                new_task.due = new_event.start
+                # Only notify on dates before this subevent
+                new_task.notification_dates = event.rsvp_task.notification_dates
+                new_task.save()
+
             # Create EventUser objects and assign to users
             for user in new_event.assigned_users:
                 eu = models.EventUser()
                 eu.event = new_event
                 eu.save()
                 user.assigned_events.append(eu)
+                if event.enable_rsvp:
+                    tu = models.TaskUser()
+                    tu.task = new_task
+                    tu.watch_object = eu
+                    tu.link = url_for('public.recurring_event_info', id=event.id)
+                    tu.watch_field = "rsvp"
+                    tu.save()
+                    user.assigned_tasks.append(tu)
                 user.save()
+            # Create notifications
+            if event.enable_rsvp:
+                new_task.send_notifications(new_event.assigned_users)
     event.is_draft = False
     event.save()
     return redirect(url_for('admin.recurring_event_view', id=event.id))
@@ -431,8 +449,17 @@ def recurring_event_delete(id):
                     if eu.event == e:
                         eu.delete()
                         user.assigned_events.remove(eu)
+                if event.enable_rsvp:
+                    for tu in user.assigned_tasks:
+                        if tu.task == e.rsvp_task:
+                            tu.delete()
+                            user.assigned_tasks.remove(tu)
                 user.save()
+            if e.enable_rsvp:
+                e.rsvp_task.delete()
             e.delete()
+    if event.enable_rsvp:
+        event.rsvp_task.delete()
     event.delete()
     flash('Deleted Event', 'success')
     return redirect(url_for('admin.event_list'))
@@ -449,6 +476,9 @@ def recurring_event_new():
     event.start_time = pendulum.naive(2010,1,1, 17, 0)
     event.end_time = pendulum.naive(2010,1,1, 19, 0)
     event.days_of_week = [1,3,5]
+    task = models.Task()
+    task.save()
+    event.rsvp_task = task
     event.save()
     return redirect(url_for('admin.recurring_event_edit', id=event.id))
 

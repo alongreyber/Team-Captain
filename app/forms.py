@@ -60,3 +60,6 @@ class RecurringEventForm(FlaskForm):
     days_of_week = SelectMultipleField('Days of Week', coerce=int)
     assigned_roles = SelectMultipleField('Roles')
     assigned_users = SelectMultipleField('Users')
+    enable_rsvp = BooleanField('Enable RSVP')
+    rsvp_task = FormField(TaskForm)
+    enable_attendance = BooleanField('Enable Attendance Tracking')

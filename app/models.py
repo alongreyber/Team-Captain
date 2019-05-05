@@ -164,6 +164,9 @@ class RecurringEvent(db.Document):
     # Only used when task is a draft
     assigned_roles = db.ListField(db.ReferenceField(Role))
     assigned_users = db.ListField(db.ReferenceField(User))
+    enable_rsvp = db.BooleanField(default=False)
+    rsvp_task = db.ReferenceField(Task)
+    enable_attendance = db.BooleanField(default=False)
 
 class Assignment(db.Document):
     subject = db.StringField()
