@@ -62,29 +62,29 @@
     {{ form.hidden_tag() }}
     <div class="field">
 	{{ form.filter_by.label(class_='label is-size-4') }}
-	<select id="filter_by" class="select2" name="filter_by" style="width: 50%">
-	    {% for r in form.filter_by.choices %}
-	    <option value="{{r[0]}}" {% if selected_by == r[0] %}selected{% endif %}>{{r[1]}}</option>
-	    {% endfor %}
-	</select>
+	<span id="filter-form_by" class="is-size-4">
+	    <select id="filter_by" class="select2" name="filter_by" style="width: 20%">
+		{% for r in form.filter_by.choices %}
+		<option value="{{r[0]}}" {% if selected_by == r[0] %}selected{% endif %}>{{r[1]}}</option>
+		{% endfor %}
+	    </select>
+	</span>
+	<span id="filter-form_role" class="is-size-4">
+	    <select id="filter_role" class="select2" name="filter_role" style="width: 20%">
+		{% for r in form.filter_role.choices %}
+		    <option value="{{r[0]}}" {% if selected_role == r[0] %}selected{% endif %}>{{r[1] | capitalize}}</option>
+		{% endfor %}
+	    </select>
+	</span>
+	<span id="filter-form_user" class="is-size-4">
+	    <select id="filter_user" class="select2" name="filter_user" style="width: 20%">
+		{% for r in form.filter_user.choices %}
+		    <option value="{{r[0]}}" {% if selected_user == r[0] %}selected{% endif %}>{{r[1]}}</option>
+		{% endfor %}
+	    </select>
+	</span>
+    <input class="button is-primary" id="submit" name="submit" type="submit" value="Update">
     </div>
-    <div class="field" id='filter-form_role'>
-	{{ form.filter_role.label(class_='label') }}
-	<select id="filter_role" class="select2" name="filter_role" style="width: 50%">
-	    {% for r in form.filter_role.choices %}
-		<option value="{{r[0]}}" {% if selected_role == r[0] %}selected{% endif %}>{{r[1] | capitalize}}</option>
-	    {% endfor %}
-	</select>
-    </div>
-    <div class="field" id='filter-form_user'>
-	{{ form.filter_user.label(class_='label') }}
-	<select id="filter_user" class="select2" name="filter_user" style="width: 50%">
-	    {% for r in form.filter_user.choices %}
-		<option value="{{r[0]}}" {% if selected_user == r[0] %}selected{% endif %}>{{r[1]}}</option>
-	    {% endfor %}
-	</select>
-    </div>
-    <input class="button is-primary" id="submit" name="submit" type="submit" value="Go">
 </form>
 
 <script>
@@ -100,12 +100,36 @@
 	    }
 	});
 	$('#filter_by').trigger('change');
+	unsaved = false;
     });
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
 
 <canvas id="canvas"></canvas>
+
+<br />
+<br />
+<br />
+
+<h1 class="title is-1">Data Export</h1>
+<p class="is-size-5">
+Not the statistics you wanted? Download your data here and play around with it on your own.
+</p>
+
+<br />
+<br />
+<br />
+<a href="{{ url_for('admin.attendance_download_csv') }}" class="button is-large" download>Download CSV</a>
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
 
 <script>
 window.chartColors = {

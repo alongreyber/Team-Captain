@@ -1,10 +1,10 @@
 from app import models, forms, tasks
 from app.admin import context
-from flask import render_template, request, redirect, flash, session, abort, url_for, Blueprint
+from flask import render_template, request, redirect, flash, session, abort, url_for, Blueprint, send_file
 
 from flask_login import current_user
 
-import datetime, json
+import datetime, json, io, csv
 
 import pendulum
 from bson import ObjectId
@@ -127,7 +127,6 @@ def attendance_graphs():
     for eu in all_eus:
         # We have to do this every time so that we include all the dates
         event_date = eu.event.start.format('MM/DD/YY')
-        print(event_date)
         if event_date not in data:
             data[event_date]= 0
         if filter_by == 'User':
@@ -174,6 +173,53 @@ def attendance_graphs():
             total_users=len(all_users),
             hours_last_week=hours_last_week,
             average_time_at_event=total_hours/len(all_events))
+
+@admin.route('/attendance/csv')
+def attendance_download_csv():
+    print('New code')
+    all_eus = models.EventUser.objects
+    all_users = models.User.objects
+    # Fill in eu.user
+    for eu in all_eus:
+        for user in all_users:
+            if eu in user.assigned_events:
+                eu.user = user
+                break
+    proxy = io.StringIO()
+    writer = csv.writer(proxy)
+    header = ['Event Name','Event Date', 'Sign In', 'Sign Out', 'User Name', 'User Email']
+    writer.writerow(header)
+    # Write to CSV
+    for eu in all_eus:
+        if eu.sign_in:
+            start_time = eu.sign_in.in_tz(current_user.tz).format('HH:mm')
+        else:
+            start_time = ""
+        if eu.sign_out:
+            end_time = eu.sign_out.in_tz(current_user.tz).format('HH:mm')
+        else:
+            end_time = ""
+        row = [eu.event.name,
+                eu.event.start.in_tz(current_user.tz).format('MM/DD/YYYY'),
+                start_time,
+                end_time,
+                eu.user.first_name + " " + eu.user.last_name,
+                eu.user.email]
+        writer.writerow(row)
+
+    # Creating the byteIO object from the StringIO Object
+    mem = io.BytesIO()
+    mem.write(proxy.getvalue().encode('utf-8'))
+    mem.seek(0)
+    proxy.close()
+
+    response = send_file(
+        mem,
+        as_attachment=True,
+        attachment_filename='attendance-data.csv',
+        mimetype='text/csv')
+    response.headers["Cache-Control"] = "no-cache"
+    return response
 
 @admin.route('/events')
 def event_list():

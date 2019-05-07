@@ -52,7 +52,7 @@ class AssignmentForm(FlaskForm):
     task = FormField(TaskForm)
 
 class FilterForm(FlaskForm):
-    filter_by = SelectField('Filter By', coerce=int)
+    filter_by = SelectField('Filter', coerce=int)
     filter_user = SelectField('User')
     filter_role = SelectField('Role')
 
