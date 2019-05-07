@@ -100,10 +100,80 @@ def role_delete(id):
         flash('Deleted Role', 'success')
     return redirect(url_for('admin.role_list'))
 
-@admin.route('/attendance')
+@admin.route('/attendance', methods=['GET', 'POST'])
 def attendance_graphs():
+    all_eus = models.EventUser.objects
     all_events = models.Event.objects
-    return render_template('admin/attendance_graphs.html', all_events=all_events)
+    all_users = models.User.objects
+    all_roles = models.Role.objects
+    form = forms.FilterForm()
+    filter_choices = ['None', 'User', 'Role']
+    form.filter_by.choices = list(zip(range(len(filter_choices)), filter_choices))
+    form.filter_role.choices = [(str(role.id), role.name) for role in all_roles]
+    form.filter_user.choices = [(str(user.id), user.first_name + " " + user.last_name) for user in all_users]
+    if form.validate_on_submit():
+        filter_by = dict(form.filter_by.choices).get(form.filter_by.data)
+    else:
+        # By default filter by none
+        filter_by = 'None'
+    # Fill in eu.user
+    for eu in all_eus:
+        for user in all_users:
+            if eu in user.assigned_events:
+                eu.user = user
+                break
+    # Filter data by current user
+    data = {}
+    for eu in all_eus:
+        # We have to do this every time so that we include all the dates
+        event_date = eu.event.start.format('MM/DD/YY')
+        print(event_date)
+        if event_date not in data:
+            data[event_date]= 0
+        if filter_by == 'User':
+            if eu.user.id != ObjectId(form.filter_user.data):
+                continue
+        if filter_by == 'Role':
+            if ObjectId(form.filter_role.data) not in [r.id for r in eu.user.roles]:
+                continue
+        if not eu.sign_out or not eu.sign_in:
+            continue
+        minutes = (eu.sign_out - eu.sign_in).total_minutes()
+        user_name = eu.user.first_name + " " + eu.user.last_name
+        data[event_date] += minutes
+    # Get any element in by_user and then get the keys for graph X axis labels
+    labels = list(data.keys())
+    values = list(data.values())
+    if len(form.errors) > 0:
+        flash_errors(form)
+
+    # Calculate total hours
+    total_hours = 0
+    for eu in all_eus:
+        if not eu.sign_out or not eu.sign_in:
+            continue
+        total_hours += (eu.sign_out - eu.sign_in).total_hours()
+    # Hours last week
+    hours_last_week = 0
+    for eu in all_eus:
+        if not eu.sign_out or not eu.sign_in:
+            continue
+        if eu.sign_in < pendulum.now('UTC').subtract(weeks=1):
+            continue
+        hours_last_week += (eu.sign_out - eu.sign_in).total_hours()
+    return render_template('admin/attendance_graphs.html',
+            all_events=all_events,
+            values=values,
+            labels=labels,
+            form=form,
+            selected_by=form.filter_by.data,
+            selected_user=form.filter_user.data,
+            selected_role=form.filter_role.data,
+            total_hours=total_hours,
+            total_events=len(all_events),
+            total_users=len(all_users),
+            hours_last_week=hours_last_week,
+            average_time_at_event=total_hours/len(all_events))
 
 @admin.route('/events')
 def event_list():

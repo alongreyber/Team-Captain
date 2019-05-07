@@ -51,6 +51,11 @@ class AssignmentForm(FlaskForm):
     due = html5.DateTimeLocalField(format='%Y-%m-%dT%H:%M', validators=[required()])
     task = FormField(TaskForm)
 
+class FilterForm(FlaskForm):
+    filter_by = SelectField('Filter By', coerce=int)
+    filter_user = SelectField('User')
+    filter_role = SelectField('Role')
+
 class RoleForm(FlaskForm):
     role = StringField(label="Add")
 

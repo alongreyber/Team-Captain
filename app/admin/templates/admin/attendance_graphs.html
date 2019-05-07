@@ -1,71 +1,175 @@
-{% extends 'public/base.html' %}
+{% extends 'admin/base.html' %}
 
-{% block public_content %}
-<h1 class="title is-1">Attendance Graphs</h1>
+{% block admin_content %}
+<h1 class="title is-1">Attendance Statistics</h1>
 
-<p class="is-size-5">
-To track attendance, please create an event. Here you can view stats on attendance.
-</p>
+<br />
+
+<h1 class="title is-1 has-text-centered">At a Glance</h1>
+
 <br />
 <br />
 <br />
 
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<div class="level">
+  <div class="level-item has-text-centered">
+    <div>
+      <p class="heading is-size-2">Total Hours</p>
+      <p class="title is-size-2">{{total_hours|round}}</p>
+    </div>
+  </div>
+  <div class="level-item has-text-centered">
+    <div>
+      <p class="heading is-size-2">Hours in past Week</p>
+      <p class="title is-size-2">{{hours_last_week|round}}</p>
+    </div>
+  </div>
+</div>
 
-<div id="graph" style="height:500px;"></div>
+<br />
+<br />
+<br />
+
+<div class="level">
+  <div class="level-item has-text-centered">
+    <div>
+      <p class="heading is-size-3">Events</p>
+      <p class="title is-size-3">{{total_events}}</p>
+    </div>
+  </div>
+  <div class="level-item has-text-centered">
+    <div>
+      <p class="heading is-size-3">Users</p>
+      <p class="title is-size-3">{{total_users}}</p>
+    </div>
+  </div>
+  <div class="level-item has-text-centered">
+    <div>
+      <p class="heading is-size-3">Average Time at Event</p>
+      <p class="title is-size-3">{{average_time_at_event|round(precision=1)}}</p>
+    </div>
+  </div>
+</div>
+
+<br />
+<br />
+<div class="is-divider" ></div>
+<br />
+<br />
+
+<h1 class="title is-1">Hours over Time</h1>
+<form id="filter-form" submit="return false;" action="" method="post">
+    {{ form.hidden_tag() }}
+    <div class="field">
+	{{ form.filter_by.label(class_='label is-size-4') }}
+	<select id="filter_by" class="select2" name="filter_by" style="width: 50%">
+	    {% for r in form.filter_by.choices %}
+	    <option value="{{r[0]}}" {% if selected_by == r[0] %}selected{% endif %}>{{r[1]}}</option>
+	    {% endfor %}
+	</select>
+    </div>
+    <div class="field" id='filter-form_role'>
+	{{ form.filter_role.label(class_='label') }}
+	<select id="filter_role" class="select2" name="filter_role" style="width: 50%">
+	    {% for r in form.filter_role.choices %}
+		<option value="{{r[0]}}" {% if selected_role == r[0] %}selected{% endif %}>{{r[1] | capitalize}}</option>
+	    {% endfor %}
+	</select>
+    </div>
+    <div class="field" id='filter-form_user'>
+	{{ form.filter_user.label(class_='label') }}
+	<select id="filter_user" class="select2" name="filter_user" style="width: 50%">
+	    {% for r in form.filter_user.choices %}
+		<option value="{{r[0]}}" {% if selected_user == r[0] %}selected{% endif %}>{{r[1]}}</option>
+	    {% endfor %}
+	</select>
+    </div>
+    <input class="button is-primary" id="submit" name="submit" type="submit" value="Go">
+</form>
 
 <script>
-function makeTrace(i) {
-    return {
-        y: Array.apply(null, Array(10)).map(() => Math.random()),
-        line: { 
-            shape: 'spline' ,
-            color: 'red'
-        },
-        visible: i === 0,
-        name: 'Data set ' + i,
+    $(document).ready(function() {
+	$('#filter_by').change(function() {
+	    var selectedOptionName = this.options[this.value].innerHTML;
+	    $('#filter-form_user').hide();
+	    $('#filter-form_role').hide();
+	    if( selectedOptionName == 'User' ) {
+		$("#filter-form_user").show();
+	    } else if( selectedOptionName == 'Role' ) {
+		$("#filter-form_role").show();
+	    }
+	});
+	$('#filter_by').trigger('change');
+    });
+</script>
 
-    };
-}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
 
-Plotly.plot('graph', [0, 1, 2, 3].map(makeTrace), {
-    updatemenus: [{
-        y: 0.8,
-        yanchor: 'top',
-        buttons: [{
-            method: 'restyle',
-            args: ['line.color', 'red'],
-            label: 'red'
-        }, {
-            method: 'restyle',
-            args: ['line.color', 'blue'],
-            label: 'blue'
-        }, {
-            method: 'restyle',
-            args: ['line.color', 'green'],
-            label: 'green'
-        }] 
-    }, {
-        y: 1,
-        yanchor: 'top',
-        buttons: [{
-            method: 'restyle',
-            args: ['visible', [true, false, false, false]],
-            label: 'Data set 0'
-        }, {
-            method: 'restyle',
-            args: ['visible', [false, true, false, false]],
-            label: 'Data set 1'
-        }, {
-            method: 'restyle',
-            args: ['visible', [false, false, true, false]],
-            label: 'Data set 2'
-        }, {
-            method: 'restyle',
-            args: ['visible', [false, false, false, true]],
-            label: 'Data set 3'
-        }]
-    }],
-});
+<canvas id="canvas"></canvas>
+
+<script>
+window.chartColors = {
+    red: 'rgb(255, 99, 132)',
+    orange: 'rgb(255, 159, 64)',
+    yellow: 'rgb(255, 205, 86)',
+    green: 'rgb(75, 192, 192)',
+    blue: 'rgb(54, 162, 235)',
+    purple: 'rgb(153, 102, 255)',
+    grey: 'rgb(201, 203, 207)'
+};
+
+var config = {
+    type: 'line',
+    data: {
+	labels: {{labels|tojson}},
+	datasets: [{
+	    label: 'Data',
+	    backgroundColor: window.chartColors.red,
+	    borderColor: window.chartColors.red,
+	    data: {{values|tojson}},
+	    fill: false,
+	}]
+    },
+    options: {
+	responsive: true,
+	title: {
+	    display: true,
+	    text: 'Attendance Over Time'
+	},
+	tooltips: {
+	    mode: 'index',
+	    intersect: false,
+	},
+	hover: {
+	    mode: 'nearest',
+	    intersect: true
+	},
+	scales: {
+	    xAxes: [{
+		display: true,
+		scaleLabel: {
+		    display: true,
+		    labelString: 'Date'
+		}
+	    }],
+	    yAxes: [{
+		display: true,
+		scaleLabel: {
+		    display: true,
+		    labelString: 'Total Attendance (Minutes)'
+		},
+		ticks: {
+		    beginAtZero: true
+		}
+	    }]
+	}
+    }
+};
+
+window.onload = function() {
+    var ctx = $('#canvas')[0].getContext('2d');
+    window.myLine = new Chart(ctx, config);
+};
+
 </script>
 {% endblock %}
