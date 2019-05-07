@@ -33,7 +33,7 @@ def user_list():
     users = models.User.objects
     return render_template('admin/user_list.html', users=users)
 
-@admin.route('/u/<id>', methods=['GET', 'POST'])
+@admin.route('/user/<id>', methods=['GET', 'POST'])
 def user_info(id):
     user = models.User.objects(id=id).first()
     all_roles = models.Role.objects
@@ -56,7 +56,7 @@ def user_info(id):
     return render_template('admin/user_info.html', user=user, form=form,
             selected_roles=[role.name for role in user.roles])
 
-@admin.route('/u/<id>/delete')
+@admin.route('/user/<id>/delete')
 def user_delete(id):
     user = models.User.objects(id=id).first()
     for tu in user.assigned_tasks:
@@ -229,7 +229,7 @@ def event_list():
             scheduled_events=scheduled_events,
             recurring_events=recurring_events)
 
-@admin.route('/e/<id>/view')
+@admin.route('/event/<id>/view')
 def scheduled_event_view(id):
     event = models.Event.objects(id=id).first()
     if not event:
@@ -261,7 +261,7 @@ def scheduled_event_view(id):
                 event.recurring_event = re
     return render_template('admin/scheduled_event_view.html', event=event, assigned_users=assigned_users)
 
-@admin.route('/e/<id>/clockin', methods=['GET', 'POST'])
+@admin.route('/event/<id>/clockin', methods=['GET', 'POST'])
 def event_clockin(id):
     event = models.Event.objects(id=id).first()
     form = forms.ClockInForm()
@@ -305,7 +305,7 @@ def event_clockin(id):
                     flash('Signed in ' + user.first_name + " " + user.last_name, 'success')
     return render_template('admin/event_clockin.html', event=event, form=form)
 
-@admin.route('/eu/<id>/edit', methods=['GET', 'POST'])
+@admin.route('/eventuser/<id>/edit', methods=['GET', 'POST'])
 def event_user_edit(id):
     eu = models.EventUser.objects(id=id).first()
     if not eu or not eu.event.enable_attendance:
@@ -335,7 +335,7 @@ def event_user_edit(id):
             flash('Changes Saved', 'success')
     return render_template('admin/event_user_edit.html', eu=eu, form=form)
 
-@admin.route('/e/<id>/delete')
+@admin.route('/event/<id>/delete')
 def scheduled_event_delete(id):
     event = models.Event.objects(id=id, is_recurring=False).first()
     if not event:
@@ -361,7 +361,7 @@ def scheduled_event_delete(id):
     flash('Deleted Event', 'success')
     return redirect(url_for('admin.event_list'))
 
-@admin.route('/m/<id>/edit', methods=["GET","POST"])
+@admin.route('/event/<id>/edit', methods=["GET","POST"])
 def scheduled_event_edit(id):
     event = models.Event.objects(id=id, is_recurring=False).first()
     all_roles = models.Role.objects
@@ -413,7 +413,7 @@ def scheduled_event_edit(id):
 
             selected_dates=[dt.in_tz(current_user.tz).isoformat() for dt in event.rsvp_task.notification_dates])
 
-@admin.route('/m/<id>/publish')
+@admin.route('/event/<id>/publish')
 def scheduled_event_publish(id):
     event = models.Event.objects(id=id, is_draft=True, is_recurring=False).first()
     if not event:
@@ -458,31 +458,6 @@ def scheduled_event_publish(id):
     # Create task to RSVP
     return redirect(url_for('admin.scheduled_event_view', id=event.id))
 
-@admin.route('/m/<id>/send_reminder')
-def scheduled_event_send_reminder(id):
-    event = models.Event.objects(id=id).first()
-    if not event or event.is_draft:
-        abort(404)
-    all_users = models.User.objects
-    for user in all_users:
-        send_reminder = False
-        for eu in user.assigned_events:
-            if eu.event == event and not eu.rsvp:
-                send_reminder = True
-        if send_reminder:
-            notification = models.PushNotification()
-            notification.user = user
-            notification.text = "RSVP Reminder : " + event.name
-            notification.link = url_for('public.event_info', id=event.id, _external=True)
-            notification.send_email = False
-            notification.send_text  = False
-            notification.send_app   = True
-            notification.send_push  = False
-            notification.save()
-            tasks.send_notification((notification.id))
-    flash('Sent notification to users', 'success')
-    return redirect(url_for('admin.scheduled_event_view', id=event.id))
-
 @admin.route('/newevent')
 def scheduled_event_new():
     everyone_role = models.Role.objects(name='everyone').first()
@@ -498,7 +473,7 @@ def scheduled_event_new():
     event.save()
     return redirect(url_for('admin.scheduled_event_edit', id=event.id))
 
-@admin.route('/rm/<id>/view')
+@admin.route('/event-recurring/<id>/view')
 def recurring_event_view(id):
     event = models.RecurringEvent.objects(id=id).first()
     if not event:
@@ -507,7 +482,7 @@ def recurring_event_view(id):
         return redirect(url_for('admin.recurring_event_edit', id=event.id))
     return render_template('admin/recurring_event_view.html', event=event)
 
-@admin.route('/rm/<id>/edit', methods=["GET","POST"])
+@admin.route('/event-recurring/<id>/edit', methods=["GET","POST"])
 def recurring_event_edit(id):
     event = models.RecurringEvent.objects(id=id).first()
     all_roles = models.Role.objects
@@ -559,7 +534,7 @@ def recurring_event_edit(id):
             selected_users=[user.first_name + " " + user.last_name for user in event.assigned_users],
             selected_dates=[dt.in_tz(current_user.tz).isoformat() for dt in event.rsvp_task.notification_dates])
 
-@admin.route('/rm/<id>/publish')
+@admin.route('/event-recurring/<id>/publish')
 def recurring_event_publish(id):
     event = models.RecurringEvent.objects(id=id, is_draft=True).first()
     if not event:
@@ -637,7 +612,7 @@ def recurring_event_publish(id):
     event.save()
     return redirect(url_for('admin.recurring_event_view', id=event.id))
 
-@admin.route('/rm/<id>/delete')
+@admin.route('/event-recurring/<id>/delete')
 def recurring_event_delete(id):
     event = models.RecurringEvent.objects(id=id).first()
     all_users = models.User.objects

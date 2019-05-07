@@ -61,7 +61,7 @@ class User(db.Document, UserMixin):
     # Timemzone
     tz = db.StringField()
     bio = db.StringField()
-    barcode = db.StringField(max_length=100)
+    barcode = db.StringField(max_length=100, unique=True)
     first_name = db.StringField(max_length=50)
     last_name = db.StringField(max_length=50)
     roles = db.ListField(db.ReferenceField(Role))

@@ -20,6 +20,7 @@ class PublicUserForm(FlaskForm):
     personal_email = html5.EmailField()
     phone_number = html5.TelField()
     bio = TextAreaField()
+    barcode = StringField()
 
 class TaskForm(FlaskForm):
     notify_by_email = BooleanField('Notify by Email?')

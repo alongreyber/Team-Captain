@@ -5,6 +5,7 @@ from flask_login import current_user, login_required
 import pendulum
 from bson import ObjectId
 
+from mongoengine.errors import NotUniqueError
 
 public = Blueprint('public', __name__, template_folder='templates')
 
@@ -24,9 +25,14 @@ def edit_profile():
     if form.validate_on_submit():
         updated_dict = form.data
         del updated_dict['csrf_token']
-        current_user.modify(**updated_dict)
-        flash('Changes Saved', 'success')
-        return redirect(url_for('public.user_profile'))
+        try:
+            current_user.modify(**updated_dict)
+            flash('Changes Saved', 'success')
+            return redirect(url_for('public.user_profile'))
+        except NotUniqueError:
+            flash('Barcode already in use', 'warning')
+    if len(form.errors) > 0:
+        flash_errors(form)
     return render_template('public/edit_profile.html', form=form)
 
 @public.route('/submittimezone', methods=['POST'])

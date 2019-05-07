@@ -35,6 +35,12 @@
 	{{ form.bio(class_='textarea', rows="5") }}
 	</div>
     </div>
+    <div class="field">
+	{{ form.barcode.label(class_='label') }}
+	<div class="control">
+	    {{ form.barcode(class_='input') }}
+	</div>
+    </div>
     <br >
     <input class="button is-primary" id="submit" name="submit" type="submit" value="Save">
 </form>
