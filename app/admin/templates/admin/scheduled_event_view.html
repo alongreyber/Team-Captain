@@ -1,9 +1,28 @@
 {% extends 'admin/base.html' %}
 
-{% block admin_content %}
-<h1 class="title is-1">Event</h1>
+{% if event.is_recurring %}
+{% set back_url = url_for('admin.recurring_event_view', id=event.recurring_event.id) %}
+{% else %}
+{% set back_url = url_for('admin.event_list') %}
+{% endif %}
 
-<p>{{event.name}}</p>
+
+{% block admin_content %}
+<div class="level">
+    <div class="level-left">
+	<h1 class="level-item title is-1">{{event.name}}</h1>
+    </div>
+    <div class="level-right">
+	{% if event.start < now and event.end < now %}
+	<div class="level-item button is-danger is-large is-outlined">Past</div>
+	{% elif event.start > now and event.end < now %}
+	<div class="level-item button is-warning is-large is-outlined">In Progress</div>
+	{% else %}
+	<div class="level-item button is-success is-large is-outlined">Upcoming</div>
+	{% endif %}
+    </div>
+</div>
+
 
 <div class="content is-medium" id="content-div" style="border: 1px solid gray; padding: 20px"></div>
 <script>
@@ -13,6 +32,13 @@
     $('#content-div').html(result);
 </script>
 
+<p class="is-size-5">
+Start: {{event.start|localize|format}}
+<br />
+End: &nbsp;&nbsp;{{event.end|localize|format}}
+<p>
+<br />
+
 <h5 class="title is-5">Assigned Users</h5>
 <table class="table">
     <thead>
@@ -20,6 +46,11 @@
 	{% if event.enable_rsvp %}
 	<th>Seen RSVP</th>
 	<th>RSVP</th>
+	{% endif %}
+	{% if event.enable_attendance %}
+	<th>Sign In</th>
+	<th>Sign Out</th>
+	<th>Total Time</th>
 	{% endif %}
     </thead>
     <tbody>
@@ -47,12 +78,39 @@
 		{% endif %}
 	    </td>
 	    {% endif %}
+	    {% if event.enable_attendance %}
+	    <td>
+		{{ user.eu.sign_in |localize|format('hh:mm A') }}
+		<a href="{{url_for('admin.event_user_edit', id=user.eu.id)}}" class="icon">
+		    <i class="fas fa-pencil-alt"></i>
+		</a>
+	    </td>
+	    <td>
+		{{ user.eu.sign_out|localize|format('hh:mm A') }}
+		<a href="{{url_for('admin.event_user_edit', id=user.eu.id)}}" class="icon">
+		    <i class="fas fa-pencil-alt"></i>
+		</a>
+	    </td>
+	    <td>
+		{% if user.eu.sign_in and user.eu.sign_out %}
+		    {{ (user.eu.sign_out - user.eu.sign_in).in_minutes() }} minutes
+		{% endif %}
+	    </td>
+	    {% endif %}
 	</tr>
 	{% endfor %}
     </tbody>
 </table>
 
-<a href="{{url_for('admin.scheduled_event_send_reminder', id=event.id)}}" class="button is-success" >Send Reminder</a>
+<h5 class="title is-5">Attendance</h5>
+<a class="button is-primary " href="{{ url_for('admin.event_clockin', id=event.id) }}" {% if event.end < now %}disabled{% endif %}>Clock-In</a>
+<br />
+<br />
+<br />
+<br />
+
+{% if not event.is_recurring %}
 <a href="{{url_for('admin.scheduled_event_delete', id=event.id)}}" class="button is-danger">Delete</a>
+{% endif %}
 
 {% endblock %}

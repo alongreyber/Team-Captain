@@ -43,6 +43,12 @@
     <body>
 	{% block nav %}{% endblock %}
 
+	{# Render a back button #}
+	{% if back_url %}
+	<a style="margin: 35px 0 0 50px; position: absolute" href="{{back_url}}" class="icon is-large">
+	    <i class="fas fa-arrow-left fa-2x"></i>
+	</a>
+	{% endif %}
 	<div class="container" id='main-container'>
 	    {% with messages = get_flashed_messages(with_categories=true) %}
 	    {% if messages %}

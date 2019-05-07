@@ -1,6 +1,8 @@
 {% import 'helpers.html' as helpers %}
 {% extends 'admin/base.html' %}
 
+{% set back_url = url_for('admin.event_list') %}
+
 {% block admin_content %}
 <h1 class="title is-1">Event Info</h1>
 <br />

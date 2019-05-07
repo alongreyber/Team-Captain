@@ -1,7 +1,9 @@
 {% extends 'admin/base.html' %}
 
+{% set back_url = url_for('admin.user_list') %}
+
 {% block admin_content %}
-<h1 class="title">{{user.first_name}} {{user.last_name}}</h1>
+<h1 class="title is-1">{{user.first_name}} {{user.last_name}}</h1>
 <form submit="return false;" action="" method="post">
     {{ form.hidden_tag() }}
 

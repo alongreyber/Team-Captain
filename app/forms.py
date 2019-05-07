@@ -39,6 +39,10 @@ class EventForm(FlaskForm):
     rsvp_task = FormField(TaskForm)
     enable_attendance = BooleanField('Enable Attendance Tracking')
 
+class EventUserForm(FlaskForm):
+    sign_in = html5.TimeField()
+    sign_out = html5.TimeField()
+
 class AssignmentForm(FlaskForm):
     subject = StringField(validators=[required()])
     content = TextAreaField()
@@ -63,3 +67,6 @@ class RecurringEventForm(FlaskForm):
     enable_rsvp = BooleanField('Enable RSVP')
     rsvp_task = FormField(TaskForm)
     enable_attendance = BooleanField('Enable Attendance Tracking')
+
+class ClockInForm(FlaskForm):
+    barcode = StringField(validators=[required()])

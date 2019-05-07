@@ -1,7 +1,9 @@
 {% extends 'admin/base.html' %}
 
+{% set back_url = url_for('admin.assignment_list') %}
+
 {% block admin_content %}
-<h1 class="title">Edit Task</h1>
+<h1 class="title is-1">Edit Task</h1>
 <h3 class="title is-3">Task Details</h3>
 <form id="assignment-form" submit="return false;" action="" method="post">
     {{ form.hidden_tag() }}

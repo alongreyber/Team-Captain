@@ -45,10 +45,14 @@ def inject_datetime():
 
 @app.template_filter('localize')
 def localize(dt):
+    if not dt:
+        return ""
     return dt.in_tz(current_user.tz)
 
 @app.template_filter('format')
 def format(dt, fmt_string="MM/DD/YY h:mm A"):
+    if not dt:
+        return ""
     return dt.format(fmt_string)
 
 # Register admin first so that it takes precendence over our domain search

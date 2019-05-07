@@ -100,6 +100,11 @@ def role_delete(id):
         flash('Deleted Role', 'success')
     return redirect(url_for('admin.role_list'))
 
+@admin.route('/attendance')
+def attendance_graphs():
+    all_events = models.Event.objects
+    return render_template('admin/attendance_graphs.html', all_events=all_events)
+
 @admin.route('/events')
 def event_list():
     scheduled_events = models.Event.objects(is_recurring=False)
@@ -108,7 +113,7 @@ def event_list():
             scheduled_events=scheduled_events,
             recurring_events=recurring_events)
 
-@admin.route('/m/<id>/view')
+@admin.route('/e/<id>/view')
 def scheduled_event_view(id):
     event = models.Event.objects(id=id).first()
     if not event:
@@ -132,9 +137,89 @@ def scheduled_event_view(id):
                 user.eu = eu
         if user.eu:
             assigned_users.append(user)
+    # This is for the back button
+    if event.is_recurring:
+        all_recurring_events = models.RecurringEvent.objects
+        for re in all_recurring_events:
+            if event in re.events:
+                event.recurring_event = re
     return render_template('admin/scheduled_event_view.html', event=event, assigned_users=assigned_users)
 
-@admin.route('/m/<id>/delete')
+@admin.route('/e/<id>/clockin', methods=['GET', 'POST'])
+def event_clockin(id):
+    event = models.Event.objects(id=id).first()
+    form = forms.ClockInForm()
+    if not event or event.is_draft:
+        abort(404)
+    # Sign in and sign out start 1 hour before and after the event
+    start_range = event.start.subtract(hours=1)
+    end_range   = event.end.add(hours=1)
+    if pendulum.now('UTC') < start_range:
+        flash("Event hasn't started yet!", 'warning')
+        return redirect(request.referrer)
+    if pendulum.now('UTC') > end_range:
+        flash("Event has already finished!", 'warning')
+        return redirect(request.referrer)
+    if form.validate_on_submit():
+        user = models.User.objects(barcode=form.barcode.data).first()
+        if not user:
+            flash('Barcode not recognized!', 'danger')
+        else:
+            # Check that this event is starting soon
+            for user_eu in user.assigned_events:
+                if user_eu.event == event:
+                    eu = user_eu
+                    break
+            if not eu:
+                flash('User is not assigned to this event!', 'danger')
+            else:
+                # If user already signed in and out
+                # we'll edit the sign out time
+                if eu.sign_in and eu.sign_out:
+                    eu.sign_out = pendulum.now('UTC')
+                    eu.save()
+                    flash('Sign out time updated for ' + user.first_name + " " + user.last_name, 'success')
+                elif eu.sign_in:
+                    eu.sign_out = pendulum.now('UTC')
+                    eu.save()
+                    flash('Signed out ' + user.first_name + " " + user.last_name, 'success')
+                else:
+                    eu.sign_in = pendulum.now('UTC')
+                    eu.save()
+                    flash('Signed in ' + user.first_name + " " + user.last_name, 'success')
+    return render_template('admin/event_clockin.html', event=event, form=form)
+
+@admin.route('/eu/<id>/edit', methods=['GET', 'POST'])
+def event_user_edit(id):
+    eu = models.EventUser.objects(id=id).first()
+    if not eu or not eu.event.enable_attendance:
+        abort(404)
+    all_users = models.User.objects
+    for user in all_users:
+        if eu in user.assigned_events:
+            eu.user = user
+    form_data = eu.to_mongo().to_dict()
+    if 'sign_in' in form_data:
+        form_data['sign_in'] = form_data['sign_in'].in_tz(current_user.tz)
+        form_data['sign_out'] = form_data['sign_out'].in_tz(current_user.tz)
+    form = forms.EventUserForm(data=form_data)
+    if form.validate_on_submit():
+        eu.sign_in = pendulum.instance(datetime.datetime.combine(eu.event.start.date(), form.sign_in.data), tz=current_user.tz).in_tz('UTC')
+        eu.sign_out = pendulum.instance(datetime.datetime.combine(eu.event.start.date(), form.sign_out.data), tz=current_user.tz).in_tz('UTC')
+        start_range = eu.event.start.subtract(hours=1)
+        end_range   = eu.event.end.add(hours=1)
+        if eu.sign_in > eu.sign_out:
+            flash('Sign in time cannot be after sign out!', 'warning')
+        elif eu.sign_in < start_range:
+            flash('Sign in cannot be more than an hour before the event starts ' + start_range.in_tz(current_user.tz).format('(hh:mm A)'), 'warning')
+        elif eu.sign_out > end_range:
+            flash('Sign out cannot be more than an hour after the event ends ' + end_range.in_tz(current_user.tz).format('(hh:mm A)'), 'warning')
+        else:
+            eu.save()
+            flash('Changes Saved', 'success')
+    return render_template('admin/event_user_edit.html', eu=eu, form=form)
+
+@admin.route('/e/<id>/delete')
 def scheduled_event_delete(id):
     event = models.Event.objects(id=id, is_recurring=False).first()
     if not event:
@@ -184,6 +269,8 @@ def scheduled_event_edit(id):
             flash('Start of event cannot be after end!', 'warning')
         elif start <= pendulum.now('UTC'):
             flash('Event cannot start in the past', 'warning')
+        elif (end - start).hours > 24:
+            flash('Events cannot span more than 1 day. Please use a recurring event.', 'warning')
         else:
             flash('Changes Saved', 'success')
             event.assigned_roles = [ObjectId(r) for r in form.assigned_roles.data]
@@ -512,6 +599,7 @@ def assignment_new():
     assignment = models.Assignment()
     task = models.Task()
     task.save()
+    assignment.subject = "New Assignment"
     assignment.task = task
     assignment.due = pendulum.now('UTC').add(days=7)
     assignment.task.notification_dates.append(pendulum.today(tz=current_user.tz).at(17,0).in_tz('UTC'))

@@ -27,6 +27,9 @@
 	    <a href="{{url_for('admin.role_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/role') }}">
 		Roles
 	    </a>
+	    <a href="{{url_for('admin.attendance_graphs')}}" class="navbar-item {{ "is-active" if request.path.startswith('/attendance') }}">
+		Attendance
+	    </a>
 	    <a href="{{url_for('admin.debug_tools')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/debug') }}">
 		Debug Tools
 	    </a>
