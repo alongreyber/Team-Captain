@@ -1,0 +1,32 @@
+{% extends 'admin/base.html' %}
+
+{% set back_url = url_for('admin.article_list') %}
+
+{% block admin_content %}
+<h1 class="title is-1">Edit Topic</h1>
+
+<form id="topic-form" submit="return false;" action="" method="post">
+    {{ form.hidden_tag() }}
+
+    <div class="field">
+	{{ form.name.label(class_='label') }}
+	<div class="control">
+	    {{ form.name(class_='input') }}
+	</div>
+    </div>
+
+    <div class="field">
+	{{ form.description.label(class_='label') }}
+	<div class="control">
+	    {{ form.description(class_='textarea') }}
+	</div>
+    </div>
+    
+    <input class="button is-primary" id="submit" name="submit" type="submit" value="Save">
+    <a href="{{url_for('admin.topic_delete', id=topic.id)}}" class="button is-danger">
+	Delete
+    </a>
+
+</form>
+
+{% endblock %}

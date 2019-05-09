@@ -1,0 +1,37 @@
+{% extends 'public/wiki/base.html' %}
+
+{% block wiki_content %}
+<h1 class="title is-1">Wiki</h1>
+
+<p class="is-size-5">
+Welcome to the team wiki! Pick a topic or make a new topic to get started. All of your topics can be either public or private.
+</p>
+<br/>
+<br/>
+
+<div style="display: flex">
+    <h3 class="title is-3">Topics</h3>
+    <a style="margin-left: 20px" class="button is-primary" href="#">New</a>
+</div>
+
+<table class="table is-hoverable">
+    <thead>
+	<th>Name</th>
+	<th>Description</th>
+	<th>Permissions</th>
+    </thead>
+    <tbody>
+	{% for topic in topics %}
+	<tr {{helpers.onclick(url_for('public.wiki_topic_view', id=topic.id))}} >
+	    <td>
+		{{topic.name}}
+	    </td>
+	    <td>
+		{{topic.description}}
+	    </td>
+	</tr>
+	{% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

@@ -30,6 +30,9 @@
 	    <a href="{{url_for('admin.attendance_graphs')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/attendance') }}">
 		Attendance
 	    </a>
+	    <a href="{{url_for('admin.article_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/wiki') }}">
+		Wiki
+	    </a>
 	    <a href="{{url_for('admin.debug_tools')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/debug') }}">
 		Debug Tools
 	    </a>

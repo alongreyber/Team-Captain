@@ -188,6 +188,16 @@ class EventUser(db.Document):
     sign_in = PendulumField()
     sign_out = PendulumField()
 
+class Topic(db.Document):
+    name = db.StringField()
+    description = db.StringField()
+
+class Article(db.Document):
+    name = db.StringField()
+    content = db.StringField()
+    topic = db.ReferenceField(Topic)
+    owner = db.ReferenceField(User)
+
 def check_for_automatic_task(sender, document, created):
     tasks.check_automatic_task_completion((document.id))
 

@@ -191,3 +191,18 @@ def rsvp_for_meeting(id):
     if request.args.get('r') == 'n':
         meeting.modify(push__rsvp_no=current_user.to_dbref())
     return redirect(request.referrer)
+
+@public.route('/wiki')
+def wiki_view():
+    articles = models.Article.objects
+    topics = models.Topic.objects
+    return render_template('public/wiki/home.html', articles=articles, topics=topics)
+
+@public.route('/wiki/topic/<id>/view')
+def wiki_topic_view(id):
+    articles = models.Article.objects
+    topics = models.Topic.objects
+    topic = models.Topic.objects(id=id).first()
+    if not topic:
+        abort(404)
+    return render_template('public/wiki/topic_view.html', articles=articles, topics=topics, topic=topic)

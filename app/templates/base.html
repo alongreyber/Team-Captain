@@ -1,3 +1,4 @@
+{% import 'helpers.html' as helpers %}
 <html>
     <head>
 	<!-- Font Awesome Icons -->
@@ -44,25 +45,34 @@
 	{% block nav %}{% endblock %}
 
 	{# Render a back button #}
-	{% if back_url %}
-	<a style="margin: 35px 0 0 50px; position: absolute" href="{{back_url}}" class="icon is-large">
-	    <i class="fas fa-arrow-left fa-2x"></i>
-	</a>
-	{% endif %}
-	<div class="container" id='main-container'>
-	    {% with messages = get_flashed_messages(with_categories=true) %}
-	    {% if messages %}
-		{% for category, message in messages %}
-		{% if category != 'feedback' %}
-		<div class="notification is-{{ category }}" role="alert">
-		    {{ message }}
+	<div class="container is-fluid" id='main-container'>
+	    {% if back_url %}
+	    <a style="margin: 15px 0 0 10px; position: absolute" href="{{back_url}}" class="icon is-large">
+		<i class="fas fa-arrow-left fa-2x"></i>
+	    </a>
+	    {% endif %}
+	    <div class="columns">
+		{% if self.sidebar() %}
+		<div class="column is-3 is-fullheight">
+		    {% block sidebar %}{% endblock %}
 		</div>
 		{% endif %}
-		{% endfor %}
-	    {% endif %}
-	    {% endwith %}
+		<div class="column {% if self.sidebar() %}is-9{% else %}is-12{% endif %} container">
+		    {% with messages = get_flashed_messages(with_categories=true) %}
+		    {% if messages %}
+			{% for category, message in messages %}
+			{% if category != 'feedback' %}
+			<div class="notification is-{{ category }}" role="alert">
+			    {{ message }}
+			</div>
+			{% endif %}
+			{% endfor %}
+		    {% endif %}
+		    {% endwith %}
 
-	    {% block content %}{% endblock %}
+		    {% block content %}{% endblock %}
+		</div>
+	    </div>
 	</div>
     </body>
 </html>

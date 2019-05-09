@@ -852,9 +852,90 @@ def assignment_delete(id):
     assignment.task.delete()
     return redirect(url_for('admin.assignment_list'))
 
+@admin.route('/wiki')
+def article_list():
+    articles = models.Article.objects
+    topics = models.Topic.objects
+    return render_template('admin/article_list.html', articles=articles, topics=topics)
+
 @admin.route('/debug')
 def debug_tools():
     return render_template('admin/debug_tools.html')
+
+@admin.route('/newtopic')
+def new_topic():
+    topic = models.Topic()
+    topic.name = "New Topic"
+    topic.description = "My New Topic"
+    topic.save()
+    return redirect(url_for('admin.topic_edit', id=topic.id))
+
+@admin.route('/topic/<id>/edit', methods=['GET','POST'])
+def topic_edit(id):
+    topic = models.Topic.objects(id=id).first()
+    if not topic:
+        abort(404)
+    form = forms.TopicForm(data=topic.to_mongo().to_dict())
+    if form.validate_on_submit():
+        topic.name = form.name.data
+        topic.description = form.description.data
+        topic.save()
+        flash('Changes Saved', 'success')
+    return render_template('admin/topic_edit.html', topic=topic, form=form)
+
+@admin.route('/topic/<id>/delete')
+def topic_delete(id):
+    topic = models.Topic.objects(id=id).first()
+    if not topic:
+        abort(404)
+    articles = models.Article.objects(topic=topic)
+    if len(articles) != 0:
+        flash('Topic ' + topic.name + ' has articles associated with it. Please remove these before deleting', 'warning')
+        return redirect(url_for('admin.topic_edit', id=topic.id))
+    topic.delete()
+    flash('Topic Deleted', 'success')
+    return redirect(url_for('admin.article_list'))
+
+@admin.route('/newarticle')
+def new_article():
+    topics = models.Topic.objects
+    if len(topics) == 0:
+        flash('Please create a topic first!', 'warning')
+        return redirect(url_for('admin.article_list'))
+    article = models.Article()
+    article.name = "New Article"
+    article.content = "My New Article"
+    article.owner = current_user.id
+    article.save()
+    return redirect(url_for('admin.article_edit', id=article.id))
+
+@admin.route('/article/<id>/edit', methods=['GET','POST'])
+def article_edit(id):
+    article = models.Article.objects(id=id).first()
+    if not article:
+        abort(404)
+    form = forms.ArticleForm(data=article.to_mongo().to_dict())
+    all_users = models.User.objects
+    all_topics = models.Topic.objects
+    form.owner.choices = [(str(user.id), user.first_name + " " + user.last_name) for user in all_users]
+    form.topic.choices = [(str(topic.id), topic.name) for topic in all_topics]
+    if form.validate_on_submit():
+        article.name = form.name.data
+        article.content = form.content.data
+        article.owner = ObjectId(form.owner.data)
+        article.topic = ObjectId(form.topic.data)
+        article.save()
+        flash('Changes Saved', 'success')
+    return render_template('admin/article_edit.html', article=article, form=form)
+
+@admin.route('/article/<id>/delete')
+def article_delete(id):
+    article = models.Article.objects(id=id).first()
+    if not article:
+        abort(404)
+    article.delete()
+    flash('Article Deleted', 'success')
+    return redirect(url_for('admin.article_list'))
 
 @admin.route('/debug/clear_db')
 def clear_db():

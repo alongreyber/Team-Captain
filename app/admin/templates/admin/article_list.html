@@ -1,0 +1,69 @@
+{% import 'helpers.html' as helpers %}
+{% extends 'admin/base.html' %}
+{% block admin_content %}
+
+<h1 class="title is-1"> Wiki </h1>
+
+<br/>
+<br/>
+
+<div style="display: flex">
+    <h3 class="title is-3">Topics</h3>
+    <a style="margin-left: 20px" class="button is-primary" href="{{url_for('admin.new_topic')}}">New</a>
+</div>
+<table class="table is-hoverable">
+    <thead>
+	<th>Name</th>
+	<th>Description</th>
+	<th>Number of Articles</th>
+    </thead>
+    <tbody>
+	{% for topic in topics %}
+	<tr {{helpers.onclick(url_for('admin.topic_edit', id=topic.id))}} >
+	    <td>
+		{{topic.name}}
+	    </td>
+	    <td>
+		{{topic.description}}
+	    </td>
+	    <td>
+		1
+	    </td>
+	</tr>
+	{% endfor %}
+    </tbody>
+</table>
+
+<br/>
+<br/>
+<br/>
+<br/>
+<div style="display: flex">
+    <h3 class="title is-3">Articles</h3>
+    <a style="margin-left: 20px" class="button is-primary" href="{{url_for('admin.new_article')}}">New</a>
+</div>
+
+<table class="table is-hoverable">
+    <thead>
+	<th>Topic</th>
+	<th>Name</th>
+	<th>Owner</th>
+    </thead>
+    <tbody>
+	{% for article in articles %}
+	<tr {{helpers.onclick(url_for('admin.article_edit', id=article.id))}} >
+	    <td>
+		{{article.topic.name}}
+	    </td>
+	    <td>
+		{{article.name}}
+	    </td>
+	    <td>
+		{{article.owner.first_name + " " + article.owner.last_name}}
+	    </td>
+	</tr>
+	{% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

@@ -76,3 +76,13 @@ class RecurringEventForm(FlaskForm):
 
 class ClockInForm(FlaskForm):
     barcode = StringField(validators=[required()])
+
+class TopicForm(FlaskForm):
+    name = StringField(validators=[required()])
+    description = TextAreaField(validators=[required()])
+
+class ArticleForm(FlaskForm):
+    name = StringField(validators=[required()])
+    content = TextAreaField()
+    topic = SelectField('Topic')
+    owner = SelectField('Owner')

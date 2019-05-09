@@ -1,0 +1,12 @@
+{% extends 'public/wiki/base.html' %}
+
+{% block wiki_content %}
+<h1 class="title is-1">{{topic.name}}</h1>
+
+<p class="is-size-4">{{topic.description}}</p>
+
+<br />
+<a class="button is-primary" href="#" >New Article</a>
+<br />
+
+{% endblock %}
