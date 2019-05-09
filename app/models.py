@@ -64,6 +64,9 @@ class User(db.Document, UserMixin):
     barcode = db.StringField(max_length=100, unique=True)
     first_name = db.StringField(max_length=50)
     last_name = db.StringField(max_length=50)
+    @property
+    def name(self):
+        return self.first_name + " " + self.last_name
     roles = db.ListField(db.ReferenceField(Role))
     assigned_tasks = db.ListField(db.ReferenceField('TaskUser'))
     assigned_events = db.ListField(db.ReferenceField('EventUser'))
@@ -73,6 +76,28 @@ class User(db.Document, UserMixin):
 @login_manager.user_loader
 def load_user(user_id):
     return User.objects(id=user_id).first()
+
+class PermissionSet(db.EmbeddedDocument):
+    editor_users = db.ListField(db.ReferenceField(User))
+    editor_roles = db.ListField(db.ReferenceField(Role))
+    visible_users = db.ListField(db.ReferenceField(User))
+    visible_roles = db.ListField(db.ReferenceField(Role))
+    def check_editor(self, user):
+        for u in self.editor_users:
+            if u.id == user.id:
+                return True
+        for user_role in user.roles:
+            if user_role in self.editor_roles:
+                return True
+        return False
+    def check_visible(self, user):
+        for u in self.visible_users:
+            if u.id == user.id:
+                return True
+        for user_role in user.roles:
+            if user_role in self.visible_roles:
+                return True
+        return False
 
 class Task(db.Document):
     notification_dates = db.ListField(PendulumField())
@@ -116,7 +141,6 @@ class Task(db.Document):
                     # Notify user at their most recent time zone
                     eta = notification.date.in_tz(notification.user.tz)
                     tasks.send_notification.schedule((notification.id), eta=eta)
-
 # Visible to users
 class TaskUser(db.Document):
     task = db.ReferenceField(Task)
@@ -132,9 +156,14 @@ class TaskUser(db.Document):
     # Which field on that object to check
     watch_field = db.StringField()
 
+class Calendar(db.Document):
+    name = db.StringField()
+    description = db.StringField()
+    permissions = db.EmbeddedDocumentField(PermissionSet)
 
 class Event(db.Document):
     name = db.StringField()
+    calendar = db.ReferenceField(Calendar)
     # Not filled in if this is a recurring event
     content = db.StringField()
     start = PendulumField()
@@ -142,14 +171,13 @@ class Event(db.Document):
     is_draft = db.BooleanField(default=True)
     # Duplicate data, lets us keep track of whether this is a recurring event
     is_recurring = db.BooleanField(default=False)
-    assigned_roles = db.ListField(db.ReferenceField(Role))
-    assigned_users = db.ListField(db.ReferenceField(User))
     enable_rsvp = db.BooleanField(default=False)
     rsvp_task = db.ReferenceField(Task)
     enable_attendance = db.BooleanField(default=False)
 
 class RecurringEvent(db.Document):
     name = db.StringField()
+    calendar = db.ReferenceField(Calendar)
     content = db.StringField()
     # NOTE
     # These are not in UTC. They are naive objects that are turned
@@ -162,19 +190,16 @@ class RecurringEvent(db.Document):
     is_draft = db.BooleanField(default=True)
     events = db.ListField(db.ReferenceField(Event))
     # Only used when task is a draft
-    assigned_roles = db.ListField(db.ReferenceField(Role))
-    assigned_users = db.ListField(db.ReferenceField(User))
     enable_rsvp = db.BooleanField(default=False)
     rsvp_task = db.ReferenceField(Task)
     enable_attendance = db.BooleanField(default=False)
 
 class Assignment(db.Document):
     subject = db.StringField()
+    permissions = db.EmbeddedDocumentField(PermissionSet)
     content = db.StringField()
     due = PendulumField()
     is_draft = db.BooleanField(default=True)
-    assigned_roles = db.ListField(db.ReferenceField(Role))
-    assigned_users  = db.ListField(db.ReferenceField(User))
     task = db.ReferenceField(Task)
 
 class AssignmentUser(db.Document):
@@ -189,6 +214,8 @@ class EventUser(db.Document):
     sign_out = PendulumField()
 
 class Topic(db.Document):
+    owner = db.ReferenceField(User)
+    permissions = db.EmbeddedDocumentField(PermissionSet)
     name = db.StringField()
     description = db.StringField()
 

@@ -1,12 +1,51 @@
 {% extends 'public/wiki/base.html' %}
 
 {% block wiki_content %}
-<h1 class="title is-1">{{topic.name}}</h1>
+<div class="level">
+    <div class="level-left">
+	<h1 class="level-item title is-1">{{topic.name}}</h1>
+    </div>
+    <div class="level-right">
+	{% if topic.permissions.check_editor(current_user) %}
+	<a href="{{url_for('public.topic_edit', id=topic.id)}}" class="level-item icon is-large">
+	    <i class="fas fa-edit fa-2x"></i>
+	</a>
+	{% endif %}
+    </div>
+</div>
+
 
 <p class="is-size-4">{{topic.description}}</p>
+<br/>
+<h4 class="is-size-4"> Owner: {{ topic.owner.name }}
+<br/>
+<br/>
 
-<br />
-<a class="button is-primary" href="#" >New Article</a>
+<div class='columns'>
+    <div class="column">
+	<h3 class="title is-3">Editors</h3>
+	{% for r in topic.permissions.editor_roles %}
+	<div class="button is-rounded is-primary">{{r.name | capitalize}}</div>
+	{% endfor %}
+	{% for u in topic.permissions.editor_users %}
+	<div class="button is-rounded is-link">{{u.first_name + " " + u.last_name}}</div>
+	{% endfor %}
+    </div>
+    <div class="column">
+	<h3 class="title is-3">Visible To</h3>
+	{% for r in topic.permissions.visible_roles %}
+	<div class="button is-rounded is-primary">{{r.name | capitalize}}</div>
+	{% endfor %}
+	{% for u in topic.permissions.visible_users %}
+	<div class="button is-rounded is-link">{{u.first_name + " " + u.last_name}}</div>
+	{% endfor %}
+    </div>
+</div>
+
+<div class="is-divider" ></div>
+<h3 class="title is-3">Recent Activity</h3>
+
+<a class="button is-primary" href="{{url_for('public.new_article', id=topic.id)}}" >New Article</a>
 <br />
 
 {% endblock %}

@@ -1,0 +1,27 @@
+{% extends 'public/wiki/base.html' %}
+
+{% block wiki_content %}
+<div class="level">
+    <div class="level-left">
+	<h1 class="level-item title is-1">{{article.name}}</h1>
+    </div>
+    <div class="level-right">
+	<a href="{{url_for('public.article_edit', tid=article.topic.id, id=article.id)}}" class="level-item icon is-large">
+	    <i class="fas fa-edit fa-2x"></i>
+	</a>
+    </div>
+</div>
+<p class="is-size-5">Written by {{article.owner.name}}</p>
+<br/>
+<br/>
+<br/>
+
+<div class="content is-medium" id="content-div" style="border: 1px solid gray; padding: 20px"></div>
+<script>
+    var md = window.markdownit();
+    var input = {{article.content|tojson}};
+    var result = md.render(input);
+    $('#content-div').html(result);
+</script>
+
+{% endblock %}

@@ -192,17 +192,149 @@ def rsvp_for_meeting(id):
         meeting.modify(push__rsvp_no=current_user.to_dbref())
     return redirect(request.referrer)
 
-@public.route('/wiki')
-def wiki_view():
+# Utility functions to simplify permission selection form
+def init_choices_permission_form(form):
+    all_roles = models.Role.objects
+    all_users = models.User.objects
+    form.permissions.visible_roles.choices = [(str(role.id), role.name) for role in all_roles]
+    form.permissions.visible_users.choices = [(str(user.id), user.first_name + " " + user.last_name) for user in all_users]
+    form.permissions.editor_roles.choices = [(str(role.id), role.name) for role in all_roles]
+    form.permissions.editor_users.choices = [(str(user.id), user.first_name + " " + user.last_name) for user in all_users]
+
+def save_permission_form(form, obj):
+    obj.permissions.visible_roles = [ObjectId(r) for r in form.permissions.visible_roles.data]
+    obj.permissions.visible_users = [ObjectId(u) for u in form.permissions.visible_users.data]
+    obj.permissions.editor_roles = [ObjectId(r) for r in form.permissions.editor_roles.data]
+    obj.permissions.editor_users = [ObjectId(u) for u in form.permissions.editor_users.data]
+
+def set_selected_permission_form(form, obj):
+    form.permissions.editor_roles.selected = [str(role.id) for role in obj.permissions.editor_roles]
+    form.permissions.editor_users.selected = [str(user.id) for user in obj.permissions.editor_users]
+    form.permissions.visible_roles.selected = [str(role.id) for role in obj.permissions.visible_roles]
+    form.permissions.visible_users.selected = [str(user.id) for user in obj.permissions.visible_users]
+
+
+def get_sidebar_data():
     articles = models.Article.objects
     topics = models.Topic.objects
-    return render_template('public/wiki/home.html', articles=articles, topics=topics)
+    return dict(articles=articles, topics=topics)
+
+@public.route('/wiki')
+def wiki_home():
+    articles = models.Article.objects
+    topics = models.Topic.objects
+    return render_template('public/wiki/home.html',
+            articles=articles,
+            topics=topics,
+            sidebar_data=get_sidebar_data())
 
 @public.route('/wiki/topic/<id>/view')
-def wiki_topic_view(id):
-    articles = models.Article.objects
-    topics = models.Topic.objects
+def topic_view(id):
     topic = models.Topic.objects(id=id).first()
     if not topic:
         abort(404)
-    return render_template('public/wiki/topic_view.html', articles=articles, topics=topics, topic=topic)
+    if not topic.permissions.check_visible(current_user) and not current_user.id == topic.owner.id:
+        abort(404)
+    return render_template('public/wiki/topic_view.html',
+            topic=topic,
+            sidebar_data=get_sidebar_data())
+
+@public.route('/wiki/newtopic')
+def topic_new():
+    topic = models.Topic()
+    topic.name = "New Topic"
+    topic.owner = current_user.id
+    topic.description = "My New Topic"
+
+    everyone_role = models.Role.objects(name='everyone').first()
+    topic.permissions = models.PermissionSet()
+    topic.permissions.visible_roles = [everyone_role.id]
+
+    topic.save()
+    return redirect(url_for('public.topic_edit', id=topic.id))
+
+@public.route('/wiki/topic/<id>/edit', methods=['GET','POST'])
+def topic_edit(id):
+    topic = models.Topic.objects(id=id).first()
+    if not topic:
+        abort(404)
+    if not topic.permissions.check_editor(current_user) and not current_user.id == topic.owner.id:
+        abort(404)
+    form = forms.TopicForm(data=topic.to_mongo().to_dict())
+    init_choices_permission_form(form)
+    if form.validate_on_submit():
+        topic.name = form.name.data
+        topic.description = form.description.data
+        save_permission_form(form, topic)
+        topic.save()
+        flash('Changes Saved', 'success')
+    set_selected_permission_form(form, topic)
+    return render_template('public/wiki/topic_edit.html',
+            topic=topic,
+            form=form,
+            sidebar_data=get_sidebar_data())
+
+@public.route('/wiki/topic/<id>/newarticle')
+def new_article(id):
+    topic = models.Topic.objects(id=id).first()
+    if not topic:
+        abort(404)
+    if not topic.permissions.check_editor(current_user) and not current_user.id == topic.owner.id:
+        abort(404)
+    article = models.Article()
+    article.name = "New Article"
+    article.content = "My New Article"
+    article.owner = current_user.id
+    article.topic = topic
+    article.save()
+    return redirect(url_for('public.article_edit', id=article.id, tid=topic.id))
+
+@public.route('/wiki/topic/<tid>/article/<id>/edit', methods=['GET','POST'])
+def article_edit(tid, id):
+    topic = models.Topic.objects(id=tid).first()
+    if not topic:
+        abort(404)
+    if not topic.permissions.check_editor(current_user) and not current_user.id == topic.owner.id:
+        abort(404)
+    article = models.Article.objects(id=id).first()
+    if not article:
+        abort(404)
+    form = forms.ArticleForm(data=article.to_mongo().to_dict())
+    if form.validate_on_submit():
+        article.name = form.name.data
+        article.content = form.content.data
+        article.save()
+        flash('Changes Saved', 'success')
+    return render_template('public/wiki/article_edit.html',
+            article=article,
+            form=form,
+            sidebar_data=get_sidebar_data())
+
+@public.route('/wiki/topic/<tid>/article/<id>/view')
+def article_view(tid, id):
+    topic = models.Topic.objects(id=tid).first()
+    if not topic:
+        abort(404)
+    if not topic.permissions.check_visible(current_user) and not current_user.id == topic.owner.id:
+        abort(404)
+    article = models.Article.objects(id=id).first()
+    if not article:
+        abort(404)
+    return render_template('public/wiki/article_view.html',
+            article=article,
+            sidebar_data=get_sidebar_data())
+
+@public.route('/wiki/topic/<tid>/article/<id>/delete')
+def article_delete(id):
+    topic = models.Topic.objects(id=tid).first()
+    if not topic:
+        abort(404)
+    if not topic.permissions.check_editor(current_user) and not current_user.id == topic.owner.id:
+        abort(404)
+    article = models.Article.objects(id=id).first()
+    if not article:
+        abort(404)
+    article.delete()
+    flash('Article Deleted', 'success')
+    return redirect(url_for('public.topic_view'))
+

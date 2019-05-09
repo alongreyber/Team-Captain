@@ -1,0 +1,37 @@
+{{ form.permissions.hidden_tag() }}
+<h4 class="title is-4">Editors</h4>
+<div class="field">
+    {{ form.permissions.editor_roles.label(class_='label') }}
+    <select id="permissions-editor_roles" class="select2" name="permissions-editor_roles" multiple="multiple" style="width: 100%">
+	{% for r in form.permissions.editor_roles.choices %}
+	    <option value="{{r[0]}}" {% if r[0] in form.permissions.editor_roles.selected %}selected="selected"{% endif %}>{{r[1] | capitalize}}</option>
+	{% endfor %}
+    </select>
+</div>
+<div class="field">
+    {{ form.permissions.editor_users.label(class_='label') }}
+    <select id="permissions-editor_users" class="select2" name="permissions-editor_users" multiple="multiple" style="width: 100%">
+	{% for r in form.permissions.editor_users.choices %}
+	    <option value="{{r[0]}}" {% if r[0] in form.permissions.editor_users.selected %}selected="selected"{% endif %}>{{r[1]}}</option>
+	{% endfor %}
+    </select>
+</div>
+
+<h4 class="title is-4">Visible To</h4>
+<div class="field">
+    {{ form.permissions.visible_roles.label(class_='label') }}
+    <select id="permissions-visible_roles" class="select2" name="permissions-visible_roles" multiple="multiple" style="width: 100%">
+	{% for r in form.permissions.visible_roles.choices %}
+	    <option value="{{r[0]}}" {% if r[0] in form.permissions.visible_roles.selected %}selected="selected"{% endif %}>{{r[1] | capitalize}}</option>
+	{% endfor %}
+    </select>
+</div>
+<div class="field">
+    {{ form.permissions.visible_users.label(class_='label') }}
+    <select id="permissions-visible_users" class="select2" name="permissions-visible_users" multiple="multiple" style="width: 100%">
+	{% for r in form.permissions.visible_users.choices %}
+	    <option value="{{r[0]}}" {% if r[0] in form.permissions.visible_users.selected %}selected="selected"{% endif %}>{{r[1]}}</option>
+	{% endfor %}
+    </select>
+</div>
+

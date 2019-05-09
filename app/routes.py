@@ -58,7 +58,6 @@ def callback():
             user = models.User.objects(email=email).first()
             if user is None:
                 user = models.User(email=email)
-            user.name = user_data['name']
             #user.tokens = json.dumps(token)
             #user.avatar = user_data['picture']
             everyone_role = models.Role.objects(name='everyone').first()

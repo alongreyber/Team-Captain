@@ -6,24 +6,26 @@
     General
     </p>
     <ul class="menu-list">
-	<li><a class="{{ 'is-active' if request.path == '/wiki' }}" href="{{url_for('public.wiki_view')}}">Home</a></li>
+	<li><a class="{{ 'is-active' if request.path == '/wiki' }}" href="{{url_for('public.wiki_home')}}">Home</a></li>
 	<li><a>Drafts</a></li>
     </ul>
     <p class="menu-label">
     Articles & Topics
     </p>
     <ul class="menu-list">
-	{% for t in topics %}
+	{% for t in sidebar_data.topics %}
+	{% if t.permissions.check_visible(current_user) %}
 	<li>
-	    <a class="{{ 'is-active' if t == topic }}" href="{{url_for('public.wiki_topic_view', id=t.id)}}">{{t.name}}</a>
+	    <a class="{{ 'is-active' if t == topic }}" href="{{url_for('public.topic_view', id=t.id)}}">{{t.name}}</a>
 	    <ul>
-		{% for article in articles %}
-		{% if article.topic == t %}
-		<li><a>{{article.name}}</a></li>
+		{% for a in sidebar_data.articles %}
+		{% if a.topic == t %}
+		<li><a class="{{ 'is-active' if a == article }}" href="{{url_for('public.article_view', tid=t.id, id=a.id)}}">{{a.name}}</a></li>
 		{% endif %}
 		{% endfor %}
 	    </ul>
 	</li>
+	{% endif %}
 	{% endfor %}
 </aside>
 {% endblock %}

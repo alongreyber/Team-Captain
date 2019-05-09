@@ -77,12 +77,17 @@ class RecurringEventForm(FlaskForm):
 class ClockInForm(FlaskForm):
     barcode = StringField(validators=[required()])
 
+class PermissionSetForm(FlaskForm):
+    editor_roles = SelectMultipleField('Roles')
+    editor_users = SelectMultipleField('Users')
+    visible_roles = SelectMultipleField('Roles')
+    visible_users = SelectMultipleField('Users')
+
 class TopicForm(FlaskForm):
     name = StringField(validators=[required()])
     description = TextAreaField(validators=[required()])
+    permissions = FormField(PermissionSetForm)
 
 class ArticleForm(FlaskForm):
     name = StringField(validators=[required()])
     content = TextAreaField()
-    topic = SelectField('Topic')
-    owner = SelectField('Owner')
