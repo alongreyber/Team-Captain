@@ -34,8 +34,6 @@ class EventForm(FlaskForm):
     end = html5.DateTimeLocalField(format='%Y-%m-%dT%H:%M')
     content = TextAreaField('Description (Markdown)')
     name = StringField(validators=[required()])
-    assigned_roles = SelectMultipleField('Roles')
-    assigned_users = SelectMultipleField('Users')
     enable_rsvp = BooleanField('Enable RSVP')
     rsvp_task = FormField(TaskForm)
     enable_attendance = BooleanField('Enable Attendance Tracking')
@@ -84,6 +82,11 @@ class PermissionSetForm(FlaskForm):
     visible_users = SelectMultipleField('Users')
 
 class TopicForm(FlaskForm):
+    name = StringField(validators=[required()])
+    description = TextAreaField(validators=[required()])
+    permissions = FormField(PermissionSetForm)
+
+class CalendarForm(FlaskForm):
     name = StringField(validators=[required()])
     description = TextAreaField(validators=[required()])
     permissions = FormField(PermissionSetForm)

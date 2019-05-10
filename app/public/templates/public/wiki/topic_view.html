@@ -45,7 +45,9 @@
 <div class="is-divider" ></div>
 <h3 class="title is-3">Recent Activity</h3>
 
+{% if topic.permissions.check_editor(current_user) %}
 <a class="button is-primary" href="{{url_for('public.new_article', id=topic.id)}}" >New Article</a>
 <br />
+{% endif %}
 
 {% endblock %}

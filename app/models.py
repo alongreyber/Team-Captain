@@ -69,7 +69,6 @@ class User(db.Document, UserMixin):
         return self.first_name + " " + self.last_name
     roles = db.ListField(db.ReferenceField(Role))
     assigned_tasks = db.ListField(db.ReferenceField('TaskUser'))
-    assigned_events = db.ListField(db.ReferenceField('EventUser'))
     assigned_assignments = db.ListField(db.ReferenceField('AssignmentUser'))
     notifications = db.EmbeddedDocumentListField(AppNotification)
 
@@ -108,39 +107,6 @@ class Task(db.Document):
     text = db.StringField()
     due = PendulumField()
 
-    # Update from a form with a task FormField
-    def update_from_form(self, task_form, tz):
-        self.notification_dates = []
-        for dt_string in task_form.notification_dates.data.split(","):
-            if dt_string:
-                dt = pendulum.from_format(dt_string.strip(), "MM/DD/YYYY", tz=tz).in_tz('UTC')
-                self.notification_dates.append(dt)
-        self.notify_by_email = task_form.notify_by_email.data
-        self.notify_by_phone = task_form.notify_by_phone.data
-        self.notify_by_push = task_form.notify_by_push.data
-        self.notify_by_app = task_form.notify_by_app.data
-    # Send notifications to user
-    def send_notifications(self, users):
-        self.notification_dates.append(pendulum.now('UTC'))
-        for user in users:
-            for time in self.notification_dates:
-                notification = PushNotification()
-                notification.user = user
-                notification.text = self.text
-                notification.date = time
-                notification.link = url_for('public.task_redirect', id=self.id)
-                notification.send_email = self.notify_by_email
-                notification.send_text  = self.notify_by_phone
-                notification.send_app   = self.notify_by_app
-                notification.send_push  = self.notify_by_push
-                notification.save()
-                # Schedule assignment for sending unless it's right now
-                if notification.date <= pendulum.now('UTC'):
-                    tasks.send_notification((notification.id))
-                else:
-                    # Notify user at their most recent time zone
-                    eta = notification.date.in_tz(notification.user.tz)
-                    tasks.send_notification.schedule((notification.id), eta=eta)
 # Visible to users
 class TaskUser(db.Document):
     task = db.ReferenceField(Task)
@@ -159,19 +125,20 @@ class TaskUser(db.Document):
 class Calendar(db.Document):
     name = db.StringField()
     description = db.StringField()
+    owner = db.ReferenceField(User)
     permissions = db.EmbeddedDocumentField(PermissionSet)
 
 class Event(db.Document):
     name = db.StringField()
     calendar = db.ReferenceField(Calendar)
-    # Not filled in if this is a recurring event
     content = db.StringField()
     start = PendulumField()
     end = PendulumField()
     is_draft = db.BooleanField(default=True)
-    # Duplicate data, lets us keep track of whether this is a recurring event
-    is_recurring = db.BooleanField(default=False)
+    recurrence = db.ReferenceField('RecurringEvent')
     enable_rsvp = db.BooleanField(default=False)
+    # This is used to store RSVP and attendance information
+    users = db.ListField(db.ReferenceField('EventUser'))
     rsvp_task = db.ReferenceField(Task)
     enable_attendance = db.BooleanField(default=False)
 
@@ -188,7 +155,6 @@ class RecurringEvent(db.Document):
     end_time = db.DateTimeField()
     days_of_week = db.ListField(db.IntField())
     is_draft = db.BooleanField(default=True)
-    events = db.ListField(db.ReferenceField(Event))
     # Only used when task is a draft
     enable_rsvp = db.BooleanField(default=False)
     rsvp_task = db.ReferenceField(Task)
@@ -207,8 +173,7 @@ class AssignmentUser(db.Document):
     completed = db.BooleanField(default=False)
 
 class EventUser(db.Document):
-    event = db.ReferenceField(Event)
-    # Has to be string so we can store y or n or m or not yet
+    user = db.ReferenceField('User')
     rsvp = db.StringField()
     sign_in = PendulumField()
     sign_out = PendulumField()
