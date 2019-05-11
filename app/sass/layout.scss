@@ -1,17 +1,9 @@
 #main-container {
     margin-top: 2em;
-}
-#page-container {
-  position: relative;
-  min-height: 100vh;
+    min-height: calc(100vh - #{$navbar-height} - 56px); //footer height
 }
 
-#content-wrap {
-  padding-bottom: 4rem;    /* Footer height */
-}
-
-#footer {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
+body {
+    display: flex;
+    flex-direction: column;
 }

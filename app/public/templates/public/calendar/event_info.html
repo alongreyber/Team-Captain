@@ -10,9 +10,11 @@
 	<h1 class="level-item title is-1">{{event.name}}</h1>
     </div>
     <div class="level-right">
+	{% if not event.recurrence %}
 	<a href="{{url_for('public.scheduled_event_view', cid=calendar.id, id=event.id)}}" class="level-item icon is-large">
 	    <i class="fas fa-eye fa-2x"></i>
 	</a>
+	{% endif %}
     </div>
 </div>
 

@@ -444,20 +444,20 @@ def scheduled_event_view(cid, id):
         abort(404)
     if event.is_draft:
         return redirect(url_for('public.scheduled_event_edit', cid=calendar.id, id=event.id))
-    return render_template('public/calendar/scheduled_event_view.html',
+    return render_template('public/calendar/event_view.html',
             event=event,
             eu=eu,
             calendar=calendar)
 
-@public.route('/calendar/<cid>/event/<eid>/<r>')
+@public.route('/calendar/<cid>/event/<id>/<r>')
 @login_required
-def event_rsvp(cid, eid, r):
+def event_rsvp(cid, id, r):
     calendar = models.Calendar.objects(id=cid).first()
     if not calendar:
         abort(404)
     if not calendar.permissions.check_visible(current_user) and not current_user.id == calendar.owner.id:
         abort(404)
-    event = models.Event.objects(id=eid).first()
+    event = models.Event.objects(id=id).first()
     if not event:
         abort(404)
     for eu_list in event.users:
@@ -677,13 +677,12 @@ def recurring_event_publish(cid, id):
     # Save original list of assigned_users so it's possible to duplicate tasks
     event.assigned_users = calendar.permissions.visible_users
     # Find all users with role
-    for role in calendar.permissions.visible_users:
+    for role in calendar.permissions.visible_roles:
         users_with_role = models.User.objects(roles=role)
         for u in users_with_role:
             event.assigned_users.append(u)
     # Make sure list of users is unique
     event.assigned_users = list(set(event.assigned_users))
-
     start_date = pendulum.instance(event.start_date, tz=current_user.tz)
     end_date = pendulum.instance(event.end_date, tz=current_user.tz)
     period = end_date - start_date
@@ -729,7 +728,7 @@ def recurring_event_publish(cid, id):
                     tu = models.TaskUser()
                     tu.task = new_task
                     tu.watch_object = eu
-                    tu.link = url_for('public.recurring_event_info', id=event.id)
+                    tu.link = url_for('public.recurring_event_view', cid=calendar.id, id=event.id)
                     tu.watch_field = "rsvp"
                     tu.save()
                     user.assigned_tasks.append(tu)
