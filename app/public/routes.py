@@ -65,20 +65,6 @@ def recurring_event_info(id):
     return render_template('public/recurring_event_info.html', recurring_event=recurring_event, eu_list=eu_list)
 
 
-@public.route('/eu/<id>/rsvp/<r>')
-@login_required
-def rsvp_for_event(id, r):
-    eu = None
-    for my_eu in current_user.assigned_events:
-        if my_eu.id == ObjectId(id):
-            eu = my_eu
-    if not eu:
-        abort(404)
-    if r in ['y', 'n', 'm']: 
-        eu.rsvp = r
-        eu.save()
-    return redirect(request.referrer)
-
 @public.route('/notification/<id>/redirect')
 @login_required
 def notification_redirect(id):
@@ -229,7 +215,7 @@ def get_calendar_sidebar_data():
             i += 1
     return dict(calendars=calendars)
 
-@public.route('/calendar/list')
+@public.route('/calendar')
 @login_required
 def calendar_home():
     events = models.Event.objects
@@ -300,12 +286,14 @@ def calendar_edit(id):
 @login_required
 def calendar_view(id):
     calendar = models.Calendar.objects(id=id).first()
+    events = models.Event.objects(calendar=calendar)
     if not calendar:
         abort(404)
     if not calendar.permissions.check_visible(current_user) and not current_user.id == calendar.owner.id:
         abort(404)
     return render_template('public/calendar/calendar_view.html', 
             calendar=calendar,
+            events=events,
             sidebar_data=get_calendar_sidebar_data())
 
 @public.route('/calendar/<id>/delete')
@@ -362,8 +350,8 @@ def scheduled_event_edit(id, cid):
         end = pendulum.instance(form.end.data, tz=current_user.tz).in_tz('UTC')
         if start >= end:
             flash('Start of event cannot be after end!', 'warning')
-        elif start <= pendulum.now('UTC'):
-            flash('Event cannot start in the past', 'warning')
+        elif end <= pendulum.now('UTC'):
+            flash('Event cannot end in the past', 'warning')
         elif (end - start).hours > 24:
             flash('Events cannot span more than 1 day. Please use a recurring event.', 'warning')
         else:
@@ -436,6 +424,24 @@ def scheduled_event_publish(cid, id):
     event.save()
     return redirect(url_for('public.scheduled_event_view', cid=calendar.id, id=event.id))
 
+@public.route('/calendar/<cid>/event/<id>/info')
+def scheduled_event_info(cid, id):
+    calendar = models.Calendar.objects(id=cid).first()
+    if not calendar:
+        abort(404)
+    if not calendar.permissions.check_editor(current_user) and not current_user.id == calendar.owner.id:
+        abort(404)
+    event = models.Event.objects(id=id, recurrence=None).first()
+    if not event:
+        abort(404)
+    if event.is_draft:
+        return redirect(url_for('public.scheduled_event_edit', id=event.id))
+    return render_template('public/calendar/scheduled_event_info.html',
+            event=event,
+            calendar=calendar,
+            sidebar_data=get_calendar_sidebar_data())
+
+# This is like view but for editors. Shows more information like results of RSVP, etc
 @public.route('/calendar/<cid>/event/<id>/view')
 def scheduled_event_view(cid, id):
     calendar = models.Calendar.objects(id=cid).first()
@@ -444,14 +450,91 @@ def scheduled_event_view(cid, id):
     if not calendar.permissions.check_visible(current_user) and not current_user.id == calendar.owner.id:
         abort(404)
     event = models.Event.objects(id=id, recurrence=None).first()
+    for eu_list in event.users:
+        if eu_list.user.id == current_user.id:
+            eu = eu_list
     if not event:
         abort(404)
     if event.is_draft:
-        return redirect(url_for('public.scheduled_event_edit', id=event.id))
+        return redirect(url_for('public.scheduled_event_edit', cid=calendar.id, id=event.id))
     return render_template('public/calendar/scheduled_event_view.html',
             event=event,
+            eu=eu,
             calendar=calendar,
             sidebar_data=get_calendar_sidebar_data())
+
+@public.route('/calendar/<cid>/event/<eid>/<r>')
+@login_required
+def event_rsvp(cid, eid, r):
+    calendar = models.Calendar.objects(id=cid).first()
+    if not calendar:
+        abort(404)
+    if not calendar.permissions.check_visible(current_user) and not current_user.id == calendar.owner.id:
+        abort(404)
+    event = models.Event.objects(id=eid).first()
+    if not event:
+        abort(404)
+    for eu_list in event.users:
+        if eu_list.user.id == current_user.id:
+            eu = eu_list
+    if not eu:
+        abort(404)
+    if r in ['y', 'n', 'm']: 
+        eu.rsvp = r
+        eu.save()
+    return redirect(request.referrer)
+
+@public.route('/calendar/<cid>/event/<id>/clockin', methods=['GET', 'POST'])
+def event_clockin(cid, id):
+    calendar = models.Calendar.objects(id=cid).first()
+    if not calendar:
+        abort(404)
+    if not calendar.permissions.check_editor(current_user) and not current_user.id == calendar.owner.id:
+        abort(404)
+    event = models.Event.objects(id=id).first()
+    form = forms.ClockInForm()
+    if not event or event.is_draft:
+        abort(404)
+    # Sign in and sign out start 1 hour before and after the event
+    start_range = event.start.subtract(hours=1)
+    end_range   = event.end.add(hours=1)
+    if pendulum.now('UTC') < start_range:
+        flash("Event hasn't started yet!", 'warning')
+        return redirect(request.referrer)
+    if pendulum.now('UTC') > end_range:
+        flash("Event has already finished!", 'warning')
+        return redirect(request.referrer)
+    if form.validate_on_submit():
+        user = models.User.objects(barcode=form.barcode.data).first()
+        if not user:
+            flash('Barcode not recognized!', 'danger')
+        else:
+            for eu_list in event.users:
+                if user.id == eu_list.user.id:
+                    eu = eu_list
+            if not eu:
+                flash('User not added to this event!', 'danger')
+            else:
+                # Check that this event is starting soon
+                # If user already signed in and out
+                # we'll edit the sign out time
+                if eu.sign_in and eu.sign_out:
+                    eu.sign_out = pendulum.now('UTC')
+                    eu.save()
+                    flash('Sign out time updated for ' + user.first_name + " " + user.last_name, 'success')
+                elif eu.sign_in:
+                    eu.sign_out = pendulum.now('UTC')
+                    eu.save()
+                    flash('Signed out ' + user.first_name + " " + user.last_name, 'success')
+                else:
+                    eu.sign_in = pendulum.now('UTC')
+                    eu.save()
+                    flash('Signed in ' + user.first_name + " " + user.last_name, 'success')
+    return render_template('public/calendar/event_clockin.html',
+            event=event,
+            form=form,
+            sidebar_data=get_calendar_sidebar_data())
+
 
 @public.route('/calendar/<cid>/rsvp_edit/<id>', methods=['GET', 'POST'])
 def event_user_edit(cid, id):

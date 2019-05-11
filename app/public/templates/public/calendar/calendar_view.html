@@ -1,3 +1,4 @@
+{% import 'helpers.html' as helpers %}
 {% extends 'public/calendar/base.html' %}
 
 {% block calendar_content %}
@@ -17,7 +18,7 @@
 
 <p class="is-size-4">{{calendar.description}}</p>
 <br/>
-<h4 class="is-size-4"> Owner: {{ calendar.owner.name }}
+<h5 class="is-size-5"> Owner: {{ calendar.owner.name }}
 <br/>
 <br/>
 
@@ -44,6 +45,32 @@
 
 <div class="is-divider" ></div>
 <h3 class="title is-3">Events</h3>
+<table class="table is-hoverable">
+    <thead>
+	<tr>
+	    <th>Name</th>
+	    <th>Date</th>
+	    <th>Time</th>
+	</tr>
+    </thead>
+    <tbody>
+	{% for event in events %}    
+	<tr {{helpers.onclick(url_for('public.scheduled_event_view', cid=calendar.id, id=event.id))}}>
+	    <td>
+		{{event.name}}
+	    </td>
+	    <td>
+		{{event.start|localize|format('MM/DD/YY')}}
+	    </td>
+	    <td class="has-text-centered">
+		{{event.start|localize|format('hh:mm A')}} - 
+		{{event.end|localize|format('hh:mm A')}}
+	    </td>
+	</tr>
+	{% endfor %}
+    </tbody>
+</table>
+
 
 {% if calendar.permissions.check_editor(current_user) %}
 <a class="button is-primary" href="{{url_for('public.scheduled_event_new', id=calendar.id)}}" >New Event</a>
