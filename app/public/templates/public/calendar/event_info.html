@@ -1,5 +1,9 @@
 {% extends 'public/base.html' %}
 
+{% if event.recurrence %}
+{% set back_url = url_for('public.recurring_event_info', cid=calendar.id, id=event.recurrence.id) %}
+{% endif %}
+
 {% block public_content %}
 <div class="level">
     <div class="level-left">

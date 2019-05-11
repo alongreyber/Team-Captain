@@ -42,38 +42,50 @@
 	{% endblock %}
     </head>
     <body>
-	{% block nav %}{% endblock %}
+	{# These styles are necessary to show footer correctly (ugh) #}
+	<div id="page-container">
+	    <div id="content-wrap">
+		{% block nav %}{% endblock %}
 
-	{# Render a back button #}
-	<div class="container" id='main-container'>
-	    {% if back_url %}
-	    <a style="margin: 15px 0 0 10px; position: absolute" href="{{back_url}}" class="icon is-large">
-		<i class="fas fa-arrow-left fa-2x"></i>
-	    </a>
-	    {% endif %}
-	    <div class="columns">
-		{% if self.sidebar() %}
-		<div class="column is-2 is-fullheight">
-		    {% block sidebar %}{% endblock %}
-		</div>
+		{# Render a back button #}
+		{% if back_url %}
+		<a style="margin: 30px 0 0 30px; position: absolute" href="{{back_url}}" class="icon is-large">
+		    <i class="fas fa-arrow-left fa-2x"></i>
+		</a>
 		{% endif %}
-		<div class="column {% if self.sidebar() %}is-10{% else %}is-12{% endif %} container">
-		    {% with messages = get_flashed_messages(with_categories=true) %}
-		    {% if messages %}
-			{% for category, message in messages %}
-			{% if category != 'feedback' %}
-			<div class="notification is-{{ category }}" role="alert">
-			    {{ message }}
+		<div class="container" id='main-container'>
+		    <div class="columns">
+			{% if self.sidebar() %}
+			<div class="column is-2 is-fullheight">
+			    {% block sidebar %}{% endblock %}
 			</div>
 			{% endif %}
-			{% endfor %}
-		    {% endif %}
-		    {% endwith %}
+			<div class="column {% if self.sidebar() %}is-10{% else %}is-12{% endif %} container">
+			    {% with messages = get_flashed_messages(with_categories=true) %}
+			    {% if messages %}
+				{% for category, message in messages %}
+				{% if category != 'feedback' %}
+				<div class="notification is-{{ category }}" role="alert">
+				    {{ message }}
+				</div>
+				{% endif %}
+				{% endfor %}
+			    {% endif %}
+			    {% endwith %}
 
-		    {% block content %}{% endblock %}
+			    {% block content %}{% endblock %}
+			</div>
+		    </div>
 		</div>
 	    </div>
 	</div>
+	<footer class="footer" id="footer">
+	    <div class="content">
+		<p>
+		    Copyright &#169; 2019 Alon Greyber
+		</p>
+	    </div>
+	</footer>
     </body>
 </html>
 

@@ -44,36 +44,84 @@
 </div>
 
 <div class="is-divider" ></div>
-<h3 class="title is-3">Events</h3>
-<table class="table is-hoverable">
-    <thead>
-	<tr>
-	    <th>Name</th>
-	    <th>Date</th>
-	    <th>Time</th>
-	</tr>
-    </thead>
-    <tbody>
-	{% for event in events %}    
-	<tr {{helpers.onclick(url_for('public.scheduled_event_view', cid=calendar.id, id=event.id))}}>
-	    <td>
-		{{event.name}}
-	    </td>
-	    <td>
-		{{event.start|localize|format('MM/DD/YY')}}
-	    </td>
-	    <td class="has-text-centered">
-		{{event.start|localize|format('hh:mm A')}} - 
-		{{event.end|localize|format('hh:mm A')}}
-	    </td>
-	</tr>
-	{% endfor %}
-    </tbody>
-</table>
+<div class="columns">
+    <div class="column">
+	<h3 class="title is-3">Events</h3>
+	<table class="table is-hoverable">
+	    <thead>
+		<tr>
+		    <th>Name</th>
+		    <th>Date</th>
+		    <th>Time</th>
+		</tr>
+	    </thead>
+	    <tbody>
+		{% for event in events %}    
+		<tr {{helpers.onclick(url_for('public.scheduled_event_view', cid=calendar.id, id=event.id))}}>
+		    <td>
+			{{event.name}}
+		    </td>
+		    <td>
+			{{event.start|localize|format('MM/DD/YY')}}
+		    </td>
+		    <td class="has-text-centered">
+			{{event.start|localize|format('hh:mm A')}} - 
+			{{event.end|localize|format('hh:mm A')}}
+		    </td>
+		</tr>
+		{% endfor %}
+	    </tbody>
+	</table>
+	{% if calendar.permissions.check_editor(current_user) %}
+	<a class="button is-primary" href="{{url_for('public.scheduled_event_new', id=calendar.id)}}" >New Event</a>
+	{% endif %}
+    </div>
+    <div class="column">
+	<table class="table is-hoverable">
+	    <h3 class="title is-3">Recurring Events</h3>
+	    <thead>
+		<tr>
+		    <th>Draft</th>
+		    <th>Name</th>
+		    <th>Dates</th>
+		    <th>Times</th>
+		    <th>Days of Week</th>
+		</tr>
+	    </thead>
+	    <tbody>
+		{% for event in recurring_events %}    
+		<tr {{helpers.onclick(url_for('public.recurring_event_view', cid=calendar.id, id=event.id))}}>
+		    <td>
+			<div class="icon is-medium" style="display: inline-table">
+			    {% if event.is_draft %}
+			    <i class="fas fa-pencil-ruler fa-lg"></i>
+			    {% endif %}
+			</div>
+		    </td>
+		    <td>
+			{{event.name}}
+		    </td>
+		    <td>
+			{{event.start_date.strftime('%a %m/%d/%y')}} - {{event.end_date.strftime('%a %m/%d/%y')}}
+		    </td>
+		    <td>
+			{{event.start_time.strftime('%I:%M %p')}} - {{event.end_time.strftime('%I:%M %p')}}
+		    </td>
+		    <td>
+			{% for d in event.days_of_week %}
+			{{d | day_of_week_letter }}
+			{% endfor %}
+		    </td>
+		</tr>
+		{% endfor %}
+	    </tbody>
+	</table>
+	{% if calendar.permissions.check_editor(current_user) %}
+	<a class="button is-primary" href="{{url_for('public.recurring_event_new', id=calendar.id)}}" >New Recurring Event</a>
+	{% endif %}
+    </div>
+</div>
 
 
-{% if calendar.permissions.check_editor(current_user) %}
-<a class="button is-primary" href="{{url_for('public.scheduled_event_new', id=calendar.id)}}" >New Event</a>
-{% endif %}
 <br />
 {% endblock %}
