@@ -1,6 +1,6 @@
-{% extends 'public/calendar/base.html' %}
+{% extends 'public/base.html' %}
 
-{% block calendar_content %}
+{% block public_content %}
 <h1 class="title is-1">Edit Attendance for {{eu.user.first_name}} {{eu.user.last_name}}</h1>
 <form action="" method="post">
     {{ form.hidden_tag() }}

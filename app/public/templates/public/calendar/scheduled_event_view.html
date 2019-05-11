@@ -1,14 +1,16 @@
-{% extends 'public/calendar/base.html' %}
+{% extends 'public/base.html' %}
 
-{% block calendar_content %}
+{% block public_content %}
 <div class="level">
     <div class="level-left">
 	<h1 class="level-item title is-1">{{event.name}}</h1>
     </div>
     <div class="level-right">
+	{% if calendar.permissions.check_editor(current_user) %}
 	<a href="{{url_for('public.scheduled_event_info', cid=calendar.id, id=event.id)}}" class="level-item icon is-large">
 	    <i class="fas fa-pencil-alt fa-2x"></i>
 	</a>
+	{% endif %}
     </div>
 </div>
 

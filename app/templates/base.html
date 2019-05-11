@@ -45,7 +45,7 @@
 	{% block nav %}{% endblock %}
 
 	{# Render a back button #}
-	<div class="container is-fluid" id='main-container'>
+	<div class="container" id='main-container'>
 	    {% if back_url %}
 	    <a style="margin: 15px 0 0 10px; position: absolute" href="{{back_url}}" class="icon is-large">
 		<i class="fas fa-arrow-left fa-2x"></i>
@@ -53,11 +53,11 @@
 	    {% endif %}
 	    <div class="columns">
 		{% if self.sidebar() %}
-		<div class="column is-3 is-fullheight">
+		<div class="column is-2 is-fullheight">
 		    {% block sidebar %}{% endblock %}
 		</div>
 		{% endif %}
-		<div class="column {% if self.sidebar() %}is-9{% else %}is-12{% endif %} container">
+		<div class="column {% if self.sidebar() %}is-10{% else %}is-12{% endif %} container">
 		    {% with messages = get_flashed_messages(with_categories=true) %}
 		    {% if messages %}
 			{% for category, message in messages %}
