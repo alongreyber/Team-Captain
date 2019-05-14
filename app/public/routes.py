@@ -214,8 +214,13 @@ def calendar_home():
         e_new['title']  = e.name
         e_new['start']  = e.start.isoformat()
         e_new['end']    = e.end.isoformat()
+        if e.is_draft:
+            continue
         if e.calendar.permissions.check_editor(current_user):
-            e_new['url']    = url_for('public.event_info', cid=e.calendar.id, id=e.id)
+            if e.recurrence:
+                e_new['url']    = url_for('public.recurring_event_info', cid=e.calendar.id, id=e.recurrence.id)
+            else:
+                e_new['url']    = url_for('public.event_info', cid=e.calendar.id, id=e.id)
         else:
             if e.recurrence:
                 e_new['url']    = url_for('public.recurring_event_view', cid=e.calendar.id, id=e.recurrence.id)
@@ -238,12 +243,13 @@ def calendar_new():
     calendar = models.Calendar()
     calendar.name = "New Calendar"
     calendar.description = "My New Calendar"
-    calendar.owner = current_user.id
 
     everyone_role = models.Role.objects(name='everyone').first()
     calendar.permissions = models.PermissionSet()
     calendar.permissions.visible_roles = [everyone_role.id]
+    calendar.permissions.editor_users = [current_user.id]
     calendar.save()
+    flash('Calendar created', 'success')
     return redirect(url_for('public.calendar_edit', id=calendar.id))
 
 @public.route('/calendar/<id>/edit', methods=['GET', 'POST'])
@@ -252,7 +258,7 @@ def calendar_edit(id):
     calendar = models.Calendar.objects(id=id).first()
     if not calendar:
         abort(404)
-    if not calendar.permissions.check_editor(current_user) and not current_user.id == calendar.owner.id:
+    if not calendar.permissions.check_editor(current_user):
         abort(404)
     form = forms.CalendarForm(data=calendar.to_mongo().to_dict())
     init_choices_permission_form(form)
@@ -260,8 +266,11 @@ def calendar_edit(id):
         calendar.name = form.name.data
         calendar.description = form.description.data
         save_permission_form(form, calendar)
-        calendar.save()
-        flash('Changes Saved', 'success')
+        if not calendar.permissions.check_editor(current_user):
+            flash('You cannot remove yourself as an editor', 'warning')
+        else:
+            calendar.save()
+            flash('Changes Saved', 'success')
     set_selected_permission_form(form, calendar)
     return render_template('public/calendar/calendar_edit.html',
             calendar=calendar,
@@ -275,7 +284,7 @@ def calendar_view(id):
     recurring_events = models.RecurringEvent.objects(calendar=calendar)
     if not calendar:
         abort(404)
-    if not calendar.permissions.check_visible(current_user) and not current_user.id == calendar.owner.id:
+    if not calendar.permissions.check_visible(current_user):
         abort(404)
     return render_template('public/calendar/calendar_view.html', 
             calendar=calendar,
@@ -288,17 +297,24 @@ def calendar_delete(id):
     calendar = models.Calendar.objects(id=id)
     if not calendar:
         abort(404)
-    if not calendar.permissions.check_editor(current_user) and not current_user.id == calendar.owner.id:
+    if not calendar.permissions.check_editor(current_user):
         abort(404)
     # Delete things!
 
-@public.route('/calendar/<id>/newevent')
-def scheduled_event_new(id):
-    calendar = models.Calendar.objects(id=id).first()
+@public.route('/newevent')
+def scheduled_event_new():
+    calendar = None
+    if request.args.get('id'):
+        calendar = models.Calendar.objects(id=request.args.get('id')).first()
+    else:
+        all_calendars = models.Calendar.objects
+        for c in all_calendars:
+            if c.permissions.check_editor(current_user):
+                calendar = c
+                break
     if not calendar:
-        abort(404)
-    if not calendar.permissions.check_editor(current_user) and not current_user.id == calendar.owner.id:
-        abort(404)
+        flash('Please create a calendar first!', 'warning')
+        return redirect(url_for('public.calendar_home'))
     everyone_role = models.Role.objects(name='everyone').first()
 
     event = models.Event()
@@ -311,25 +327,29 @@ def scheduled_event_new(id):
     task.save()
     event.rsvp_task = task
     event.save()
-    return redirect(url_for('public.scheduled_event_edit', cid=calendar.id, id=event.id))
+    return redirect(url_for('public.scheduled_event_edit', id=event.id))
 
-@public.route('/calendar/<cid>/event/<id>', methods=["GET","POST"])
-def scheduled_event_edit(id, cid):
-    calendar = models.Calendar.objects(id=cid).first()
-    if not calendar:
-        abort(404)
-    if not calendar.permissions.check_editor(current_user) and not current_user.id == calendar.owner.id:
-        abort(404)
+@public.route('/event/<id>', methods=["GET","POST"])
+def scheduled_event_edit(id):
     event = models.Event.objects(id=id, recurrence=None).first()
     if not event:
         abort(404)
+    if not event.calendar.permissions.check_editor(current_user):
+        abort(404)
     if not event.is_draft:
         return redirect(url_for('public.scheduled_event_view', cid=calendar.id, id=event.id))
+
+    all_calendars = models.Calendar.objects
+    allowed_edit_calendars = []
+    for c in all_calendars:
+        if c.permissions.check_editor(current_user):
+            allowed_edit_calendars.append(c)
     form_data = event.to_mongo().to_dict()
     # Localize start and end to user's location
     form_data['start'] = form_data['start'].in_tz(current_user.tz)
     form_data['end'] = form_data['end'].in_tz(current_user.tz)
     form = forms.EventForm(request.form, data=form_data)
+    form.calendar.choices = [(str(c.id), c.name) for c in allowed_edit_calendars]
     if form.validate_on_submit():
         # Convert times to UTC
         start = pendulum.instance(form.start.data, tz=current_user.tz).in_tz('UTC')
@@ -348,6 +368,7 @@ def scheduled_event_edit(id, cid):
             event.name = form.name.data
             event.enable_rsvp = form.enable_rsvp.data
             event.enable_attendance = form.enable_attendance.data
+            event.calendar = ObjectId(form.calendar.data)
 
             # Update task
             save_task_form(event.rsvp_task, form.rsvp_task)
@@ -361,15 +382,14 @@ def scheduled_event_edit(id, cid):
     return render_template('public/calendar/scheduled_event_edit.html',
             event=event,
             form=form, 
-            selected_dates=[dt.in_tz(current_user.tz).isoformat() for dt in event.rsvp_task.notification_dates],
-            calendar=calendar)
+            selected_dates=[dt.in_tz(current_user.tz).isoformat() for dt in event.rsvp_task.notification_dates])
 
 @public.route('/calendar/<cid>/event/<id>/publish')
 def scheduled_event_publish(cid, id):
     calendar = models.Calendar.objects(id=cid).first()
     if not calendar:
         abort(404)
-    if not calendar.permissions.check_editor(current_user) and not current_user.id == calendar.owner.id:
+    if not calendar.permissions.check_editor(current_user):
         abort(404)
     event = models.Event.objects(id=id, recurrence=None).first()
     if not event:
@@ -414,7 +434,7 @@ def event_info(cid, id):
     calendar = models.Calendar.objects(id=cid).first()
     if not calendar:
         abort(404)
-    if not calendar.permissions.check_editor(current_user) and not current_user.id == calendar.owner.id:
+    if not calendar.permissions.check_editor(current_user):
         abort(404)
     event = models.Event.objects(id=id).first()
     if not event:
@@ -434,7 +454,7 @@ def scheduled_event_view(cid, id):
     calendar = models.Calendar.objects(id=cid).first()
     if not calendar:
         abort(404)
-    if not calendar.permissions.check_visible(current_user) and not current_user.id == calendar.owner.id:
+    if not calendar.permissions.check_visible(current_user):
         abort(404)
     event = models.Event.objects(id=id, recurrence=None).first()
     for eu_list in event.users:
@@ -455,7 +475,7 @@ def event_rsvp(cid, id, r):
     calendar = models.Calendar.objects(id=cid).first()
     if not calendar:
         abort(404)
-    if not calendar.permissions.check_visible(current_user) and not current_user.id == calendar.owner.id:
+    if not calendar.permissions.check_visible(current_user):
         abort(404)
     event = models.Event.objects(id=id).first()
     if not event:
@@ -475,7 +495,7 @@ def event_clockin(cid, id):
     calendar = models.Calendar.objects(id=cid).first()
     if not calendar:
         abort(404)
-    if not calendar.permissions.check_editor(current_user) and not current_user.id == calendar.owner.id:
+    if not calendar.permissions.check_editor(current_user):
         abort(404)
     event = models.Event.objects(id=id).first()
     form = forms.ClockInForm()
@@ -526,7 +546,7 @@ def event_user_edit(cid, id):
     calendar = models.Calendar.objects(id=cid).first()
     if not calendar:
         abort(404)
-    if not calendar.permissions.check_editor(current_user) and not current_user.id == calendar.owner.id:
+    if not calendar.permissions.check_editor(current_user):
         abort(404)
     eu = models.EventUser.objects(id=id).first()
     event = models.Event.objects(calendar=calendar, users=eu).first()
@@ -562,7 +582,7 @@ def scheduled_event_delete(id):
     calendar = models.Calendar.objects(id=cid)
     if not calendar:
         abort(404)
-    if not calendar.permissions.check_editor(current_user) and not current_user.id == calendar.owner.id:
+    if not calendar.permissions.check_editor(current_user):
         abort(404)
     event = models.Event.objects(id=id, is_recurring=False, calendar=calendar).first()
     if not event:
@@ -588,14 +608,21 @@ def scheduled_event_delete(id):
     flash('Deleted Event', 'success')
     return redirect(url_for('admin.event_list'))
 
-@public.route('/calendar/<id>/event-recurring/new')
+@public.route('/event-recurring/new')
 @login_required
-def recurring_event_new(id):
-    calendar = models.Calendar.objects(id=id).first()
+def recurring_event_new():
+    calendar = None
+    if request.args.get('id'):
+        calendar = models.Calendar.objects(id=request.args.get('id')).first()
+    else:
+        all_calendars = models.Calendar.objects
+        for c in all_calendars:
+            if c.permissions.check_editor(current_user):
+                calendar = c
+                break
     if not calendar:
-        abort(404)
-    if not calendar.permissions.check_editor(current_user) and not current_user.id == calendar.owner.id:
-        abort(404)
+        flash('Please create a calendar first!', 'warning')
+        return redirect(url_for('public.calendar_home'))
     everyone_role = models.Role.objects(name='everyone').first()
     event = models.RecurringEvent()
     event.name = "New Event"
@@ -610,24 +637,27 @@ def recurring_event_new(id):
     task.save()
     event.rsvp_task = task
     event.save()
-    return redirect(url_for('public.recurring_event_edit', cid=calendar.id, id=event.id))
+    return redirect(url_for('public.recurring_event_edit', id=event.id))
 
-@public.route('/calendar/<cid>/event-recurring/<id>/edit', methods=["GET","POST"])
+@public.route('/event-recurring/<id>/edit', methods=["GET","POST"])
 def recurring_event_edit(cid, id):
-    calendar = models.Calendar.objects(id=cid).first()
-    if not calendar:
-        abort(404)
-    if not calendar.permissions.check_editor(current_user) and not current_user.id == calendar.owner.id:
-        abort(404)
     event = models.RecurringEvent.objects(id=id).first()
     if not event:
         abort(404)
     if not event.is_draft:
         return redirect(url_for('public.recurring_event_view', cid=calendar.id,  id=event.id))
+    if not event.calendar.permissions.check_editor(current_user):
+        abort(404)
+    all_calendars = models.Calendar.objects
+    allowed_edit_calendars = []
+    for c in all_calendars:
+        if c.permissions.check_editor(current_user):
+            allowed_edit_calendars.append(c)
     form_data = event.to_mongo().to_dict()
     form = forms.RecurringEventForm(data=form_data)
     all_days_of_week = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
     form.days_of_week.choices = list(zip(range(7), all_days_of_week))
+    form.calendar.choices = [(str(c.id), c.name) for c in allowed_edit_calendars]
     if form.validate_on_submit():
         if form.end_time.data <= form.start_time.data:
             flash('Start time of event cannot be before end!', 'warning')
@@ -645,6 +675,7 @@ def recurring_event_edit(cid, id):
             event.days_of_week = form.days_of_week.data
             event.enable_rsvp = form.enable_rsvp.data
             event.enable_attendance = form.enable_attendance.data
+            event.calendar = ObjectId(form.calendar.data)
 
             # Update task
             save_task_form(event.rsvp_task, form.rsvp_task)
@@ -667,7 +698,7 @@ def recurring_event_publish(cid, id):
     calendar = models.Calendar.objects(id=cid).first()
     if not calendar:
         abort(404)
-    if not calendar.permissions.check_editor(current_user) and not current_user.id == calendar.owner.id:
+    if not calendar.permissions.check_editor(current_user):
         abort(404)
     event = models.RecurringEvent.objects(id=id).first()
     if not event:
@@ -748,7 +779,7 @@ def recurring_event_view(cid, id):
     calendar = models.Calendar.objects(id=cid).first()
     if not calendar:
         abort(404)
-    if not calendar.permissions.check_visible(current_user) and not current_user.id == calendar.owner.id:
+    if not calendar.permissions.check_visible(current_user):
         abort(404)
     event = models.RecurringEvent.objects(id=id).first()
     if not event:
@@ -770,7 +801,7 @@ def recurring_event_info(cid, id):
     calendar = models.Calendar.objects(id=cid).first()
     if not calendar:
         abort(404)
-    if not calendar.permissions.check_editor(current_user) and not current_user.id == calendar.owner.id:
+    if not calendar.permissions.check_editor(current_user):
         abort(404)
     event = models.RecurringEvent.objects(id=id).first()
     if not event:
@@ -837,7 +868,7 @@ def topic_view(id):
     topic = models.Topic.objects(id=id).first()
     if not topic:
         abort(404)
-    if not topic.permissions.check_visible(current_user) and not current_user.id == topic.owner.id:
+    if not topic.permissions.check_visible(current_user):
         abort(404)
     return render_template('public/wiki/topic_view.html',
             topic=topic,
@@ -847,12 +878,12 @@ def topic_view(id):
 def topic_new():
     topic = models.Topic()
     topic.name = "New Topic"
-    topic.owner = current_user.id
     topic.description = "My New Topic"
 
     everyone_role = models.Role.objects(name='everyone').first()
     topic.permissions = models.PermissionSet()
     topic.permissions.visible_roles = [everyone_role.id]
+    topic.permissions.editor_users = [current_user.id]
 
     topic.save()
     return redirect(url_for('public.topic_edit', id=topic.id))
@@ -862,7 +893,7 @@ def topic_edit(id):
     topic = models.Topic.objects(id=id).first()
     if not topic:
         abort(404)
-    if not topic.permissions.check_editor(current_user) and not current_user.id == topic.owner.id:
+    if not topic.permissions.check_editor(current_user):
         abort(404)
     form = forms.TopicForm(data=topic.to_mongo().to_dict())
     init_choices_permission_form(form)
@@ -870,6 +901,8 @@ def topic_edit(id):
         topic.name = form.name.data
         topic.description = form.description.data
         save_permission_form(form, topic)
+        if not topic.permissions.check_editor(current_user):
+            flash('You cannot remove yourself as an editor', 'warning')
         topic.save()
         flash('Changes Saved', 'success')
     set_selected_permission_form(form, topic)
@@ -878,12 +911,28 @@ def topic_edit(id):
             form=form,
             sidebar_data=get_wiki_sidebar_data())
 
+@public.route('/topic/<id>/delete')
+def topic_delete(id):
+    topic = models.Topic.objects(id=id).first()
+    if not topic:
+        abort(404)
+    if not topic.permissions.check_editor(current_user):
+        abort(404)
+    articles = models.Article.objects(topic=topic)
+    if len(articles) != 0:
+        flash('Topic ' + topic.name + ' has articles associated with it. Please remove these before deleting', 'warning')
+        return redirect(url_for('public.topic_edit', id=topic.id))
+    topic.delete()
+    flash('Topic Deleted', 'success')
+    return redirect(url_for('public.wiki_home'))
+
+
 @public.route('/wiki/topic/<id>/newarticle')
 def new_article(id):
     topic = models.Topic.objects(id=id).first()
     if not topic:
         abort(404)
-    if not topic.permissions.check_editor(current_user) and not current_user.id == topic.owner.id:
+    if not topic.permissions.check_editor(current_user):
         abort(404)
     article = models.Article()
     article.name = "New Article"
@@ -898,7 +947,7 @@ def article_edit(tid, id):
     topic = models.Topic.objects(id=tid).first()
     if not topic:
         abort(404)
-    if not topic.permissions.check_editor(current_user) and not current_user.id == topic.owner.id:
+    if not topic.permissions.check_editor(current_user):
         abort(404)
     article = models.Article.objects(id=id).first()
     if not article:
@@ -919,7 +968,7 @@ def article_view(tid, id):
     topic = models.Topic.objects(id=tid).first()
     if not topic:
         abort(404)
-    if not topic.permissions.check_visible(current_user) and not current_user.id == topic.owner.id:
+    if not topic.permissions.check_visible(current_user):
         abort(404)
     article = models.Article.objects(id=id).first()
     if not article:
@@ -933,7 +982,7 @@ def article_delete(id):
     topic = models.Topic.objects(id=tid).first()
     if not topic:
         abort(404)
-    if not topic.permissions.check_editor(current_user) and not current_user.id == topic.owner.id:
+    if not topic.permissions.check_editor(current_user):
         abort(404)
     article = models.Article.objects(id=id).first()
     if not article:

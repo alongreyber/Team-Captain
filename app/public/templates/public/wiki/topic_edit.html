@@ -33,7 +33,7 @@
     {% include 'public/components/permissions_form.html' %}
     
     <input class="button is-primary" id="submit" name="submit" type="submit" value="Save">
-    <a href="{{url_for('admin.topic_delete', id=topic.id)}}" class="button is-danger">
+    <a href="{{url_for('public.topic_delete', id=topic.id)}}" class="button is-danger">
 	Delete
     </a>
 

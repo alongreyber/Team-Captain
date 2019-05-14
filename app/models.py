@@ -31,6 +31,18 @@ class PendulumField(BaseField):
         # Automatically converted to string for storage
         return value
 
+class Organization(db.Document):
+    name = db.StringField()
+
+class OrgDocument(db.Document):
+    meta = {'abstract': True}
+    org = db.LazyReferenceField(Organization)
+
+    # Filter to objects in org
+    @db.queryset_manager
+    def objects(doc_cls, query):
+        return query
+
 class Role(db.Document):
     name = db.StringField()
 
@@ -122,10 +134,9 @@ class TaskUser(db.Document):
     # Which field on that object to check
     watch_field = db.StringField()
 
-class Calendar(db.Document):
+class Calendar(OrgDocument):
     name = db.StringField()
     description = db.StringField()
-    owner = db.ReferenceField(User)
     permissions = db.EmbeddedDocumentField(PermissionSet)
 
 class Event(db.Document):

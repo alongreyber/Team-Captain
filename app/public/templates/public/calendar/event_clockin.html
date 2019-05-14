@@ -1,6 +1,8 @@
-{% extends 'public/base.html' %}
+{% extends 'public/calendar/event_base.html' %}
 
-{% block public_content %}
+{% set up_url = url_for('public.event_view', id=event.id) %}
+
+{% block event_content %}
 <h1 class="title">Sign In for {{event.name}}</h1>
 <br />
 <br />

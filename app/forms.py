@@ -30,6 +30,7 @@ class TaskForm(FlaskForm):
     notification_dates = StringField()
 
 class EventForm(FlaskForm):
+    calendar = SelectField('Calendar')
     start = html5.DateTimeLocalField(format='%Y-%m-%dT%H:%M')
     end = html5.DateTimeLocalField(format='%Y-%m-%dT%H:%M')
     content = TextAreaField('Description (Markdown)')
@@ -59,6 +60,7 @@ class RoleForm(FlaskForm):
     role = StringField(label="Add")
 
 class RecurringEventForm(FlaskForm):
+    calendar = SelectField('Calendar')
     name = StringField(validators=[required()])
     content = TextAreaField(label="Description (Markdown)")
     start_date = html5.DateField('Start Date', validators=[required()])
