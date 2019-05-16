@@ -1,12 +1,12 @@
 {% extends 'public/base.html' %}
 
 {% block public_content %}
-<h1 class="title">User Profile</h1>
+<h1 class="title is-1">User Profile</h1>
 
 <article class="media is-size-5">
     <figure class="media-left">
 	<p class="image is-128x128">
-	<img src="{{current_user.email | gravatar(size=128) }}" style="border-radius: 10px; border: 1px solid #ddd; padding: 5px">
+	<img src="{{current_user.email | gravatar(size=128) }}" style="border-radius: 12%; border: 1px solid #ddd; padding: 5%">
 	</p>
     </figure>
     <div class="media-content">

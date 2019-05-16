@@ -1,0 +1,6 @@
+<div {{ helpers.onclick(link) }} style="display: flex; align-items: center; flex-direction: row; margin: 5px 5px 5px 5px">
+    <img style="margin-right: 10px; border-radius: 2px" src="{{user.email | gravatar(size=24) }}"></img>
+    <span class="has-text-gray-darker" style="margin-top: 3px">
+	{{user.name}}
+    </span>
+</div>

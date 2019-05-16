@@ -27,20 +27,22 @@
 <div class='columns'>
     <div class="column">
 	<h3 class="title is-3">Editors</h3>
-	{% for r in calendar.permissions.editor_roles %}
-	<div class="button is-rounded is-primary">{{r.name | capitalize}}</div>
+	{% for role in calendar.permissions.editor_roles %}
+	    {% include 'public/components/role_list.html' %}
 	{% endfor %}
-	{% for u in calendar.permissions.editor_users %}
-	<div class="button is-rounded is-link">{{u.first_name + " " + u.last_name}}</div>
+	{% for user in calendar.permissions.editor_users %}
+	    {% set link = url_for('public.user_info', id=user.id) %}
+	    {% include 'public/components/user_list.html' %}
 	{% endfor %}
     </div>
     <div class="column">
 	<h3 class="title is-3">Visible To</h3>
-	{% for r in calendar.permissions.visible_roles %}
-	<div class="button is-rounded is-primary">{{r.name | capitalize}}</div>
+	{% for role in calendar.permissions.visible_roles %}
+	    {% include 'public/components/role_list.html' %}
 	{% endfor %}
-	{% for u in calendar.permissions.visible_users %}
-	<div class="button is-rounded is-link">{{u.first_name + " " + u.last_name}}</div>
+	{% for user in calendar.permissions.visible_users %}
+	    {% set link = url_for('public.user_info', id=user.id) %}
+	    {% include 'public/components/user_list.html' %}
 	{% endfor %}
     </div>
 </div>
@@ -87,8 +89,8 @@
 	{% endif %}
     </div>
     <div class="column">
+	<h3 class="title is-3">Recurring Events</h3>
 	<table class="table is-hoverable">
-	    <h3 class="title is-3">Recurring Events</h3>
 	    <thead>
 		<tr>
 		    <th>Draft</th>

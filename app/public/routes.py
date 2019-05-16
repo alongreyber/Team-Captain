@@ -37,6 +37,18 @@ def edit_profile():
         flash_errors(form)
     return render_template('public/edit_profile.html', form=form)
 
+@public.route('/user/<id>')
+@login_required
+def user_info(id):
+    # TODO finish
+    return "Hi!"
+
+@public.route('/users')
+@login_required
+def user_list(id):
+    # TODO finish
+    return "Hi!"
+
 @public.route('/submittimezone', methods=['POST'])
 @login_required
 def timezone_submit():
@@ -139,37 +151,40 @@ def rsvp_for_meeting(id):
     return redirect(request.referrer)
 
 # Utility functions to simplify permission selection form
-def init_choices_permission_form(form):
+def init_permission_form(form):
     all_roles = models.Role.objects
     all_users = models.User.objects
-    form.permissions.visible_roles.choices = [(str(role.id), role.name) for role in all_roles]
-    form.permissions.visible_users.choices = [(str(user.id), user.first_name + " " + user.last_name) for user in all_users]
-    form.permissions.editor_roles.choices = [(str(role.id), role.name) for role in all_roles]
-    form.permissions.editor_users.choices = [(str(user.id), user.first_name + " " + user.last_name) for user in all_users]
+    form.visible_roles.choices = [(str(role.id), role.name) for role in all_roles]
+    form.visible_users.choices = [(str(user.id), user.first_name + " " + user.last_name) for user in all_users]
+    form.editor_roles.choices = [(str(role.id), role.name) for role in all_roles]
+    form.editor_users.choices = [(str(user.id), user.first_name + " " + user.last_name) for user in all_users]
 
 def save_permission_form(form, obj):
-    obj.permissions.visible_roles = [ObjectId(r) for r in form.permissions.visible_roles.data]
-    obj.permissions.visible_users = [ObjectId(u) for u in form.permissions.visible_users.data]
-    obj.permissions.editor_roles = [ObjectId(r) for r in form.permissions.editor_roles.data]
-    obj.permissions.editor_users = [ObjectId(u) for u in form.permissions.editor_users.data]
+    obj.visible_roles = [ObjectId(r) for r in form.visible_roles.data]
+    obj.visible_users = [ObjectId(u) for u in form.visible_users.data]
+    obj.editor_roles = [ObjectId(r) for r in form.editor_roles.data]
+    obj.editor_users = [ObjectId(u) for u in form.editor_users.data]
 
 def set_selected_permission_form(form, obj):
-    form.permissions.editor_roles.selected = [str(role.id) for role in obj.permissions.editor_roles]
-    form.permissions.editor_users.selected = [str(user.id) for user in obj.permissions.editor_users]
-    form.permissions.visible_roles.selected = [str(role.id) for role in obj.permissions.visible_roles]
-    form.permissions.visible_users.selected = [str(user.id) for user in obj.permissions.visible_users]
+    form.editor_roles.selected = [str(role.id) for role in obj.editor_roles]
+    form.editor_users.selected = [str(user.id) for user in obj.editor_users]
+    form.visible_roles.selected = [str(role.id) for role in obj.visible_roles]
+    form.visible_users.selected = [str(user.id) for user in obj.visible_users]
+
+def set_selected_notification_form(form, obj):
+    form.selected_dates = [dt.in_tz(current_user.tz).isoformat() for dt in obj.notification_dates]
 
 # Update from a form with a task FormField
-def save_notification_form(notification_settings, notification_settings_form):
-    notification_settings.notification_dates = []
-    for dt_string in notification_settings_form.notification_dates.data.split(","):
+def save_notification_form(form, obj):
+    obj.notification_dates = []
+    for dt_string in form.notification_dates.data.split(","):
         if dt_string:
             dt = pendulum.from_format(dt_string.strip(), "MM/DD/YYYY", tz=current_user.tz).in_tz('UTC')
-            notification_settings.notification_dates.append(dt)
-    notification_settings.notify_by_email = notification_settings_form.notify_by_email.data
-    notification_settings.notify_by_phone = notification_settings_form.notify_by_phone.data
-    notification_settings.notify_by_push = notification_settings_form.notify_by_push.data
-    notification_settings.notify_by_app = notification_settings_form.notify_by_app.data
+            obj.notification_dates.append(dt)
+    obj.notify_by_email = form.notify_by_email.data
+    obj.notify_by_phone = form.notify_by_phone.data
+    obj.notify_by_push  = form.notify_by_push.data
+    obj.notify_by_app   = form.notify_by_app.data
 
 def send_notification(notification_settings, ou):
     notification_settings.notification_dates.append(pendulum.now('UTC'))
@@ -267,17 +282,17 @@ def calendar_edit(id):
     if not calendar.permissions.check_editor(current_user):
         abort(404)
     form = forms.CalendarForm(data=calendar.to_mongo().to_dict())
-    init_choices_permission_form(form)
+    init_permission_form(form.permissions)
     if form.validate_on_submit():
         calendar.name = form.name.data
         calendar.description = form.description.data
-        save_permission_form(form, calendar)
+        save_permission_form(form.permissions, calendar.permissions)
         if not calendar.permissions.check_editor(current_user):
             flash('You cannot remove yourself as an editor', 'warning')
         else:
             calendar.save()
             flash('Changes Saved', 'success')
-    set_selected_permission_form(form, calendar)
+    set_selected_permission_form(form.permissions, calendar.permissions)
     return render_template('public/calendar/calendar_edit.html',
             calendar=calendar,
             form=form)
@@ -307,7 +322,7 @@ def calendar_delete(id):
         abort(404)
     # Delete things!
 
-@public.route('/newevent')
+@public.route('/event/new')
 def scheduled_event_new():
     calendar = None
     if request.args.get('id'):
@@ -329,10 +344,11 @@ def scheduled_event_new():
     event.content = "My New Event"
     event.start = pendulum.now('UTC').add(days=1)
     event.end = event.start.add(hours=2)
+    event.rsvp_notifications = models.NotificationSettings()
     event.save()
     return redirect(url_for('public.scheduled_event_edit', id=event.id))
 
-@public.route('/event/<id>', methods=["GET","POST"])
+@public.route('/event/<id>/edit', methods=["GET","POST"])
 def scheduled_event_edit(id):
     event = models.Event.objects(id=id, recurrence=None).first()
     if not event:
@@ -374,18 +390,14 @@ def scheduled_event_edit(id):
             event.calendar = ObjectId(form.calendar.data)
 
             # Update task
-            save_notification_form(event.rsvp_notifications, form.rsvp_notifications)
-            event.rsvp_task.text = "RSVP for " + event.name
-            event.rsvp_task.due = event.start
-            event.rsvp_task.save()
-
+            save_notification_form(form.rsvp_notifications, event.rsvp_notifications)
             event.save()
     if len(form.errors) > 0:
         flash_errors(form)
+    set_selected_notification_form(form.rsvp_notifications, event.rsvp_notifications)
     return render_template('public/calendar/scheduled_event_edit.html',
             event=event,
-            form=form, 
-            selected_dates=[dt.in_tz(current_user.tz).isoformat() for dt in event.rsvp_task.notification_dates])
+            form=form)
 
 @public.route('/calendar/<cid>/event/<id>/publish')
 def scheduled_event_publish(cid, id):
@@ -868,16 +880,16 @@ def topic_edit(id):
     if not topic.permissions.check_editor(current_user):
         abort(404)
     form = forms.TopicForm(data=topic.to_mongo().to_dict())
-    init_choices_permission_form(form)
+    init_permission_form(form.permissions)
     if form.validate_on_submit():
         topic.name = form.name.data
         topic.description = form.description.data
-        save_permission_form(form, topic)
+        save_permission_form(form.permissions, topic.permissions)
         if not topic.permissions.check_editor(current_user):
             flash('You cannot remove yourself as an editor', 'warning')
         topic.save()
         flash('Changes Saved', 'success')
-    set_selected_permission_form(form, topic)
+    set_selected_permission_form(form.permissions, topic.permissions)
     return render_template('public/wiki/topic_edit.html',
             topic=topic,
             form=form,
@@ -1012,12 +1024,12 @@ def assignment_edit(id):
     form_data = assignment.to_mongo().to_dict()
     form_data['due'] = form_data['due'].in_tz(current_user.tz)
     form = forms.AssignmentForm(data=form_data)
-    init_choices_permission_form(form)
+    init_permission_form(form.permissions, assignment.permissions)
     if form.validate_on_submit():
         assignment.subject = form.subject.data
         assignment.content = form.content.data
         assignment.due = pendulum.instance(form.due.data, tz=current_user.tz).in_tz('UTC')
-        save_permission_form(form, assignment)
+        save_permission_form(form.permissions, assignment.permissions)
         save_notification_form(assignment.notifications, form.notifications)
         if assignment.due < pendulum.now('UTC'):
             flash('Task cannot be due in the past', 'warning')
@@ -1028,11 +1040,11 @@ def assignment_edit(id):
             flash('Changes Saved', 'success')
     if len(form.errors) > 0:
         flash_errors(form)
-    set_selected_permission_form(form, assignment)
+    set_selected_permission_form(form.permissiosn, assignment.permissions)
+    set_selected_notification_form(form.notifications, assignment.notifications)
     return render_template('public/assignment_edit.html',
             assignment=assignment,
-            form=form,
-            selected_dates=[dt.in_tz(current_user.tz).isoformat() for dt in assignment.notifications.notification_dates])
+            form=form)
 
 @public.route('/assignment/<id>/publish')
 def assignment_publish(id):
