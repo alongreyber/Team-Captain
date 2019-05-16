@@ -3,6 +3,7 @@
 
 <h1 class="title is-1"> My Tasks </h1>
 
+{% if tasks|length > 0 %}
 <table class="table is-hoverable">
     <thead>
 	<tr>
@@ -12,7 +13,7 @@
 	</tr>
     </thead>
     <tbody>
-	{% for tu in tus %}    
+	{% for task in tasks %}    
 	<tr onclick="window.location='{{url_for('public.task_redirect', id=tu.id)}}'">
 	    <td>
 		{{tu.task.text}}
@@ -33,5 +34,10 @@
 	{% endfor %}
     </tbody>
 </table>
+{% else %}
+<h3 class="title is-3">
+    No tasks right now!
+</h3>
+{% endif %}
 
 {% endblock %}

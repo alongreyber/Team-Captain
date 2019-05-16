@@ -7,6 +7,12 @@ from wtforms.validators import *
 
 from flask_mongoengine.wtf import model_form
 
+class PermissionSetForm(FlaskForm):
+    editor_roles = SelectMultipleField('Roles')
+    editor_users = SelectMultipleField('Users')
+    visible_roles = SelectMultipleField('Roles')
+    visible_users = SelectMultipleField('Users')
+
 class UserForm(FlaskForm):
     first_name = StringField()
     last_name = StringField()
@@ -22,7 +28,7 @@ class PublicUserForm(FlaskForm):
     bio = TextAreaField()
     barcode = StringField()
 
-class TaskForm(FlaskForm):
+class NotificationForm(FlaskForm):
     notify_by_email = BooleanField('Notify by Email?')
     notify_by_phone = BooleanField('Notify by Phone?')
     notify_by_push = BooleanField('Notify by Push?')
@@ -36,7 +42,7 @@ class EventForm(FlaskForm):
     content = TextAreaField('Description (Markdown)')
     name = StringField(validators=[required()])
     enable_rsvp = BooleanField('Enable RSVP')
-    rsvp_task = FormField(TaskForm)
+    rsvp_notifications = FormField(NotificationForm)
     enable_attendance = BooleanField('Enable Attendance Tracking')
 
 class EventUserForm(FlaskForm):
@@ -46,10 +52,9 @@ class EventUserForm(FlaskForm):
 class AssignmentForm(FlaskForm):
     subject = StringField(validators=[required()])
     content = TextAreaField()
-    assigned_roles = SelectMultipleField('Roles')
-    assigned_users = SelectMultipleField('Users')
     due = html5.DateTimeLocalField(format='%Y-%m-%dT%H:%M', validators=[required()])
-    task = FormField(TaskForm)
+    permissions = FormField(PermissionSetForm)
+    notifications = FormField(NotificationForm)
 
 class FilterForm(FlaskForm):
     filter_by = SelectField('Filter', coerce=int)
@@ -71,17 +76,11 @@ class RecurringEventForm(FlaskForm):
     assigned_roles = SelectMultipleField('Roles')
     assigned_users = SelectMultipleField('Users')
     enable_rsvp = BooleanField('Enable RSVP')
-    rsvp_task = FormField(TaskForm)
+    rsvp_notifications = FormField(NotificationForm)
     enable_attendance = BooleanField('Enable Attendance Tracking')
 
 class ClockInForm(FlaskForm):
     barcode = StringField(validators=[required()])
-
-class PermissionSetForm(FlaskForm):
-    editor_roles = SelectMultipleField('Roles')
-    editor_users = SelectMultipleField('Users')
-    visible_roles = SelectMultipleField('Roles')
-    visible_users = SelectMultipleField('Users')
 
 class TopicForm(FlaskForm):
     name = StringField(validators=[required()])

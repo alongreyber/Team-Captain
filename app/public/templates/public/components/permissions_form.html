@@ -1,5 +1,6 @@
 {{ form.permissions.hidden_tag() }}
-<h4 class="title is-4">Editors</h4>
+
+<h4 class="title is-4">{{ editor_label }}</h4>
 <div class="field">
     {{ form.permissions.editor_roles.label(class_='label') }}
     <select id="permissions-editor_roles" class="select2" name="permissions-editor_roles" multiple="multiple" style="width: 100%">
@@ -17,7 +18,8 @@
     </select>
 </div>
 
-<h4 class="title is-4">Visible To</h4>
+<br />
+<h4 class="title is-4">{{ visible_label }}</h4>
 <div class="field">
     {{ form.permissions.visible_roles.label(class_='label') }}
     <select id="permissions-visible_roles" class="select2" name="permissions-visible_roles" multiple="multiple" style="width: 100%">

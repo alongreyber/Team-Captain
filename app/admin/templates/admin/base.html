@@ -18,20 +18,11 @@
 	    <a href="{{url_for('admin.user_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/user') }}">
 		Users
 	    </a>
-	    <a href="{{url_for('admin.event_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/event') }}">
-		Events
-	    </a>
-	    <a href="{{url_for('admin.assignment_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/assignment') }}">
-		Assignments
-	    </a>
 	    <a href="{{url_for('admin.role_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/role') }}">
 		Roles
 	    </a>
 	    <a href="{{url_for('admin.attendance_graphs')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/attendance') }}">
 		Attendance
-	    </a>
-	    <a href="{{url_for('admin.article_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/wiki') }}">
-		Wiki
 	    </a>
 	    <a href="{{url_for('admin.debug_tools')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/debug') }}">
 		Debug Tools

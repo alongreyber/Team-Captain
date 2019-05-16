@@ -220,197 +220,6 @@ def attendance_download_csv():
     response.headers["Cache-Control"] = "no-cache"
     return response
 
-@admin.route('/assignments')
-def assignment_list():
-    assignments = models.Assignment.objects
-    all_users = models.User.objects
-    all_users.select_related(max_depth=2)
-    for assignment in assignments:
-        assignment.number_assigned = 0
-        assignment.number_seen = 0
-        assignment.number_completed = 0
-        for user in all_users:
-            # Filter AssignmentUser objects to those related to this assignment (should be 1 or 0)
-            for au in user.assigned_assignments:
-                # This is true if the user is assigned to the assignment
-                if au.assignment.id == assignment.id:
-                    assignment.number_assigned += 1
-                    # Find associated TaskUser object
-                    for tu in user.assigned_tasks:
-                        if au.id == tu.watch_object.id:
-                            if tu.seen:
-                                assignment.number_seen += 1
-                            if tu.completed:
-                                assignment.number_completed += 1
-    return render_template('admin/assignment_list.html', assignments=assignments)
-
-@admin.route('/newassignment')
-def assignment_new():
-    everyone_role = models.Role.objects(name='everyone').first()
-    assignment = models.Assignment()
-    task = models.Task()
-    task.save()
-    assignment.subject = "New Assignment"
-    assignment.task = task
-    assignment.due = pendulum.now('UTC').add(days=7)
-    assignment.task.notification_dates.append(pendulum.today(tz=current_user.tz).at(17,0).in_tz('UTC'))
-    assignment.assigned_roles = [everyone_role]
-    assignment.save()
-    assignment.task.save()
-    return redirect(url_for('admin.assignment_edit', id=assignment.id))
-
-
-@admin.route('/assignment/<id>/edit', methods=['GET', 'POST'])
-def assignment_edit(id):
-    assignment = models.Assignment.objects(id=id).first()
-    if not assignment:
-        abort(404)
-    if not assignment.is_draft:
-        return redirect(url_for('admin.assignment_view', id=id))
-
-    # Queries
-    assignment.select_related(max_depth=2)
-    all_roles = models.Role.objects
-    all_users = models.User.objects
-
-    form_data = assignment.to_mongo().to_dict()
-    form_data['due'] = form_data['due'].in_tz(current_user.tz)
-    form = forms.AssignmentForm(data=form_data)
-    form.assigned_roles.choices = [(str(role.id), role.name) for role in all_roles]
-    form.assigned_users.choices = [(str(user.id), user.first_name + " " + user.last_name) for user in all_users]
-    if form.validate_on_submit():
-        assignment.subject = form.subject.data
-        assignment.content = form.content.data
-        assignment.due = pendulum.instance(form.due.data, tz=current_user.tz).in_tz('UTC')
-        if assignment.due < pendulum.now('UTC'):
-            flash('Task cannot be due in the past', 'warning')
-        else:
-            assignment.assigned_roles = [ObjectId(r) for r in form.assigned_roles.data]
-            assignment.assigned_users = [ObjectId(r) for r in form.assigned_users.data]
-            # Update task
-            assignment.task.update_from_form(form.task, current_user.tz)
-            assignment.task.text = assignment.subject
-            assignment.task.due = assignment.due
-            assignment.task.save()
-            assignment.save()
-            assignment.reload()
-            flash('Changes Saved', 'success')
-    if len(form.errors) > 0:
-        flash_errors(form)
-    return render_template('admin/assignment_edit.html', assignment=assignment, form=form,
-            selected_roles=[role.name for role in assignment.assigned_roles],
-            selected_users=[user.first_name + " " + user.last_name for user in assignment.assigned_users],
-            selected_dates=[dt.in_tz(current_user.tz).isoformat() for dt in assignment.task.notification_dates])
-
-@admin.route('/assignment/<id>/publish')
-def assignment_publish(id):
-    assignment = models.Assignment.objects(id=id).first()
-    assignment.select_related(max_depth=2)
-    if not assignment:
-        abort(404)
-    if not assignment.is_draft:
-        redirect(url_for('admin.assignment_edit', id=id))
-    # Parse assignment into viewing format
-    assignment.is_draft = False
-    # Save original list of assigned_users so it's possible to duplicate assignments
-    original_assigned_users = assignment.assigned_users
-    # Find all users with role
-    for role in assignment.assigned_roles:
-        users_with_role = models.User.objects(roles=role)
-        for u in users_with_role:
-            assignment.assigned_users.append(u)
-    # Make sure list of users is unique
-    assignment.assigned_users = list(set(assignment.assigned_users))
-    # Create TaskUser objects and assignments to user
-    for user in assignment.assigned_users:
-        au = models.AssignmentUser()
-        au.assignment = assignment
-        au.save()
-
-        tu = models.TaskUser()
-        tu.task = assignment.task
-        tu.link = url_for('public.assignment_info', id=assignment.id)
-        tu.watch_object = au
-        tu.watch_field = 'completed'
-        tu.save()
-
-        user.assigned_assignments.append(au)
-        user.assigned_tasks.append(tu)
-        user.save()
-
-    # Create notifications
-    assignment.save()
-    assignment.task.send_notifications(assignment.assigned_users)
-    return redirect(url_for('admin.assignment_view',id=id))
-
-
-@admin.route('/assignment/<id>/view')
-def assignment_view(id):
-    assignment = models.Assignment.objects(id=id).first()
-    if not assignment:
-        abort(404)
-    if assignment.is_draft:
-        return redirect(url_for('admin.assignment_edit', id=id))
-    # Complex query here, but it's okay because this is an admin interface
-    # First filter users to make sure they're assigned to the assignment
-    all_users = models.User.objects
-    all_users.select_related(max_depth=2)
-    assigned_users = []
-    for user in all_users:
-        # Filter AssignmentUser objects to those related to this assignment (should be 1 or 0)
-        for au in user.assigned_assignments:
-            # This is true if the user is assigned to the assignment
-            if au.assignment.id == assignment.id:
-                # Find associated TaskUser object and attach it
-                for tu in user.assigned_tasks:
-                    if au.id == tu.watch_object.id:
-                        user.tu = tu
-                user.au = au
-        if user.au:
-            assigned_users.append(user)
-    return render_template('admin/assignment_view.html', assignment=assignment, assigned_users=assigned_users)
-
-@admin.route('/assignment/<id>/duplicate')
-def assignment_duplicate(id):
-    assignment = models.Assignment.objects(id=id).first()
-    if not assignment:
-        abort(404)
-    new_assignment         = models.Assignment()
-    new_assignment.subject = assignment.subject + " Copy"
-    new_assignment.content = assignment.content
-    new_assignment.assigned_roles = assignment.assigned_roles
-    new_assignment.assigned_users = assignment.assigned_users
-    new_assignment.due     = pendulum.tomorrow('UTC')
-    new_assignment.task    = assignment.task
-    # Clear notification dates in case they are outside the range
-    new_assignment.task.notification_dates = []
-    new_assignment.save()
-    return redirect(url_for('admin.assignment_edit', id=new_assignment.id))
-
-
-@admin.route('/assignment/<id>/delete')
-def assignment_delete(id):
-    assignment = models.Assignment.objects(id=id).first()
-    if not assignment:
-        abort(404)
-    if not assignment.is_draft:
-        # Since assignments have no record of who is assigned we have to delete au's manually
-        # Same with tus
-        all_users = models.User.objects
-        all_users.select_related(max_depth=2)
-        for user in all_users:
-            for au in user.assigned_assignments:
-                if au.assignment == assignment:
-                    au.delete()
-                    user.assigned_assignments.remove(au)
-            for tu in user.assigned_tasks:
-                if tu.task == assignment.task:
-                    tu.delete()
-                    user.assigned_tasks.remove(tu)
-            user.save()
-    assignment.delete()
-    assignment.task.delete()
-    return redirect(url_for('admin.assignment_list'))
 
 @admin.route('/wiki')
 def article_list():
@@ -426,21 +235,17 @@ def debug_tools():
 @admin.route('/debug/clear_db')
 def clear_db():
     models.PushNotification.drop_collection()
+    models.Calendar.drop_collection()
     models.Event.drop_collection()
-    models.EventUser.drop_collection()
     models.RecurringEvent.drop_collection()
-    models.Task.drop_collection()
-    models.TaskUser.drop_collection()
+    models.EventUser.drop_collection()
     models.Assignment.drop_collection()
     models.AssignmentUser.drop_collection()
-    models.Calendar.drop_collection()
     models.Topic.drop_collection()
     models.Article.drop_collection()
 
     for user in models.User.objects:
         user.assigned_tasks = []
-        user.assigned_events = []
-        user.assigned_assignments = []
         user.notifications = []
         user.save()
 

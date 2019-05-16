@@ -1,0 +1,37 @@
+<div>
+    <div class="columns">
+	<div class="column is-half">
+	    <div class="field">
+		{{ form.notifications.hidden_tag() }}
+		<div class="control">
+		    {{ form.notifications.notification_dates(type="hidden", class="datepicker-input") }}
+		    <script>
+			var selectedDateStrings = {{selected_dates|tojson}};
+			var datePickerSelector = ".datepicker-input";
+			var maxDateSelector = "{{max_date_selector}}";
+		    </script>
+		</div>
+	    </div>
+	</div>
+	<div class="column">
+	    <br />
+	    <br />
+	    <div class="field">
+		{{ form.notifications.notify_by_app(class_='is-checkradio') }}
+		{{ form.notifications.notify_by_app.label(class_='label') }}
+	    </div>
+	    <div class="field">
+		{{ form.notifications.notify_by_email(class_='is-checkradio') }}
+		{{ form.notifications.notify_by_email.label(class_='label') }}
+	    </div>
+	    <div class="field">
+		{{ form.notifications.notify_by_push(class_='is-checkradio') }}
+		{{ form.notifications.notify_by_push.label(class_='label') }}
+	    </div>
+	    <div class="field">
+		{{ form.notifications.notify_by_phone(class_='is-checkradio') }}
+		{{ form.notifications.notify_by_phone.label(class_='label') }}
+	    </div>
+	</div>
+    </div>
+</div>

@@ -73,45 +73,52 @@ def notification_dismiss(id):
 @public.route('/assignment/<id>/complete')
 @login_required
 def assignment_complete(id):
-    # Make sure that the assignment is published and that the user is assigned to it
-    au_list = list(filter(lambda au: au.assignment.id == ObjectId(id), current_user.assigned_assignments))
-    if len(au_list) == 0:
+    assignment = models.Assignment.objects(id=id).first()
+    if not assignment:
         abort(404)
-    au = au_list[0]
+    if not assignment.permissions.check_visible(current_user):
+        abort(404)
+    if assignment.is_draft:
+        abort(404)
+    for au_list in assignment.users:
+        if au_list.user.id == current_user.id:
+            au = au_list
+    if not au:
+        abort(404)
     if not au.completed:
-        au.completed = True
+        au.completed = pendulum.now('UTC')
         au.save()
-    return redirect(url_for('public.assignment_info', id=au.assignment.id))
+    return redirect(url_for('public.assignment_view', id=assignment.id))
 
-@public.route('/assignment/<id>')
+@public.route('/assignment/<id>/info')
 @login_required
 def assignment_info(id):
-    # Make sure that the assignment is published and that the user is assigned to it
-    au_list = list(filter(lambda au: au.assignment.id == ObjectId(id), current_user.assigned_assignments))
-    if len(au_list) == 0:
+    assignment = models.Assignment.objects(id=id).first()
+    if not assignment:
         abort(404)
-    au = au_list[0]
-    assignment = au.assignment
-    return render_template('public/assignment_info.html', au=au)
+    if not assignment.permissions.check_editor(current_user):
+        abort(404)
+    if assignment.is_draft:
+        return redirect(url_for('public.assignment_edit', id=id))
+    return render_template('public/assignment_info.html', assignment=assignment)
 
 @public.route('/task/<id>')
 @login_required
 def task_redirect(id):
     # Make sure that the task is in the user assigned task list
-    tu_list = list(filter(lambda tu: tu.id == ObjectId(id), current_user.assigned_tasks))
-    if len(tu_list) == 0:
+    for task_list in current_user.assigned_tasks:
+        if task_list.id == id:
+            task = task_list 
+    if not task:
         abort(404)
-    tu = tu_list[0]
-    if not tu.seen:
-        tu.seen = pendulum.now('UTC')
-        tu.save()
-    return redirect(tu.link)
+    # Not done yet!
 
 @public.route('/tasks')
 def task_list():
     current_user.select_related(max_depth=2)
-    tus = current_user.assigned_tasks
-    return render_template('public/task_list.html',tus=tus)
+    tasks = current_user.assigned_tasks
+    # TODO fill in information such as URL based on task type
+    return render_template('public/task_list.html',tasks=tasks)
 
 @public.route('/rsvp/<id>')
 @login_required
@@ -153,38 +160,37 @@ def set_selected_permission_form(form, obj):
     form.permissions.visible_users.selected = [str(user.id) for user in obj.permissions.visible_users]
 
 # Update from a form with a task FormField
-def save_task_form(task, task_form):
-    task.notification_dates = []
-    for dt_string in task_form.notification_dates.data.split(","):
+def save_notification_form(notification_settings, notification_settings_form):
+    notification_settings.notification_dates = []
+    for dt_string in notification_settings_form.notification_dates.data.split(","):
         if dt_string:
             dt = pendulum.from_format(dt_string.strip(), "MM/DD/YYYY", tz=current_user.tz).in_tz('UTC')
-            task.notification_dates.append(dt)
-    task.notify_by_email = task_form.notify_by_email.data
-    task.notify_by_phone = task_form.notify_by_phone.data
-    task.notify_by_push = task_form.notify_by_push.data
-    task.notify_by_app = task_form.notify_by_app.data
+            notification_settings.notification_dates.append(dt)
+    notification_settings.notify_by_email = notification_settings_form.notify_by_email.data
+    notification_settings.notify_by_phone = notification_settings_form.notify_by_phone.data
+    notification_settings.notify_by_push = notification_settings_form.notify_by_push.data
+    notification_settings.notify_by_app = notification_settings_form.notify_by_app.data
 
-def task_send_notifications(task, users):
-    task.notification_dates.append(pendulum.now('UTC'))
-    for user in users:
-        for time in task.notification_dates:
-            notification = models.PushNotification()
-            notification.user = user
-            notification.text = task.text
-            notification.date = time
-            notification.link = url_for('public.task_redirect', id=task.id)
-            notification.send_email = task.notify_by_email
-            notification.send_text  = task.notify_by_phone
-            notification.send_app   = task.notify_by_app
-            notification.send_push  = task.notify_by_push
-            notification.save()
-            # Schedule assignment for sending unless it's right now
-            if notification.date <= pendulum.now('UTC'):
-                tasks.send_notification((notification.id))
-            else:
-                # Notify user at their most recent time zone
-                eta = notification.date.in_tz(notification.user.tz)
-                tasks.send_notification.schedule((notification.id), eta=eta)
+def send_notification(notification_settings, ou):
+    notification_settings.notification_dates.append(pendulum.now('UTC'))
+    for time in notification_settings.notification_dates:
+        notification = models.PushNotification()
+        notification.user = ou.user
+        notification.text = notification_settings.text
+        notification.date = time
+        notification.link = url_for('public.task_redirect', id=ou.id)
+        notification.send_email = notification_settings.notify_by_email
+        notification.send_text  = notification_settings.notify_by_phone
+        notification.send_app   = notification_settings.notify_by_app
+        notification.send_push  = notification_settings.notify_by_push
+        notification.save()
+        # Schedule assignment for sending unless it's right now
+        if notification.date <= pendulum.now('UTC'):
+            tasks.send_notification((notification.id))
+        else:
+            # Notify user at their most recent time zone
+            eta = notification.date.in_tz(notification.user.tz)
+            tasks.send_notification.schedule((notification.id), eta=eta)
 
 
 calendar_colors = ['#5484ed', '#dc2127', '#a4bdfc', '#46d6db', '#7ae7bf',  '#fbd75b', '#ffb878', '#51b749', '#ff887c', '#dbadff', '#e1e1e1']
@@ -323,9 +329,6 @@ def scheduled_event_new():
     event.content = "My New Event"
     event.start = pendulum.now('UTC').add(days=1)
     event.end = event.start.add(hours=2)
-    task = models.Task()
-    task.save()
-    event.rsvp_task = task
     event.save()
     return redirect(url_for('public.scheduled_event_edit', id=event.id))
 
@@ -371,7 +374,7 @@ def scheduled_event_edit(id):
             event.calendar = ObjectId(form.calendar.data)
 
             # Update task
-            save_task_form(event.rsvp_task, form.rsvp_task)
+            save_notification_form(event.rsvp_notifications, form.rsvp_notifications)
             event.rsvp_task.text = "RSVP for " + event.name
             event.rsvp_task.due = event.start
             event.rsvp_task.save()
@@ -414,17 +417,9 @@ def scheduled_event_publish(cid, id):
         eu.save()
         event.users.append(eu)
         if event.enable_rsvp:
-            tu = models.TaskUser()
-            tu.task = event.rsvp_task
-            tu.watch_object = eu
-            tu.link = url_for('public.scheduled_event_view', cid=calendar.id, id=event.id)
-            tu.watch_field = "rsvp"
-            tu.save()
-            user.assigned_tasks.append(tu)
+            user.assigned_tasks.append(eu)
+            send_notification(event.rsvp_notifications, eu)
 
-    # Create notifications
-    if event.enable_rsvp:
-        task_send_notifications(event.rsvp_task, event.assigned_users)
     event.is_draft = False
     event.save()
     return redirect(url_for('public.scheduled_event_view', cid=calendar.id, id=event.id))
@@ -678,7 +673,7 @@ def recurring_event_edit(cid, id):
             event.calendar = ObjectId(form.calendar.data)
 
             # Update task
-            save_task_form(event.rsvp_task, form.rsvp_task)
+            save_notification_form(event.rsvp_notifications, form.rsvp_notifications)
             event.rsvp_task.text = "RSVP for " + event.name
             event.rsvp_task.save()
 
@@ -736,38 +731,15 @@ def recurring_event_publish(cid, id):
                                      enable_rsvp = event.enable_rsvp,
                                      enable_attendance = event.enable_attendance)
 
-            # Create a separate task for each subevent
-            if event.enable_rsvp:
-                new_task = models.Task()
-                new_task.text = event.rsvp_task.text + " on " + start.format('MM/DD/YYYY')
-                new_task.notify_by_email = event.rsvp_task.notify_by_email
-                new_task.notify_by_phone = event.rsvp_task.notify_by_phone
-                new_task.notify_by_app = event.rsvp_task.notify_by_app
-                new_task.notify_by_push = event.rsvp_task.notify_by_push
-                new_task.due = new_event.start
-                # Only notify on dates before this subevent
-                new_task.notification_dates = event.rsvp_task.notification_dates
-                new_task.save()
-
-            # Create EventUser objects and assign to 
             for user in event.assigned_users:
                 eu = models.EventUser()
                 eu.user = user
                 eu.save()
                 new_event.users.append(eu)
                 if event.enable_rsvp:
-                    tu = models.TaskUser()
-                    tu.task = new_task
-                    tu.watch_object = eu
-                    tu.link = url_for('public.recurring_event_view', cid=calendar.id, id=event.id)
-                    tu.watch_field = "rsvp"
-                    tu.save()
-                    user.assigned_tasks.append(tu)
+                    user.assigned_tasks.append(eu)
+                    send_notification(new_task, eu)
                 user.save()
-
-            # Create notifications
-            if event.enable_rsvp:
-                task_send_notifications(new_task, event.assigned_users)
 
             new_event.save()
     event.is_draft = False
@@ -991,3 +963,153 @@ def article_delete(id):
     flash('Article Deleted', 'success')
     return redirect(url_for('public.topic_view'))
 
+@public.route('/assignments')
+def assignment_list():
+    assignments = models.Assignment.objects
+    for a in assignments:
+        a.number_assigned = len(a.users)
+        a.number_seen = 0
+        a.number_completed = 0
+        for au in a.users:
+            if au.seen:
+                a.number_seen += 1
+            if au.completed:
+                a.number_completed += 1
+            if au.user.id == current_user.id:
+                a.au = au
+    return render_template('public/assignment_list.html', assignments=assignments)
+
+@public.route('/assignment/new')
+def assignment_new():
+    everyone_role = models.Role.objects(name='everyone').first()
+    assignment = models.Assignment()
+    assignment.subject = "New Assignment"
+    assignment.permissions = models.PermissionSet()
+    # Visible users corresponds to assigned users
+    assignment.permissions.editor_users = [current_user.id]
+    assignment.permissions.visible_roles = [everyone_role]
+
+    assignment.notifications = models.NotificationSettings()
+    assignment.notifications.notification_dates.append(pendulum.today(tz=current_user.tz).at(17,0).in_tz('UTC'))
+    assignment.due = pendulum.now('UTC').add(days=7)
+    assignment.save()
+    return redirect(url_for('public.assignment_edit', id=assignment.id))
+
+
+@public.route('/assignment/<id>/edit', methods=['GET', 'POST'])
+def assignment_edit(id):
+    assignment = models.Assignment.objects(id=id).first()
+    if not assignment:
+        abort(404)
+    if not assignment.is_draft:
+        return redirect(url_for('public.assignment_view', id=id))
+
+    # Queries
+    assignment.select_related(max_depth=2)
+    all_roles = models.Role.objects
+    all_users = models.User.objects
+
+    form_data = assignment.to_mongo().to_dict()
+    form_data['due'] = form_data['due'].in_tz(current_user.tz)
+    form = forms.AssignmentForm(data=form_data)
+    init_choices_permission_form(form)
+    if form.validate_on_submit():
+        assignment.subject = form.subject.data
+        assignment.content = form.content.data
+        assignment.due = pendulum.instance(form.due.data, tz=current_user.tz).in_tz('UTC')
+        save_permission_form(form, assignment)
+        save_notification_form(assignment.notifications, form.notifications)
+        if assignment.due < pendulum.now('UTC'):
+            flash('Task cannot be due in the past', 'warning')
+        else:
+            # Update task
+            assignment.save()
+            assignment.reload()
+            flash('Changes Saved', 'success')
+    if len(form.errors) > 0:
+        flash_errors(form)
+    set_selected_permission_form(form, assignment)
+    return render_template('public/assignment_edit.html',
+            assignment=assignment,
+            form=form,
+            selected_dates=[dt.in_tz(current_user.tz).isoformat() for dt in assignment.notifications.notification_dates])
+
+@public.route('/assignment/<id>/publish')
+def assignment_publish(id):
+    assignment = models.Assignment.objects(id=id).first()
+    if not assignment:
+        abort(404)
+    if not assignment.is_draft:
+        redirect(url_for('public.assignment_edit', id=id))
+    # Parse assignment into viewing format
+    # Save original list of assigned_users so it's possible to duplicate assignments
+    assignment.assigned_users = assignment.permissions.visible_users
+    for role in assignment.permissions.visible_roles:
+        users_with_role = models.User.objects(roles=role)
+        for u in users_with_role:
+            assignment.assigned_users.append(u)
+    # Create TaskUser objects and assignments to user
+    for user in assignment.assigned_users:
+        au = models.AssignmentUser()
+        au.user = user
+        au.save()
+        assignment.users.append(au)
+        user.assigned_tasks.append(au)
+        user.save()
+        send_notification(assignment.notifications, au)
+
+    # Create notifications
+    assignment.is_draft = False
+    assignment.save()
+    return redirect(url_for('public.assignment_info',id=id))
+
+
+@public.route('/assignment/<id>/view')
+def assignment_view(id):
+    assignment = models.Assignment.objects(id=id).first()
+    if not assignment:
+        abort(404)
+    if not assignment.permissions.check_visible(current_user):
+        abort(404)
+    if assignment.is_draft:
+        return redirect(url_for('public.assignment_edit', id=id))
+    for au_list in assignment.users:
+        if au_list.user.id == current_user.id:
+            au = au_list
+    if au:
+        au.seen = pendulum.now('UTC')
+        au.save()
+    return render_template('public/assignment_view.html', assignment=assignment, au=au)
+
+@public.route('/assignment/<id>/duplicate')
+def assignment_duplicate(id):
+    assignment = models.Assignment.objects(id=id).first()
+    if not assignment:
+        abort(404)
+    new_assignment         = models.Assignment()
+    new_assignment.subject = assignment.subject + " Copy"
+    new_assignment.content = assignment.content
+    new_assignment.assigned_roles = assignment.assigned_roles
+    new_assignment.assigned_users = assignment.assigned_users
+    new_assignment.due     = pendulum.tomorrow('UTC')
+    new_assignment.task    = assignment.task
+    # Clear notification dates in case they are outside the range
+    new_assignment.task.notification_dates = []
+    new_assignment.save()
+    return redirect(url_for('public.assignment_edit', id=new_assignment.id))
+
+
+@public.route('/assignment/<id>/delete')
+def assignment_delete(id):
+    assignment = models.Assignment.objects(id=id).first()
+    if not assignment:
+        abort(404)
+    if not assignment.permissions.check_editor(current_user):
+        abort(404)
+    if not assignment.is_draft:
+        for au in assignment.users:
+            au.user.assigned_tasks.remove(au)
+            au.user.save()
+            au.delete()
+    assignment.delete()
+    return redirect(url_for('public.assignment_list'))

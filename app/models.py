@@ -31,13 +31,12 @@ class PendulumField(BaseField):
         # Automatically converted to string for storage
         return value
 
-class Organization(db.Document):
+class Team(db.Document):
     name = db.StringField()
 
-class OrgDocument(db.Document):
+class TeamDocument(db.Document):
     meta = {'abstract': True}
-    org = db.LazyReferenceField(Organization)
-
+    org = db.LazyReferenceField(Team) 
     # Filter to objects in org
     @db.queryset_manager
     def objects(doc_cls, query):
@@ -80,8 +79,8 @@ class User(db.Document, UserMixin):
     def name(self):
         return self.first_name + " " + self.last_name
     roles = db.ListField(db.ReferenceField(Role))
-    assigned_tasks = db.ListField(db.ReferenceField('TaskUser'))
-    assigned_assignments = db.ListField(db.ReferenceField('AssignmentUser'))
+    # This will work with any object with a "seen" and "completed" field
+    assigned_tasks = db.ListField(db.GenericReferenceField())
     notifications = db.EmbeddedDocumentListField(AppNotification)
 
 @login_manager.user_loader
@@ -110,31 +109,17 @@ class PermissionSet(db.EmbeddedDocument):
                 return True
         return False
 
-class Task(db.Document):
+class NotificationSettings(db.EmbeddedDocument):
     notification_dates = db.ListField(PendulumField())
     notify_by_email = db.BooleanField(default=False)
     notify_by_phone = db.BooleanField(default=False)
     notify_by_push  = db.BooleanField(default=False)
     notify_by_app   = db.BooleanField(default=False)
     text = db.StringField()
-    due = PendulumField()
 
-# Visible to users
-class TaskUser(db.Document):
-    task = db.ReferenceField(Task)
-    # Link to follow when task is clicked on
-    link = db.StringField()
+# Calendar models
 
-    # Whether the user has seen the task
-    seen = PendulumField()
-    # Whether the user has completed task. Updated automatically
-    completed = PendulumField()
-    # Which object to watch for changes
-    watch_object = db.GenericLazyReferenceField()
-    # Which field on that object to check
-    watch_field = db.StringField()
-
-class Calendar(OrgDocument):
+class Calendar(db.Document):
     name = db.StringField()
     description = db.StringField()
     permissions = db.EmbeddedDocumentField(PermissionSet)
@@ -150,7 +135,7 @@ class Event(db.Document):
     enable_rsvp = db.BooleanField(default=False)
     # This is used to store RSVP and attendance information
     users = db.ListField(db.ReferenceField('EventUser'))
-    rsvp_task = db.ReferenceField(Task)
+    rsvp_notifications = db.EmbeddedDocumentField(NotificationSettings)
     enable_attendance = db.BooleanField(default=False)
 
 class RecurringEvent(db.Document):
@@ -168,29 +153,36 @@ class RecurringEvent(db.Document):
     is_draft = db.BooleanField(default=True)
     # Only used when task is a draft
     enable_rsvp = db.BooleanField(default=False)
-    rsvp_task = db.ReferenceField(Task)
+    rsvp_notifications = db.EmbeddedDocumentField(NotificationSettings)
     enable_attendance = db.BooleanField(default=False)
-
-class Assignment(db.Document):
-    subject = db.StringField()
-    permissions = db.EmbeddedDocumentField(PermissionSet)
-    content = db.StringField()
-    due = PendulumField()
-    is_draft = db.BooleanField(default=True)
-    task = db.ReferenceField(Task)
-
-class AssignmentUser(db.Document):
-    assignment = db.ReferenceField(Assignment)
-    completed = db.BooleanField(default=False)
 
 class EventUser(db.Document):
     user = db.ReferenceField('User')
     rsvp = db.StringField()
     sign_in = PendulumField()
     sign_out = PendulumField()
+    seen = PendulumField()
+    completed = PendulumField()
+
+# Assignment models
+
+class Assignment(db.Document):
+    permissions = db.EmbeddedDocumentField(PermissionSet)
+    users = db.ListField(db.ReferenceField('AssignmentUser'))
+    subject = db.StringField()
+    content = db.StringField()
+    due = PendulumField()
+    is_draft = db.BooleanField(default=True)
+    notifications = db.EmbeddedDocumentField(NotificationSettings)
+
+class AssignmentUser(db.Document):
+    user = db.ReferenceField('User')
+    seen = PendulumField()
+    completed = PendulumField()
+
+# Wiki models
 
 class Topic(db.Document):
-    owner = db.ReferenceField(User)
     permissions = db.EmbeddedDocumentField(PermissionSet)
     name = db.StringField()
     description = db.StringField()
@@ -200,8 +192,3 @@ class Article(db.Document):
     content = db.StringField()
     topic = db.ReferenceField(Topic)
     owner = db.ReferenceField(User)
-
-def check_for_automatic_task(sender, document, created):
-    tasks.check_automatic_task_completion((document.id))
-
-signals.post_save.connect(check_for_automatic_task)
