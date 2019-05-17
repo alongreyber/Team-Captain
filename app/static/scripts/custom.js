@@ -39,7 +39,6 @@ $(document).ready(function() {
     
 });
 
-
 // Quick script to allow toggling an element
 // Used for notification dropdown
 function toggle_active(id) {

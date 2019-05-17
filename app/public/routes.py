@@ -367,7 +367,7 @@ def scheduled_event_edit(id):
     # Localize start and end to user's location
     form_data['start'] = form_data['start'].in_tz(current_user.tz)
     form_data['end'] = form_data['end'].in_tz(current_user.tz)
-    form = forms.EventForm(request.form, data=form_data)
+    form = forms.EventForm(data=form_data)
     form.calendar.choices = [(str(c.id), c.name) for c in allowed_edit_calendars]
     if form.validate_on_submit():
         # Convert times to UTC
@@ -434,6 +434,7 @@ def scheduled_event_publish(cid, id):
 
     event.is_draft = False
     event.save()
+    flash('Event Published', 'success')
     return redirect(url_for('public.scheduled_event_view', cid=calendar.id, id=event.id))
 
 @public.route('/calendar/<cid>/event/<id>/info')
@@ -515,7 +516,7 @@ def event_clockin(cid, id):
         flash("Event hasn't started yet!", 'warning')
         return redirect(request.referrer)
     if pendulum.now('UTC') > end_range:
-        flash("Event has already finished!", 'warning')
+        flash("Event has already finished! Please modify attendance manually", 'warning')
         return redirect(request.referrer)
     if form.validate_on_submit():
         user = models.User.objects(barcode=form.barcode.data).first()
@@ -578,6 +579,7 @@ def event_user_edit(cid, id):
         else:
             eu.save()
             flash('Changes Saved', 'success')
+            return redirect(url_for('public.event_info', id=event.id, cid=calendar.id))
     return render_template('public/calendar/event_user_edit.html',
             eu=eu,
             form=form,
@@ -640,14 +642,12 @@ def recurring_event_new():
     event.start_time = pendulum.naive(2010,1,1, 17, 0)
     event.end_time = pendulum.naive(2010,1,1, 19, 0)
     event.days_of_week = [1,3,5]
-    task = models.Task()
-    task.save()
-    event.rsvp_task = task
+    event.rsvp_notifications = models.NotificationSettings()
     event.save()
     return redirect(url_for('public.recurring_event_edit', id=event.id))
 
 @public.route('/event-recurring/<id>/edit', methods=["GET","POST"])
-def recurring_event_edit(cid, id):
+def recurring_event_edit(id):
     event = models.RecurringEvent.objects(id=id).first()
     if not event:
         abort(404)
@@ -685,7 +685,7 @@ def recurring_event_edit(cid, id):
             event.calendar = ObjectId(form.calendar.data)
 
             # Update task
-            save_notification_form(event.rsvp_notifications, form.rsvp_notifications)
+            save_notification_form(form.rsvp_notifications, event.rsvp_notifications)
             event.rsvp_task.text = "RSVP for " + event.name
             event.rsvp_task.save()
 
@@ -693,12 +693,11 @@ def recurring_event_edit(cid, id):
             flash('Changes Saved', 'success')
     if len(form.errors) > 0:
         flash_errors(form)
+    set_selected_notification_form(form.rsvp_notifications, event.rsvp_notifications)
     return render_template('public/calendar/recurring_event_edit.html',
-            calendar=calendar,
             event=event,
             form=form,
-            selected_days_of_week = event.days_of_week,
-            selected_dates=[dt.in_tz(current_user.tz).isoformat() for dt in event.rsvp_task.notification_dates])
+            selected_days_of_week = event.days_of_week)
 
 @public.route('/calendar/<cid>/event-recurring/<id>/publish')
 def recurring_event_publish(cid, id):

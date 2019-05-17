@@ -5,8 +5,6 @@ from wtforms.fields import html5
 from wtforms.fields import *
 from wtforms.validators import *
 
-from flask_mongoengine.wtf import model_form
-
 class PermissionSetForm(FlaskForm):
     editor_roles = SelectMultipleField('Roles')
     editor_users = SelectMultipleField('Users')
@@ -73,8 +71,6 @@ class RecurringEventForm(FlaskForm):
     start_time = html5.TimeField('Start Time', validators=[required()])
     end_time = html5.TimeField('End Time', validators=[required()])
     days_of_week = SelectMultipleField('Days of Week', coerce=int)
-    assigned_roles = SelectMultipleField('Roles')
-    assigned_users = SelectMultipleField('Users')
     enable_rsvp = BooleanField('Enable RSVP')
     rsvp_notifications = FormField(NotificationForm)
     enable_attendance = BooleanField('Enable Attendance Tracking')

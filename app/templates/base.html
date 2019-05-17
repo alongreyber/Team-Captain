@@ -45,11 +45,6 @@
 	{% block nav %}{% endblock %}
 
 	{# Render a back button #}
-	{% if back_url %}
-	<a style="margin: 30px 0 0 30px; position: absolute" href="{{back_url}}" class="icon is-large">
-	    <i class="fas fa-arrow-left fa-2x"></i>
-	</a>
-	{% endif %}
 	<div class="container" id='main-container'>
 	    <div class="columns">
 		{% if self.sidebar() %}
