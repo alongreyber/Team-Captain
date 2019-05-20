@@ -9,7 +9,7 @@
 
 <div class="level">
     <div class="level-left">
-	<h1 class="level-item title is-1">{{event.name}}</h1>
+	<h1 class="level-item title is-1">{{event.name}}{% if event.recurrence %} - {{event.start|localize|format('MM/DD')}} {% endif %}</h1>
     </div>
     <div class="level-right">
 	{% if not event.recurrence %}

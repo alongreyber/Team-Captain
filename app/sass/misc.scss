@@ -1,14 +1,3 @@
-.role-delete:hover {
-    color: red;
-}
-.role-delete:hover span {
-    display:none;
-}
-
-.role-delete:hover:before {
-    content:"Remove";
-}
-
 // Style select2 box
 .select2-selection__choice {
     margin-bottom: 5px;
@@ -36,4 +25,8 @@ table.is-hoverable:hover {
 .CodeMirror,
 .CodeMirror-scroll {
     max-height: 300px;
+}
+
+.hoverable {
+    cursor: pointer;
 }

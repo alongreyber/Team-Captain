@@ -118,6 +118,7 @@ def assignment_info(id):
 @login_required
 def task_redirect(id):
     # Make sure that the task is in the user assigned task list
+    task = None
     for task_list in current_user.assigned_tasks:
         if task_list.id == id:
             task = task_list 
@@ -178,7 +179,7 @@ def set_selected_notification_form(form, obj):
 def save_notification_form(form, obj):
     obj.notification_dates = []
     for dt_string in form.notification_dates.data.split(","):
-        if dt_string:
+        if dt_string and dt_string != '[]':
             dt = pendulum.from_format(dt_string.strip(), "MM/DD/YYYY", tz=current_user.tz).in_tz('UTC')
             obj.notification_dates.append(dt)
     obj.notify_by_email = form.notify_by_email.data
@@ -292,6 +293,7 @@ def calendar_edit(id):
         else:
             calendar.save()
             flash('Changes Saved', 'success')
+            return redirect(url_for('public.calendar_view', id=id))
     set_selected_permission_form(form.permissions, calendar.permissions)
     return render_template('public/calendar/calendar_edit.html',
             calendar=calendar,
@@ -380,7 +382,6 @@ def scheduled_event_edit(id):
         elif (end - start).hours > 24:
             flash('Events cannot span more than 1 day. Please use a recurring event.', 'warning')
         else:
-            flash('Changes Saved', 'success')
             event.start = start
             event.end = end
             event.content = form.content.data
@@ -391,7 +392,9 @@ def scheduled_event_edit(id):
 
             # Update task
             save_notification_form(form.rsvp_notifications, event.rsvp_notifications)
+            flash('Changes Saved', 'success')
             event.save()
+            event.reload()
     if len(form.errors) > 0:
         flash_errors(form)
     set_selected_notification_form(form.rsvp_notifications, event.rsvp_notifications)
@@ -410,7 +413,7 @@ def scheduled_event_publish(cid, id):
     if not event:
         abort(404)
     if not event.is_draft:
-        return redirect(url_for('public.scheduled_event_view', id=event.id))
+        return redirect(url_for('public.scheduled_event_view', cid=calendar.id, id=event.id))
     # Find all users with role
     # "assigned_users" is a temporary array of user references that is used to create
     # the "users" array
@@ -430,12 +433,13 @@ def scheduled_event_publish(cid, id):
         event.users.append(eu)
         if event.enable_rsvp:
             user.assigned_tasks.append(eu)
+            user.save()
             send_notification(event.rsvp_notifications, eu)
 
     event.is_draft = False
     event.save()
     flash('Event Published', 'success')
-    return redirect(url_for('public.scheduled_event_view', cid=calendar.id, id=event.id))
+    return redirect(url_for('public.event_info', cid=calendar.id, id=event.id))
 
 @public.route('/calendar/<cid>/event/<id>/info')
 def event_info(cid, id):
@@ -644,6 +648,7 @@ def recurring_event_new():
     event.days_of_week = [1,3,5]
     event.rsvp_notifications = models.NotificationSettings()
     event.save()
+    flash('Created Recurring Event', 'success')
     return redirect(url_for('public.recurring_event_edit', id=event.id))
 
 @public.route('/event-recurring/<id>/edit', methods=["GET","POST"])
@@ -684,12 +689,10 @@ def recurring_event_edit(id):
             event.enable_attendance = form.enable_attendance.data
             event.calendar = ObjectId(form.calendar.data)
 
-            # Update task
             save_notification_form(form.rsvp_notifications, event.rsvp_notifications)
-            event.rsvp_task.text = "RSVP for " + event.name
-            event.rsvp_task.save()
 
             event.save()
+            event.reload()
             flash('Changes Saved', 'success')
     if len(form.errors) > 0:
         flash_errors(form)
@@ -740,7 +743,8 @@ def recurring_event_publish(cid, id):
                                      calendar = calendar,
                                      is_draft = False,
                                      enable_rsvp = event.enable_rsvp,
-                                     enable_attendance = event.enable_attendance)
+                                     enable_attendance = event.enable_attendance,
+                                     rsvp_notifications=event.rsvp_notifications)
 
             for user in event.assigned_users:
                 eu = models.EventUser()
@@ -749,13 +753,13 @@ def recurring_event_publish(cid, id):
                 new_event.users.append(eu)
                 if event.enable_rsvp:
                     user.assigned_tasks.append(eu)
-                    send_notification(new_task, eu)
-                user.save()
+                    user.save()
+                    send_notification(new_event.rsvp_notifications, eu)
 
             new_event.save()
     event.is_draft = False
     event.save()
-    return redirect(url_for('public.recurring_event_view', cid=calendar.id, id=event.id))
+    return redirect(url_for('public.recurring_event_info', cid=calendar.id, id=event.id))
 
 @public.route('/calendar/<cid>/event-recurring/<id>/view')
 def recurring_event_view(cid, id):
@@ -801,35 +805,28 @@ def recurring_event_info(cid, id):
 
 
 
-@public.route('/event-recurring/<id>/delete')
-def recurring_event_delete(id):
-    event = models.RecurringEvent.objects(id=id).first()
-    all_users = models.User.objects
-    if not event:
+@public.route('/calendar/<cid>/event-recurring/<id>/delete')
+def recurring_event_delete(cid, id):
+    calendar = models.Calendar.objects(id=cid).first()
+    if not calendar:
         abort(404)
-    if not event.is_draft:
-        # Delete associated recurring events
-        for e in event.events:
-            # Have to iterate over users and delete references manually
-            for user in all_users:
-                for eu in user.assigned_events:
-                    if eu.event == e:
-                        eu.delete()
-                        user.assigned_events.remove(eu)
-                if event.enable_rsvp:
-                    for tu in user.assigned_tasks:
-                        if tu.task == e.rsvp_task:
-                            tu.delete()
-                            user.assigned_tasks.remove(tu)
-                user.save()
-            if e.enable_rsvp:
-                e.rsvp_task.delete()
-            e.delete()
-    if event.enable_rsvp:
-        event.rsvp_task.delete()
-    event.delete()
+    if not calendar.permissions.check_editor(current_user):
+        abort(404)
+    recurring_event = models.RecurringEvent.objects(calendar=cid, id=id).first()
+    if not recurring_event:
+        abort(404)
+    if not recurring_event.is_draft:
+        events = models.Event.objects(recurrence=recurring_event)
+        # Delete associated events
+        for event in events:
+            for eu in event.users:
+                eu.user.assigned_tasks.remove(eu)
+                eu.user.save()
+                eu.delete()
+            event.delete()
+    recurring_event.delete()
     flash('Deleted Event', 'success')
-    return redirect(url_for('admin.event_list'))
+    return redirect(url_for('public.calendar_home'))
 
 
 def get_wiki_sidebar_data():

@@ -1,6 +1,7 @@
 #main-container {
     margin-top: 2em;
     min-height: calc(100vh - #{$navbar-height} - 56px); //footer height
+    width: 100%;
 }
 
 body {

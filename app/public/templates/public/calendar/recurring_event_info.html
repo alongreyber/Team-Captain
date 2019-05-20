@@ -3,7 +3,7 @@
 {% block event_content %}
 <div class="level">
     <div class="level-left">
-	<h1 class="title is-1">Recurring Event Info</h1>
+	<h1 class="title is-1">{{event.name}}</h1>
     </div>
     <div class="level-right">
 	{% if calendar.permissions.check_visible(current_user) %}
@@ -18,14 +18,18 @@
 	{% endif %}
     </div>
 </div>
-<br />
 
-<h5 class="title is-5">Name</h5>
-<p>{{event.name}}</p>
-<br />
+<div class="content is-medium" id="content-div" style="border: 1px solid gray; padding: 20px"></div>
+<script>
+    var md = window.markdownit();
+    var input = {{event.content|tojson}};
+    var result = md.render(input);
+    $('#content-div').html(result);
+</script>
 
-<h5 class="title is-5">Dates</h5>
-<table class="table is-hoverable">
+<hr/>
+
+<table class="table is-hoverable is-size-5">
     <thead>
 	<th>Date</th>
 	<th>Time</th>
@@ -42,11 +46,11 @@
 	    </td>
 	    <td>
 		{% if e.start < now and e.end < now %}
-		<div class="button is-danger">Past</div>
+		Past
 		{% elif e.start > now and e.end < now %}
-		<div class="button is-warning">In Progress</div>
+		In Progress
 		{% else %}
-		<div class="button is-success">Upcoming</div>
+		Upcoming
 		{% endif %}
 	    </td>
 	</tr>
@@ -54,7 +58,13 @@
     </tbody>
 </table>
 
+<hr/>
+
+<p class="is-size-4">
+Actions
+</p>
+<br/>
 <br/>
 
-<a href="{{url_for('public.recurring_event_delete', id=event.id)}}" class="button is-danger">Delete</a>
+<a href="{{url_for('public.recurring_event_delete', cid=calendar.id, id=event.id)}}" class="button is-danger">Delete</a>
 {% endblock %}

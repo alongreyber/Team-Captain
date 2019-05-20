@@ -1,0 +1,12 @@
+[submodule "app/sass/bulma"]
+	path = app/sass/bulma
+	url = https://github.com/jgthms/bulma.git
+[submodule "app/sass/bulma-extensions/bulma-checkradio"]
+	path = app/sass/bulma-extensions/bulma-checkradio
+	url = https://github.com/Wikiki/bulma-checkradio.git
+[submodule "app/sass/bulma-extensions/bulma-badge"]
+	path = app/sass/bulma-extensions/bulma-badge
+	url = https://github.com/Wikiki/bulma-badge.git
+[submodule "app/sass/bulma-extensions/bulma-divider"]
+	path = app/sass/bulma-extensions/bulma-divider
+	url = https://github.com/Wikiki/bulma-divider.git

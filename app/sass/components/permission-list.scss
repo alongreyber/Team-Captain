@@ -1,0 +1,28 @@
+.tc-permission-list {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    margin: 5px 5px 5px 5px;
+    padding-left: 5px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border-radius: 2px;
+    border: 1px solid white;
+    .tc-permission-list__icon {
+	margin-right: 10px;
+	border-radius: 2px;
+    }
+
+    .tc-permission-list__text {
+	margin-top: 3px;
+    }
+    .tc-permission-list__img {
+	margin-right: 10px;
+	border-radius: 2px;
+    }
+}
+
+.tc-permission-list:hover {
+    border-color: gray;
+    cursor: pointer;
+}
