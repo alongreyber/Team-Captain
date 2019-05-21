@@ -1,22 +1,42 @@
 {% extends 'base.html' %}
+
+
 {% block content %}
-<section class="hero is-primary">
-  <div class="hero-body">
-    <div class="container">
-      <h1 class="title">
-        Welcome to the FRC Management System
-      </h1>
-      <h2 class="subtitle">
-	  Developed by Alon Greyber with Bull City Botics
-	  <br />
-	  <br />
-	  <a href="{{url_for('team.index')}}">
-	      <button class="button is-link">
-		  Let's get started!
-	      </button>
-	  </a>
-      </h2>
+<style>
+body {
+    background-image: url({{url_for('static', filename='images/skyline.svg')}});
+    height: 1050px;
+}
+</style>
+
+<div class="level">
+    <div class="level-left is-size-3">
+	Team Captain
     </div>
+    <div class="level-right">
+	<a href="#" class="level-item button is-primary is-medium">
+	    Sign In
+	</a>
+    </div>
+</div>
+<div class="container">
+  <h1 class="title has-text-centered" style="font-size: 5em">
+      Team Management,<br/> built for FIRST
+  </h1>
+  <br/>
+  <h2 class="subtitle has-text-centered">
+      Developed by Alon Greyber with Bull City Botics
+  </h2>
+  <br/>
+  <br/>
+
+  <div style="display: flex; flex-direction: row; justify-content: center">
+      <a class="button is-large is-success" href="#" style="margin-right: 40px">
+	  Join a Team
+      </a>
+      <a class="button is-large is-info" href="#">
+	  Create a Team
+      </a>
   </div>
-</section>
+</div>
 {% endblock %}
