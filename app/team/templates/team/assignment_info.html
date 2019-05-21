@@ -1,0 +1,73 @@
+{% extends 'team/base.html' %}
+
+{% block team_content %}
+<div class="level">
+    <div class="level-left">
+	<h1 class="title is-1 level-item">{{assignment.subject}}</h1>
+    </div>
+
+    <div class="level-right">
+	{% if assignment.permissions.check_visible(current_user) %}
+	<a href="{{url_for('team.assignment_view', id=assignment.id)}}" class="level-item button is-medium is-outlined is-success">
+	    <span class="icon is-large">
+		<i class="fas fa-eye fa-lg"></i>
+	    </span>
+	    <span class="is-size-4">
+		&nbsp;View
+	    </span>
+	</a>
+	{% endif %}
+    </div>
+</div>
+
+<h5 class="title is-5">Due Date</h5>
+<p>{{assignment.due|localize|format}}</p>
+<br />
+
+
+<h5 class="title is-5">Content</h5>
+<div class="content is-medium" id="content-div" style="border: 1px solid gray; padding: 20px"></div>
+<script>
+    var md = window.markdownit();
+    var input = {{assignment.content|tojson}};
+    var result = md.render(input);
+    $('#content-div').html(result);
+</script>
+
+<br />
+<h5 class="title is-5">Assigned Users</h5>
+<table class="table">
+    <thead>
+	<th>User Name</th>
+	<th>Seen?</th>
+	<th>Completed?</th>
+    </thead>
+    <tbody>
+	{% for au in assignment.users %}
+	<tr>
+	    <td>
+		{{au.user.name}}
+	    </td>
+	    <td>
+		{% if au.seen %}
+		    {{au.seen|localize|format}}
+		{% else %}No{% endif %}
+	    </td>
+	    <td>
+		{% if au.completed %}
+		    {{au.completed|localize|format}}
+		{% else %}No{% endif %}
+	    </td>
+	</tr>
+	{% endfor %}
+    </tbody>
+</table>
+
+<a href="{{url_for('team.assignment_delete', id=assignment.id)}}" class="button is-danger">
+    Delete
+</a>
+<a href="{{url_for('team.assignment_duplicate', id=assignment.id)}}" class="button is-primary">
+    Make a Copy
+</a>
+
+{% endblock %}

@@ -35,7 +35,7 @@ gravatar = Gravatar(app,
                     base_url=None)
 
 from app.admin.routes import admin as admin_module
-from app.public.routes import public as public_module
+from app.team.routes import team as team_module
 from app.huey import huey
 
 # Add current datetime to jinja template
@@ -57,6 +57,6 @@ def format(dt, fmt_string="MM/DD/YY h:mm A"):
 
 # Register admin first so that it takes precendence over our domain search
 app.register_blueprint(admin_module, url_prefix='/admin')
-app.register_blueprint(public_module)
+app.register_blueprint(team_module)
 
 from app import routes

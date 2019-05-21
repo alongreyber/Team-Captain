@@ -1,0 +1,50 @@
+{% extends 'team/wiki/base.html' %}
+
+{% block wiki_content %}
+<div class="level">
+    <div class="level-left">
+	<h1 class="level-item title is-1">Edit Article</h1>
+    </div>
+    <div class="level-right">
+	<a href="{{url_for('team.article_view', tid=article.topic.id, id=article.id)}}" class="level-item button is-medium is-outlined is-success">
+	    <span class="icon is-large">
+		<i class="fas fa-eye fa-lg"></i>
+	    </span>
+	    <span class="is-size-4">
+		View
+	    </span>
+	</a>
+    </div>
+</div>
+
+<form id="article-form" submit="return false;" action="" method="post">
+
+{{ form.hidden_tag() }}
+<div class="field">
+    {{ form.topic.label(class_='label') }}
+    <select id="calendar" name="calendar" class="select2" style="width: 100%">
+	{% for r in form.topic.choices %}
+	    <option value="{{r[0]}}" {% if r[0] == article.topic.id|string %}selected="selected"{% endif %}>{{r[1]}}</option>
+	{% endfor %}
+    </select>
+</div>
+
+<div class="field">
+    {{ form.name.label(class_='label') }}
+    <div class="control">
+	{{ form.name(class_='input') }}
+    </div>
+</div>
+
+<br/>
+{{ form.content.label(class_='label') }}
+{{ form.content(id="editor") }}
+
+<input class="button is-primary" id="submit" name="submit" type="submit" value="Save">
+<a href="{{url_for('team.article_delete', tid=article.topic.id, id=article.id)}}" class="button is-danger">
+    Delete
+</a>
+
+</form>
+
+{% endblock %}

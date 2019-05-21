@@ -1,0 +1,139 @@
+{% extends 'team/calendar/event_base.html' %}
+
+{% block event_content %}
+<div class="level">
+    <div class="level-left">
+	<h1 class="level-item title is-1">{{calendar.name}}</h1>
+    </div>
+    <div class="level-right">
+	{% if calendar.permissions.check_editor(current_user) %}
+	<a href="{{url_for('team.calendar_edit', id=calendar.id)}}" class="level-item button is-medium is-outlined is-success">
+	    <span class="icon is-large">
+		<i class="fas fa-edit fa-lg"></i>
+	    </span>
+	    <span class="is-size-4">
+		Edit
+	    </span>
+	</a>
+	{% endif %}
+    </div>
+</div>
+
+
+<p class="is-size-4">{{calendar.description}}</p>
+<br/>
+<br/>
+
+<div class='columns'>
+    <div class="column">
+	<h3 class="title is-3">Editors</h3>
+	{% for role in calendar.permissions.editor_roles %}
+	    {% include 'team/components/role_list.html' %}
+	{% endfor %}
+	{% for user in calendar.permissions.editor_users %}
+	    {% set link = url_for('team.user_view', id=user.id) %}
+	    {% include 'team/components/user_list.html' %}
+	{% endfor %}
+    </div>
+    <div class="column">
+	<h3 class="title is-3">Visible To</h3>
+	{% for role in calendar.permissions.visible_roles %}
+	    {% include 'team/components/role_list.html' %}
+	{% endfor %}
+	{% for user in calendar.permissions.visible_users %}
+	    {% set link = url_for('team.user_view', id=user.id) %}
+	    {% include 'team/components/user_list.html' %}
+	{% endfor %}
+    </div>
+</div>
+
+<div class="is-divider" ></div>
+<div class="columns">
+    <div class="column">
+	<h3 class="title is-3">Events</h3>
+	<table class="table is-hoverable">
+	    <thead>
+		<tr>
+		    <th>Draft</th>
+		    <th>Name</th>
+		    <th>Date</th>
+		    <th>Time</th>
+		</tr>
+	    </thead>
+	    <tbody>
+		{% for event in events %}    
+		<tr {{helpers.onclick(url_for('team.scheduled_event_view', cid=calendar.id, id=event.id))}}>
+		    <td>
+			<div class="icon is-medium" style="display: inline-table">
+			    {% if event.is_draft %}
+			    <i class="fas fa-pencil-ruler fa-lg"></i>
+			    {% endif %}
+			</div>
+		    </td>
+		    <td>
+			{{event.name}}
+		    </td>
+		    <td>
+			{{event.start|localize|format('MM/DD/YY')}}
+		    </td>
+		    <td class="has-text-centered">
+			{{event.start|localize|format('hh:mm A')}} - 
+			{{event.end|localize|format('hh:mm A')}}
+		    </td>
+		</tr>
+		{% endfor %}
+	    </tbody>
+	</table>
+	{% if calendar.permissions.check_editor(current_user) %}
+	<a class="button is-primary" href="{{url_for('team.scheduled_event_new', id=calendar.id)}}" >New Event</a>
+	{% endif %}
+    </div>
+    <div class="column">
+	<h3 class="title is-3">Recurring Events</h3>
+	<table class="table is-hoverable">
+	    <thead>
+		<tr>
+		    <th>Draft</th>
+		    <th>Name</th>
+		    <th>Dates</th>
+		    <th>Times</th>
+		    <th>Days of Week</th>
+		</tr>
+	    </thead>
+	    <tbody>
+		{% for event in recurring_events %}    
+		<tr {{helpers.onclick(url_for('team.recurring_event_view', cid=calendar.id, id=event.id))}}>
+		    <td>
+			<div class="icon is-medium" style="display: inline-table">
+			    {% if event.is_draft %}
+			    <i class="fas fa-pencil-ruler fa-lg"></i>
+			    {% endif %}
+			</div>
+		    </td>
+		    <td>
+			{{event.name}}
+		    </td>
+		    <td>
+			{{event.start_date.strftime('%a %m/%d/%y')}} - {{event.end_date.strftime('%a %m/%d/%y')}}
+		    </td>
+		    <td>
+			{{event.start_time.strftime('%I:%M %p')}} - {{event.end_time.strftime('%I:%M %p')}}
+		    </td>
+		    <td>
+			{% for d in event.days_of_week %}
+			{{d | day_of_week_letter }}
+			{% endfor %}
+		    </td>
+		</tr>
+		{% endfor %}
+	    </tbody>
+	</table>
+	{% if calendar.permissions.check_editor(current_user) %}
+	<a class="button is-primary" href="{{url_for('team.recurring_event_new', id=calendar.id)}}" >New Recurring Event</a>
+	{% endif %}
+    </div>
+</div>
+
+
+<br />
+{% endblock %}

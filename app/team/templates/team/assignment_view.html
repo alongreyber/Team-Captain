@@ -1,0 +1,42 @@
+{% extends 'team/base.html' %}
+
+{% block team_content %}
+<div class="level">
+    <div class="level-left">
+	<h1 class="title is-1">{{assignment.subject}}</h1>
+    </div>
+    <div class="level-right">
+	{% if assignment.permissions.check_editor(current_user) %}
+	<a href="{{url_for('team.assignment_info', id=assignment.id)}}" class="level-item button is-medium is-outlined is-success">
+	    <span class="icon is-large">
+		<i class="fas fa-pencil-alt fa-lg"></i>
+	    </span>
+	    <span class="is-size-4">
+		Edit
+	    </span>
+	</a>
+	{% endif %}
+    </div>
+</div>
+
+<div class="content is-medium" id="content-div" style="border: 1px solid gray; padding: 20px"></div>
+<script>
+    var md = window.markdownit();
+    var input = {{assignment.content|tojson}};
+    var result = md.render(input);
+    $('#content-div').html(result);
+</script>
+
+<br />
+
+{% if au.completed %}
+<p class="is-size-5">
+Completed on {{au.completed|localize|format}}
+</p>
+{% endif %}
+<br/>
+
+<a class="button is-medium is-primary " href="{{url_for('team.assignment_complete', id=assignment.id)}}" {% if au.completed %}disabled{% endif %}>
+    I'm done!
+</a>
+{% endblock %}

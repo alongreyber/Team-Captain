@@ -5,7 +5,7 @@ from flask_login import current_user, login_required, login_user, logout_user
 
 from requests.exceptions import HTTPError
 
-public = Blueprint('public', __name__, template_folder='templates')
+team = Blueprint('team', __name__, template_folder='templates')
 
 # These routes are for non-authenticated users
 
@@ -16,7 +16,7 @@ def landing_page():
 @app.route('/login')
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('public.index'))
+        return redirect(url_for('team.index'))
     google = oauth.get_google_auth()
     auth_url, state = google.authorization_url( oauth.AUTH_URI, access_type='offline')
     session['oauth_state'] = state
@@ -32,7 +32,7 @@ def logout():
 def callback():
     # Redirect user to home page if already logged in.
     if current_user is not None and current_user.is_authenticated:
-        return redirect(url_for('public.index'))
+        return redirect(url_for('team.index'))
     if 'error' in request.args:
         if request.args.get('error') == 'access_denied':
             return 'You denied access.'
@@ -64,5 +64,5 @@ def callback():
             user.roles.append(everyone_role)
             user.save()
             login_user(user)
-            return redirect(url_for('public.index'))
+            return redirect(url_for('team.index'))
         return 'Could not fetch your information.'

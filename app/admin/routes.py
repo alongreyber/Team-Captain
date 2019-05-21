@@ -22,7 +22,7 @@ def require_authorization():
         if role.name == 'admin':
             return
     flash('You do not have permission to view this page', 'danger')
-    return redirect(url_for('public.index'))
+    return redirect(url_for('team.index'))
 
 @admin.route('/')
 def index():
