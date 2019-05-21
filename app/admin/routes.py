@@ -116,14 +116,11 @@ def attendance_graphs():
     else:
         # By default filter by none
         filter_by = 'None'
-    # Fill in eu.user
-    for eu in all_eus:
-        for user in all_users:
-            if eu in user.assigned_events:
-                eu.user = user
-                break
     # Filter data by current user
     data = {}
+    # Fill in eu.event
+    for eu in all_eus:
+        eu.event = models.Event.objects(users=eu.id).first()
     for eu in all_eus:
         # We have to do this every time so that we include all the dates
         event_date = eu.event.start.format('MM/DD/YY')

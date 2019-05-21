@@ -39,15 +39,17 @@ def edit_profile():
 
 @public.route('/user/<id>')
 @login_required
-def user_info(id):
-    # TODO finish
-    return "Hi!"
+def user_view(id):
+    user = models.User.objects(id=id).first()
+    if not user:
+        abort(404)
+    return render_template('public/user_view.html', user=user)
 
 @public.route('/users')
 @login_required
-def user_list(id):
-    # TODO finish
-    return "Hi!"
+def user_list():
+    users = models.User.objects
+    return render_template('public/user_list.html', users=users)
 
 @public.route('/submittimezone', methods=['POST'])
 @login_required
@@ -114,6 +116,22 @@ def assignment_info(id):
         return redirect(url_for('public.assignment_edit', id=id))
     return render_template('public/assignment_info.html', assignment=assignment)
 
+def fill_in_task_info(task):
+    if type(task) == models.EventUser:
+        # Have to find the event
+        event = models.Event.objects(users=current_user.id).first()
+        if not event:
+            print("Problem!")
+        task.text = "RSVP for " + event.name
+        task.link = url_for('public.event_view', id=event.id)
+    elif type(task) == models.AssignmentUser:
+        assignment = models.Assignment.objects(users=current_user.id).first()
+        task.text = assignment.subject
+        task.link = url_for('public.assignment_view', id=assignment.id)
+    else:
+        raise
+
+
 @public.route('/task/<id>')
 @login_required
 def task_redirect(id):
@@ -122,6 +140,7 @@ def task_redirect(id):
     for task_list in current_user.assigned_tasks:
         if task_list.id == id:
             task = task_list 
+    fill_in_task_info(task)
     if not task:
         abort(404)
     # Not done yet!
@@ -130,6 +149,8 @@ def task_redirect(id):
 def task_list():
     current_user.select_related(max_depth=2)
     tasks = current_user.assigned_tasks
+    for task in tasks:
+        fill_in_task_info(task)
     # TODO fill in information such as URL based on task type
     return render_template('public/task_list.html',tasks=tasks)
 
@@ -854,7 +875,7 @@ def topic_view(id):
             topic=topic,
             sidebar_data=get_wiki_sidebar_data())
 
-@public.route('/wiki/newtopic')
+@public.route('/wiki/topic/new')
 def topic_new():
     topic = models.Topic()
     topic.name = "New Topic"
@@ -865,6 +886,7 @@ def topic_new():
     topic.permissions.visible_roles = [everyone_role.id]
     topic.permissions.editor_users = [current_user.id]
 
+    flash('Created Topic', 'success')
     topic.save()
     return redirect(url_for('public.topic_edit', id=topic.id))
 
@@ -883,15 +905,16 @@ def topic_edit(id):
         save_permission_form(form.permissions, topic.permissions)
         if not topic.permissions.check_editor(current_user):
             flash('You cannot remove yourself as an editor', 'warning')
-        topic.save()
-        flash('Changes Saved', 'success')
+        else:
+            topic.save()
+            flash('Changes Saved', 'success')
     set_selected_permission_form(form.permissions, topic.permissions)
     return render_template('public/wiki/topic_edit.html',
             topic=topic,
             form=form,
             sidebar_data=get_wiki_sidebar_data())
 
-@public.route('/topic/<id>/delete')
+@public.route('/wiki/topic/<id>/delete')
 def topic_delete(id):
     topic = models.Topic.objects(id=id).first()
     if not topic:
@@ -907,34 +930,44 @@ def topic_delete(id):
     return redirect(url_for('public.wiki_home'))
 
 
-@public.route('/wiki/topic/<id>/newarticle')
-def new_article(id):
-    topic = models.Topic.objects(id=id).first()
+@public.route('/wiki/article/new')
+def article_new():
+    topic = None
+    if request.args.get('id'):
+        topic = models.Topic.objects(id=request.args.get('id')).first()
+    else:
+        all_topics = models.Topic.objects
+        for t in all_topics:
+            if t.permissions.check_editor(current_user):
+                topic = t
+                break
     if not topic:
-        abort(404)
-    if not topic.permissions.check_editor(current_user):
-        abort(404)
+        flash('Please create a topic first!', 'warning')
+        return redirect(url_for('public.wiki_home'))
     article = models.Article()
     article.name = "New Article"
     article.content = "My New Article"
-    article.owner = current_user.id
     article.topic = topic
     article.save()
     return redirect(url_for('public.article_edit', id=article.id, tid=topic.id))
 
 @public.route('/wiki/topic/<tid>/article/<id>/edit', methods=['GET','POST'])
 def article_edit(tid, id):
-    topic = models.Topic.objects(id=tid).first()
-    if not topic:
-        abort(404)
-    if not topic.permissions.check_editor(current_user):
-        abort(404)
     article = models.Article.objects(id=id).first()
     if not article:
         abort(404)
+    if not article.topic.permissions.check_editor(current_user):
+        abort(404)
     form = forms.ArticleForm(data=article.to_mongo().to_dict())
+    all_topics = models.Topic.objects
+    allowed_edit_topics = []
+    for t in all_topics:
+        if t.permissions.check_editor(current_user):
+            allowed_edit_topics.append(t)
+    form.topic.choices = [(str(t.id), t.name) for t in allowed_edit_topics]
     if form.validate_on_submit():
         article.name = form.name.data
+        article.topic = ObjectId(form.topic.data)
         article.content = form.content.data
         article.save()
         flash('Changes Saved', 'success')
@@ -958,7 +991,7 @@ def article_view(tid, id):
             sidebar_data=get_wiki_sidebar_data())
 
 @public.route('/wiki/topic/<tid>/article/<id>/delete')
-def article_delete(id):
+def article_delete(tid, id):
     topic = models.Topic.objects(id=tid).first()
     if not topic:
         abort(404)
@@ -969,7 +1002,7 @@ def article_delete(id):
         abort(404)
     article.delete()
     flash('Article Deleted', 'success')
-    return redirect(url_for('public.topic_view'))
+    return redirect(url_for('public.topic_view', id=tid))
 
 @public.route('/assignments')
 def assignment_list():

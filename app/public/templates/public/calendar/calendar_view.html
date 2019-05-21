@@ -31,7 +31,7 @@
 	    {% include 'public/components/role_list.html' %}
 	{% endfor %}
 	{% for user in calendar.permissions.editor_users %}
-	    {% set link = url_for('public.user_info', id=user.id) %}
+	    {% set link = url_for('public.user_view', id=user.id) %}
 	    {% include 'public/components/user_list.html' %}
 	{% endfor %}
     </div>
@@ -41,7 +41,7 @@
 	    {% include 'public/components/role_list.html' %}
 	{% endfor %}
 	{% for user in calendar.permissions.visible_users %}
-	    {% set link = url_for('public.user_info', id=user.id) %}
+	    {% set link = url_for('public.user_view', id=user.id) %}
 	    {% include 'public/components/user_list.html' %}
 	{% endfor %}
     </div>

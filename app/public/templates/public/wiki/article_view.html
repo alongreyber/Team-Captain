@@ -6,14 +6,16 @@
 	<h1 class="level-item title is-1">{{article.name}}</h1>
     </div>
     <div class="level-right">
-	<a href="{{url_for('public.article_edit', tid=article.topic.id, id=article.id)}}" class="level-item icon is-large">
-	    <i class="fas fa-edit fa-2x"></i>
+	<a href="{{url_for('public.article_edit', tid=article.topic.id, id=article.id)}}" class="level-item button is-medium is-outlined is-success">
+	    <span class="icon is-large">
+		<i class="fas fa-pencil-alt fa-lg"></i>
+	    </span>
+	    <span class="is-size-4">
+		Edit
+	    </span>
 	</a>
     </div>
 </div>
-<p class="is-size-5">Written by {{article.owner.name}}</p>
-<br/>
-<br/>
 <br/>
 
 <div class="content is-medium" id="content-div" style="border: 1px solid gray; padding: 20px"></div>

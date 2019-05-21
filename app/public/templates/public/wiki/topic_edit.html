@@ -6,8 +6,13 @@
 	<h1 class="level-item title is-1">Edit Topic</h1>
     </div>
     <div class="level-right">
-	<a href="{{url_for('public.topic_view', id=topic.id)}}" class="level-item icon is-large">
-	    <i class="fas fa-eye fa-2x"></i>
+	<a href="{{url_for('public.topic_view', id=topic.id)}}" class="level-item button is-medium is-outlined is-success">
+	    <span class="icon is-large">
+		<i class="fas fa-eye fa-lg"></i>
+	    </span>
+	    <span class="is-size-4">
+		View
+	    </span>
 	</a>
     </div>
 </div>
@@ -29,7 +34,11 @@
 	</div>
     </div>
 
+    <br/>
+    <br/>
     {# Render the permissions formfield #}
+    {% set editor_label = 'Editors' %}
+    {% set visible_label = 'Visible to' %}
     {% include 'public/components/permissions_form.html' %}
     
     <input class="button is-primary" id="submit" name="submit" type="submit" value="Save">

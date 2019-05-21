@@ -191,4 +191,3 @@ class Article(db.Document):
     name = db.StringField()
     content = db.StringField()
     topic = db.ReferenceField(Topic)
-    owner = db.ReferenceField(User)

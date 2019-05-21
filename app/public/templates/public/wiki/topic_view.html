@@ -7,8 +7,13 @@
     </div>
     <div class="level-right">
 	{% if topic.permissions.check_editor(current_user) %}
-	<a href="{{url_for('public.topic_edit', id=topic.id)}}" class="level-item icon is-large">
-	    <i class="fas fa-edit fa-2x"></i>
+	<a href="{{url_for('public.topic_edit', id=topic.id)}}" class="level-item button is-medium is-outlined is-success">
+	    <span class="icon is-large">
+		<i class="fas fa-pencil-alt fa-lg"></i>
+	    </span>
+	    <span class="is-size-4">
+		Edit
+	    </span>
 	</a>
 	{% endif %}
     </div>
@@ -17,27 +22,26 @@
 
 <p class="is-size-4">{{topic.description}}</p>
 <br/>
-<h4 class="is-size-4"> Owner: {{ topic.owner.name }}
-<br/>
-<br/>
 
 <div class='columns'>
     <div class="column">
 	<h3 class="title is-3">Editors</h3>
-	{% for r in topic.permissions.editor_roles %}
-	<div class="button is-rounded is-primary">{{r.name | capitalize}}</div>
+	{% for role in topic.permissions.editor_roles %}
+	    {% include 'public/components/role_list.html' %}
 	{% endfor %}
-	{% for u in topic.permissions.editor_users %}
-	<div class="button is-rounded is-link">{{u.first_name + " " + u.last_name}}</div>
+	{% for user in topic.permissions.editor_users %}
+	    {% set link = url_for('public.user_view', id=user.id) %}
+	    {% include 'public/components/user_list.html' %}
 	{% endfor %}
     </div>
     <div class="column">
 	<h3 class="title is-3">Visible To</h3>
-	{% for r in topic.permissions.visible_roles %}
-	<div class="button is-rounded is-primary">{{r.name | capitalize}}</div>
+	{% for role in topic.permissions.visible_roles %}
+	    {% include 'public/components/role_list.html' %}
 	{% endfor %}
-	{% for u in topic.permissions.visible_users %}
-	<div class="button is-rounded is-link">{{u.first_name + " " + u.last_name}}</div>
+	{% for user in topic.permissions.visible_users %}
+	    {% set link = url_for('public.user_view', id=user.id) %}
+	    {% include 'public/components/user_list.html' %}
 	{% endfor %}
     </div>
 </div>
@@ -46,7 +50,7 @@
 <h3 class="title is-3">Recent Activity</h3>
 
 {% if topic.permissions.check_editor(current_user) %}
-<a class="button is-primary" href="{{url_for('public.new_article', id=topic.id)}}" >New Article</a>
+<a class="button is-primary" href="{{url_for('public.article_new', id=topic.id)}}" >New Article</a>
 <br />
 {% endif %}
 

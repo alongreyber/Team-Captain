@@ -7,23 +7,15 @@
 <table class="table is-hoverable">
     <thead>
 	<tr>
-	    <th>Subject</th>
-	    <th>Due</th>
 	    <th>Completed?</th>
 	</tr>
     </thead>
     <tbody>
 	{% for task in tasks %}    
-	<tr onclick="window.location='{{url_for('public.task_redirect', id=tu.id)}}'">
-	    <td>
-		{{tu.task.text}}
-	    </td>
-	    <td>
-		{{tu.task.due|localize|format}}
-	    </td>
+	<tr onclick="window.location='{{url_for('public.task_redirect', id=task.id)}}'">
 	    <td style="text-align: center">
 		<div class="icon is-medium" style="display: inline-table;">
-		    {% if tu.completed %}
+		    {% if task.completed %}
 		    <i class="far fa-check-square fa-lg"></i>
 		    {% else %}
 		    <i class="far fa-square fa-lg"></i>

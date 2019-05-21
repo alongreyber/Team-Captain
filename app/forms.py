@@ -89,5 +89,6 @@ class CalendarForm(FlaskForm):
     permissions = FormField(PermissionSetForm)
 
 class ArticleForm(FlaskForm):
+    topic = SelectField('Topic')
     name = StringField(validators=[required()])
     content = TextAreaField()

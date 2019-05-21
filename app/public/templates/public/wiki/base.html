@@ -2,11 +2,25 @@
 
 {% block sidebar %}
 <aside class="menu">
+    {# Only show on home page #}
+    {% if request.url_rule.endpoint == 'public.wiki_home' %}
+    <a href="{{ url_for('public.article_new') }}" class="button is-large is-outlined is-success" class="button" >
+	<span class="icon is-medium" style="display: inline-block">
+	    <i class="far fa-plus-square fa-lg"></i>
+	</span>
+	<span>New Article</span>
+    </a>
+    {% else %}
+    <br/>
+    {% endif %}
+    <br/>
+    <br/>
+    <br/>
     <p class="menu-label">
     General
     </p>
     <ul class="menu-list">
-	<li><a class="{{ 'is-active' if request.path == '/wiki' }}" href="{{url_for('public.wiki_home')}}">Home</a></li>
+	<li><a class="{{ 'is-active' if request.url_rule.endpoint == 'public.wiki_home' }}" href="{{url_for('public.wiki_home')}}">Home</a></li>
 	<li><a>Drafts</a></li>
     </ul>
     <p class="menu-label">
@@ -27,6 +41,11 @@
 	</li>
 	{% endif %}
 	{% endfor %}
+	<li>
+	    <a href="{{url_for('public.topic_new')}}">
+		&#43; New Topic
+	    </a>
+	</li>
 </aside>
 {% endblock %}
 
