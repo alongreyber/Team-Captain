@@ -11,6 +11,12 @@ class PermissionSetForm(FlaskForm):
     visible_roles = SelectMultipleField('Roles')
     visible_users = SelectMultipleField('Users')
 
+class TeamForm(FlaskForm):
+    name = StringField()
+    sub = StringField('Workspace URL')
+    number = IntegerField()
+    email_subdomain = StringField('Email Subdomain (optional)')
+
 class UserForm(FlaskForm):
     first_name = StringField()
     last_name = StringField()

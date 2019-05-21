@@ -1,6 +1,6 @@
 from app import models, forms, tasks
 from app.admin import context
-from flask import render_template, request, redirect, flash, session, abort, url_for, Blueprint, send_file
+from flask import render_template, request, redirect, flash, session, abort, url_for, Blueprint, send_file, g
 
 from flask_login import current_user
 
@@ -13,20 +13,52 @@ admin = Blueprint('admin', __name__, template_folder='templates')
 
 protected_roles = ['everyone', 'admin']
 
+# Look up the current team
+@admin.url_value_preprocessor
+def get_team(endpoint, values):
+    team = models.Team.objects(sub=values.pop('sub')).first()
+    if not team:
+        abort(404)
+    g.team = team
+
+# Inject a function team_url_for that adds the correct subdomain
+def team_url_for(*args, **kwargs):
+    return url_for(*args, sub=g.team.sub, **kwargs)
+@admin.context_processor
+def inject_url_for():
+    return dict(team_url_for=team_url_for)
+
 @admin.before_request
 def require_authorization():
     if not current_user.is_authenticated:
         flash('Please log in to view this page', 'danger')
-        return redirect(url_for('login', next=request.endpoint))
+        return redirect(team_url_for('login', next=request.endpoint))
     for role in current_user.roles:
         if role.name == 'admin':
             return
     flash('You do not have permission to view this page', 'danger')
-    return redirect(url_for('team.index'))
+    return redirect(team_url_for('team.index'))
 
 @admin.route('/')
 def index():
-    return redirect(url_for('admin.user_list'))
+    return redirect(team_url_for('admin.user_list'))
+
+@admin.route('/settings', methods=['GET', 'POST'])
+def team_settings():
+    form = forms.TeamForm(data=g.team.to_mongo().to_dict())
+    if form.validate_on_submit():
+        old_subdomain = g.team.sub
+        g.team.name = form.name.data
+        g.team.sub = form.sub.data
+        g.team.number = form.number.data
+        g.team.email_subdomain = form.email_subdomain.data
+        g.team.save()
+        flash('Changes Saved', 'success')
+        g.team.reload()
+        if g.team.sub != old_subdomain:
+            return redirect(team_url_for('admin.team_settings'))
+    return render_template('admin/team_settings.html',
+            form=form)
 
 @admin.route('/users')
 def user_list():
@@ -62,7 +94,7 @@ def user_delete(id):
     for tu in user.assigned_tasks:
         tu.delete()
     user.delete()
-    return redirect(url_for('admin.user_list'))
+    return redirect(team_url_for('admin.user_list'))
 
 @admin.route('/roles')
 def role_list():
@@ -78,14 +110,14 @@ def role_new():
         for r in all_roles:
             if r.name == form.data['role'].lower():
                 flash('Role already exists', 'warning')
-                return redirect(url_for('admin.role_list'))
+                return redirect(team_url_for('admin.role_list'))
         new_role = models.Role()
         new_role.name = form.data['role'].lower()
         new_role.save()
         flash('Added Role', 'success')
     if len(form.errors) > 0:
         flash_errors(form)
-    return redirect(url_for('admin.role_list'))
+    return redirect(team_url_for('admin.role_list'))
 
 @admin.route('/role/<id>/remove')
 def role_delete(id):
@@ -98,7 +130,7 @@ def role_delete(id):
             user.save()
         role.delete()
         flash('Deleted Role', 'success')
-    return redirect(url_for('admin.role_list'))
+    return redirect(team_url_for('admin.role_list'))
 
 @admin.route('/attendance', methods=['GET', 'POST'])
 def attendance_graphs():
@@ -247,7 +279,7 @@ def clear_db():
         user.save()
 
     flash('Cleared DB', 'success')
-    return redirect(url_for('admin.debug_tools'))
+    return redirect(team_url_for('admin.debug_tools'))
 
 def flash_errors(form):
     """Flash errors from a form at the top of the page"""

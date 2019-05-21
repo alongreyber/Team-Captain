@@ -30,3 +30,7 @@ table.is-hoverable:hover {
 .hoverable {
     cursor: pointer;
 }
+
+.is-not-hoverable {
+    pointer-events: none;
+}

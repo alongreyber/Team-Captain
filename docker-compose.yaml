@@ -5,7 +5,7 @@ services:
     build: .
     environment:
       FLASK_ENV: development
-      SERVER_NAME: bcb.manager.com:5000
+      SERVER_NAME: manager.com:5000
       OAUTHLIB_INSECURE_TRANSPORT: 1
     volumes:
       - .:/code

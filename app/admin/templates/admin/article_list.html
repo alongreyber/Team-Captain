@@ -9,7 +9,7 @@
 
 <div style="display: flex">
     <h3 class="title is-3">Topics</h3>
-    <a style="margin-left: 20px" class="button is-primary" href="{{url_for('admin.new_topic')}}">New</a>
+    <a style="margin-left: 20px" class="button is-primary" href="{{team_url_for('admin.new_topic')}}">New</a>
 </div>
 <table class="table is-hoverable">
     <thead>
@@ -19,7 +19,7 @@
     </thead>
     <tbody>
 	{% for topic in topics %}
-	<tr {{helpers.onclick(url_for('admin.topic_edit', id=topic.id))}} >
+	<tr {{helpers.onclick(team_url_for('admin.topic_edit', id=topic.id))}} >
 	    <td>
 		{{topic.name}}
 	    </td>
@@ -40,7 +40,7 @@
 <br/>
 <div style="display: flex">
     <h3 class="title is-3">Articles</h3>
-    <a style="margin-left: 20px" class="button is-primary" href="{{url_for('admin.new_article')}}">New</a>
+    <a style="margin-left: 20px" class="button is-primary" href="{{team_url_for('admin.new_article')}}">New</a>
 </div>
 
 <table class="table is-hoverable">
@@ -51,7 +51,7 @@
     </thead>
     <tbody>
 	{% for article in articles %}
-	<tr {{helpers.onclick(url_for('admin.article_edit', id=article.id))}} >
+	<tr {{helpers.onclick(team_url_for('admin.article_edit', id=article.id))}} >
 	    <td>
 		{{article.topic.name}}
 	    </td>

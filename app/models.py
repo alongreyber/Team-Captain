@@ -32,21 +32,25 @@ class PendulumField(BaseField):
         return value
 
 class Team(db.Document):
+    # Subdomain
+    sub = db.StringField(unique=True)
     name = db.StringField()
+    number = db.IntField()
+    email_subdomain = db.StringField()
 
 class TeamDocument(db.Document):
     meta = {'abstract': True}
-    org = db.LazyReferenceField(Team) 
+    team = db.LazyReferenceField(Team) 
     # Filter to objects in org
-    @db.queryset_manager
-    def objects(doc_cls, query):
-        return query
+    # @db.queryset_manager
+    # def objects(doc_cls, query):
+    #    return query
 
-class Role(db.Document):
+class Role(TeamDocument):
     name = db.StringField()
 
 # Notification that has been queued to send to user
-class PushNotification(db.Document):
+class PushNotification(TeamDocument):
     user = db.ReferenceField('User')
     text = db.StringField()
     link = db.StringField()
@@ -65,7 +69,7 @@ class AppNotification(db.EmbeddedDocument):
     link = db.StringField()
     recieve_date = PendulumField()
 
-class User(db.Document, UserMixin):
+class User(TeamDocument, UserMixin):
     email = db.EmailField(max_length=100)
     personal_email = db.EmailField(max_length=100)
     phone_number = db.StringField(max_length=20)
@@ -119,12 +123,12 @@ class NotificationSettings(db.EmbeddedDocument):
 
 # Calendar models
 
-class Calendar(db.Document):
+class Calendar(TeamDocument):
     name = db.StringField()
     description = db.StringField()
     permissions = db.EmbeddedDocumentField(PermissionSet)
 
-class Event(db.Document):
+class Event(TeamDocument):
     name = db.StringField()
     calendar = db.ReferenceField(Calendar)
     content = db.StringField()
@@ -138,7 +142,7 @@ class Event(db.Document):
     rsvp_notifications = db.EmbeddedDocumentField(NotificationSettings)
     enable_attendance = db.BooleanField(default=False)
 
-class RecurringEvent(db.Document):
+class RecurringEvent(TeamDocument):
     name = db.StringField()
     calendar = db.ReferenceField(Calendar)
     content = db.StringField()
@@ -156,7 +160,7 @@ class RecurringEvent(db.Document):
     rsvp_notifications = db.EmbeddedDocumentField(NotificationSettings)
     enable_attendance = db.BooleanField(default=False)
 
-class EventUser(db.Document):
+class EventUser(TeamDocument):
     user = db.ReferenceField('User')
     rsvp = db.StringField()
     sign_in = PendulumField()
@@ -166,7 +170,7 @@ class EventUser(db.Document):
 
 # Assignment models
 
-class Assignment(db.Document):
+class Assignment(TeamDocument):
     permissions = db.EmbeddedDocumentField(PermissionSet)
     users = db.ListField(db.ReferenceField('AssignmentUser'))
     subject = db.StringField()
@@ -175,19 +179,19 @@ class Assignment(db.Document):
     is_draft = db.BooleanField(default=True)
     notifications = db.EmbeddedDocumentField(NotificationSettings)
 
-class AssignmentUser(db.Document):
+class AssignmentUser(TeamDocument):
     user = db.ReferenceField('User')
     seen = PendulumField()
     completed = PendulumField()
 
 # Wiki models
 
-class Topic(db.Document):
+class Topic(TeamDocument):
     permissions = db.EmbeddedDocumentField(PermissionSet)
     name = db.StringField()
     description = db.StringField()
 
-class Article(db.Document):
+class Article(TeamDocument):
     name = db.StringField()
     content = db.StringField()
     topic = db.ReferenceField(Topic)

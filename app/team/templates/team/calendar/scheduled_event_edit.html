@@ -70,7 +70,7 @@
     </div>
     <br />
     <input class="button is-primary" id="submit" name="submit" type="submit" value="Save">
-    <a href="{{url_for('team.scheduled_event_publish', cid=event.calendar.id, id=event.id)}}" class="button is-success" id="publish" >Publish</a>
-    <a href="{{url_for('team.scheduled_event_delete', cid=event.calendar.id,  id=event.id)}}" class="button is-danger" >Delete</a>
+    <a href="{{team_url_for('team.scheduled_event_publish', cid=event.calendar.id, id=event.id)}}" class="button is-success" id="publish" >Publish</a>
+    <a href="{{team_url_for('team.scheduled_event_delete', cid=event.calendar.id,  id=event.id)}}" class="button is-danger" >Delete</a>
 </form>
 {% endblock %}

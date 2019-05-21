@@ -1,6 +1,6 @@
 {% extends 'team/calendar/event_base.html' %}
 
-{% set up_url = url_for('team.event_view', id=event.id) %}
+{% set up_url = team_url_for('team.event_view', id=event.id) %}
 
 {% block event_content %}
 <h1 class="title">Sign In for {{event.name}}</h1>

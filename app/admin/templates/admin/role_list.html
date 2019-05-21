@@ -15,7 +15,7 @@
 		{{r.name|capitalize}}
 	    </td>
 	    <td>
-		<a href="{{url_for('admin.role_delete', id=r.id) if not r.name in protected_roles else '#'}}">
+		<a href="{{team_url_for('admin.role_delete', id=r.id) if not r.name in protected_roles else '#'}}">
 		    <button class="button is-primary" {% if r.name in protected_roles %}disabled{% endif %}>
 	
 			<span class="icon is-medium badge">
@@ -29,7 +29,7 @@
     </tbody>
 </table>
 
-<form submit="return false;" action="{{ url_for('admin.role_new') }}" method="post">
+<form submit="return false;" action="{{ team_url_for('admin.role_new') }}" method="post">
     {{ role_form.hidden_tag() }}
     <div class="field">
 	<span class="control">

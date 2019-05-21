@@ -7,7 +7,7 @@
 <br />
 <div style="display: flex">
     <h3 class="title is-3">Recurring</h3>
-    <a style="margin-left: 20px" class="button is-primary" href="{{url_for('admin.recurring_event_new')}}">New</a>
+    <a style="margin-left: 20px" class="button is-primary" href="{{team_url_for('admin.recurring_event_new')}}">New</a>
 </div>
 <br />
 <table class="table is-hoverable">
@@ -21,7 +21,7 @@
     <tbody>
 	{% for m in recurring_events %}
 	{# url points to view but we'll be redirected to edit if needed #}
-	<tr {{helpers.onclick(url_for('admin.recurring_event_view', id=m.id))}}>
+	<tr {{helpers.onclick(team_url_for('admin.recurring_event_view', id=m.id))}}>
 	    <td style="text-align: center">
 		<div class="icon is-medium" style="display: inline-table">
 		    {% if m.is_draft %}
@@ -53,7 +53,7 @@
 <br />
 <div style="display: flex">
     <h3 class="title is-3">One Time</h3>
-    <a style="margin-left: 20px" class="button is-primary" href="{{url_for('admin.scheduled_event_new')}}">New</a>
+    <a style="margin-left: 20px" class="button is-primary" href="{{team_url_for('admin.scheduled_event_new')}}">New</a>
 </div>
 <table class="table is-hoverable">
     <thead>
@@ -64,7 +64,7 @@
     </thead>
     <tbody>
 	{% for m in scheduled_events %}
-	<tr {{helpers.onclick(url_for('admin.scheduled_event_view', id=m.id))}}>
+	<tr {{helpers.onclick(team_url_for('admin.scheduled_event_view', id=m.id))}}>
 	    <td style="text-align: center">
 		<div class="icon is-medium" style="display: inline-table">
 		    {% if m.is_draft %}

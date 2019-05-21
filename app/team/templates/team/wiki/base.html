@@ -4,7 +4,7 @@
 <aside class="menu">
     {# Only show on home page #}
     {% if request.url_rule.endpoint == 'team.wiki_home' %}
-    <a href="{{ url_for('team.article_new') }}" class="button is-large is-outlined is-success" class="button" >
+    <a href="{{ team_url_for('team.article_new') }}" class="button is-large is-outlined is-success" class="button" >
 	<span class="icon is-medium" style="display: inline-block">
 	    <i class="far fa-plus-square fa-lg"></i>
 	</span>
@@ -20,7 +20,7 @@
     General
     </p>
     <ul class="menu-list">
-	<li><a class="{{ 'is-active' if request.url_rule.endpoint == 'team.wiki_home' }}" href="{{url_for('team.wiki_home')}}">Home</a></li>
+	<li><a class="{{ 'is-active' if request.url_rule.endpoint == 'team.wiki_home' }}" href="{{team_url_for('team.wiki_home')}}">Home</a></li>
 	<li><a>Drafts</a></li>
     </ul>
     <p class="menu-label">
@@ -30,11 +30,11 @@
 	{% for t in sidebar_data.topics %}
 	{% if t.permissions.check_visible(current_user) %}
 	<li>
-	    <a class="{{ 'is-active' if t == topic }}" href="{{url_for('team.topic_view', id=t.id)}}">{{t.name}}</a>
+	    <a class="{{ 'is-active' if t == topic }}" href="{{team_url_for('team.topic_view', id=t.id)}}">{{t.name}}</a>
 	    <ul>
 		{% for a in sidebar_data.articles %}
 		{% if a.topic == t %}
-		<li><a class="{{ 'is-active' if a == article }}" href="{{url_for('team.article_view', tid=t.id, id=a.id)}}">{{a.name}}</a></li>
+		<li><a class="{{ 'is-active' if a == article }}" href="{{team_url_for('team.article_view', tid=t.id, id=a.id)}}">{{a.name}}</a></li>
 		{% endif %}
 		{% endfor %}
 	    </ul>
@@ -42,7 +42,7 @@
 	{% endif %}
 	{% endfor %}
 	<li>
-	    <a href="{{url_for('team.topic_new')}}">
+	    <a href="{{team_url_for('team.topic_new')}}">
 		&#43; New Topic
 	    </a>
 	</li>

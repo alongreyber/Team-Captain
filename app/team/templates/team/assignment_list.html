@@ -14,7 +14,7 @@
     <tbody>
 	{% for assignment in assignments %}    
 	{% if assignment.permissions.check_visible(current_user)  %}
-	<tr {{helpers.onclick(url_for('team.assignment_view', id=assignment.id))}}>
+	<tr {{helpers.onclick(team_url_for('team.assignment_view', id=assignment.id))}}>
 	    <td>
 		{{assignment.subject}}
 	    </td>
@@ -36,7 +36,7 @@
 <br />
 
 <h2 class="title is-2"> My Assignments </h2>
-<a href="{{url_for('team.assignment_new')}}" class="button is-primary">
+<a href="{{team_url_for('team.assignment_new')}}" class="button is-primary">
     New
 </a>
 <table class="table is-hoverable">
@@ -53,7 +53,7 @@
     <tbody>
 	{% for assignment in assignments %}    
 	{% if assignment.permissions.check_editor(current_user)  %}
-	<tr {{helpers.onclick(url_for('team.assignment_info', id=assignment.id))}}>
+	<tr {{helpers.onclick(team_url_for('team.assignment_info', id=assignment.id))}}>
 	    <td>
 		{% if assignment.is_draft %}
 		<i class="fas fa-pencil-ruler fa-lg"></i>

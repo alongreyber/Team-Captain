@@ -12,7 +12,7 @@
     </thead>
     <tbody>
 	{% for task in tasks %}    
-	<tr onclick="window.location='{{url_for('team.task_redirect', id=task.id)}}'">
+	<tr onclick="window.location='{{team_url_for('team.task_redirect', id=task.id)}}'">
 	    <td style="text-align: center">
 		<div class="icon is-medium" style="display: inline-table;">
 		    {% if task.completed %}

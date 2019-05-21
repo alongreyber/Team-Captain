@@ -13,13 +13,13 @@
 	</div>
 	<div class="dropdown-menu">
 	    <div class="dropdown-content">
-		<a href="{{url_for('team.scheduled_event_new')}}" class="dropdown-item">
+		<a href="{{team_url_for('team.scheduled_event_new')}}" class="dropdown-item">
 		    Event
 		</a>
-		<a href="{{url_for('team.recurring_event_new')}}" class="dropdown-item">
+		<a href="{{team_url_for('team.recurring_event_new')}}" class="dropdown-item">
 		    Recurring Event
 		</a>
-		<a href="{{url_for('team.calendar_new')}}" class="dropdown-item">
+		<a href="{{team_url_for('team.calendar_new')}}" class="dropdown-item">
 		    Calendar
 		</a>
 	    </div>
@@ -38,7 +38,7 @@
     <ul class="menu-list">
 	{% for c in sidebar_data.calendars %}
 	<li>
-	    <a class="is-size-5" href="{{url_for('team.calendar_view', id=c.id)}}">
+	    <a class="is-size-5" href="{{team_url_for('team.calendar_view', id=c.id)}}">
 		<span class="icon" style="display: inline-block; color: {{c.color}}">
 		    <i class="fas fa-square"></i>
 		</span>
@@ -48,7 +48,7 @@
 	{% endfor %}
 	<br />
 	<li>
-	    <a class="is-size-5" href="{{url_for('team.calendar_new')}}">
+	    <a class="is-size-5" href="{{team_url_for('team.calendar_new')}}">
 		&#43; New
 	    </a>
 	</li>

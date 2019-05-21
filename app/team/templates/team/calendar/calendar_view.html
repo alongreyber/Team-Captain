@@ -7,7 +7,7 @@
     </div>
     <div class="level-right">
 	{% if calendar.permissions.check_editor(current_user) %}
-	<a href="{{url_for('team.calendar_edit', id=calendar.id)}}" class="level-item button is-medium is-outlined is-success">
+	<a href="{{team_url_for('team.calendar_edit', id=calendar.id)}}" class="level-item button is-medium is-outlined is-success">
 	    <span class="icon is-large">
 		<i class="fas fa-edit fa-lg"></i>
 	    </span>
@@ -31,7 +31,7 @@
 	    {% include 'team/components/role_list.html' %}
 	{% endfor %}
 	{% for user in calendar.permissions.editor_users %}
-	    {% set link = url_for('team.user_view', id=user.id) %}
+	    {% set link = team_url_for('team.user_view', id=user.id) %}
 	    {% include 'team/components/user_list.html' %}
 	{% endfor %}
     </div>
@@ -41,7 +41,7 @@
 	    {% include 'team/components/role_list.html' %}
 	{% endfor %}
 	{% for user in calendar.permissions.visible_users %}
-	    {% set link = url_for('team.user_view', id=user.id) %}
+	    {% set link = team_url_for('team.user_view', id=user.id) %}
 	    {% include 'team/components/user_list.html' %}
 	{% endfor %}
     </div>
@@ -62,7 +62,7 @@
 	    </thead>
 	    <tbody>
 		{% for event in events %}    
-		<tr {{helpers.onclick(url_for('team.scheduled_event_view', cid=calendar.id, id=event.id))}}>
+		<tr {{helpers.onclick(team_url_for('team.scheduled_event_view', cid=calendar.id, id=event.id))}}>
 		    <td>
 			<div class="icon is-medium" style="display: inline-table">
 			    {% if event.is_draft %}
@@ -85,7 +85,7 @@
 	    </tbody>
 	</table>
 	{% if calendar.permissions.check_editor(current_user) %}
-	<a class="button is-primary" href="{{url_for('team.scheduled_event_new', id=calendar.id)}}" >New Event</a>
+	<a class="button is-primary" href="{{team_url_for('team.scheduled_event_new', id=calendar.id)}}" >New Event</a>
 	{% endif %}
     </div>
     <div class="column">
@@ -102,7 +102,7 @@
 	    </thead>
 	    <tbody>
 		{% for event in recurring_events %}    
-		<tr {{helpers.onclick(url_for('team.recurring_event_view', cid=calendar.id, id=event.id))}}>
+		<tr {{helpers.onclick(team_url_for('team.recurring_event_view', cid=calendar.id, id=event.id))}}>
 		    <td>
 			<div class="icon is-medium" style="display: inline-table">
 			    {% if event.is_draft %}
@@ -129,7 +129,7 @@
 	    </tbody>
 	</table>
 	{% if calendar.permissions.check_editor(current_user) %}
-	<a class="button is-primary" href="{{url_for('team.recurring_event_new', id=calendar.id)}}" >New Recurring Event</a>
+	<a class="button is-primary" href="{{team_url_for('team.recurring_event_new', id=calendar.id)}}" >New Recurring Event</a>
 	{% endif %}
     </div>
 </div>

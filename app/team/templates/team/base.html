@@ -3,23 +3,30 @@
 {% block nav %}
 <div class="navbar is-info">
     <div class="navbar-menu is-active">
+	<div class="navbar-brand">
+	    <div class="navbar-item">
+		<div class="button is-outlined is-primary is-inverted is-not-hoverable">
+		    {{g.team.name}} - {{g.team.number}}
+		</div>
+	    </div>
+	</div>
 	<div class="navbar-start">
-	    <a href="{{url_for('team.user_profile')}}" class="navbar-item {{ "is-active" if request.path.startswith('/profile') }}">
+	    <a href="{{team_url_for('team.user_profile')}}" class="navbar-item {{ "is-active" if request.path.startswith('/profile') }}">
 		Profile
 	    </a>
-	    <a href="{{url_for('team.task_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/task') }}">
+	    <a href="{{team_url_for('team.task_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/task') }}">
 		Tasks
 	    </a>
-	    <a href="{{url_for('team.calendar_home')}}" class="navbar-item {{ "is-active" if request.path.startswith('/calendar') }}">
+	    <a href="{{team_url_for('team.calendar_home')}}" class="navbar-item {{ "is-active" if request.path.startswith('/calendar') }}">
 		Events
 	    </a>
-	    <a href="{{url_for('team.wiki_home')}}" class="navbar-item {{ "is-active" if request.path.startswith('/wiki') }}">
+	    <a href="{{team_url_for('team.wiki_home')}}" class="navbar-item {{ "is-active" if request.path.startswith('/wiki') }}">
 		Wiki
 	    </a>
-	    <a href="{{url_for('team.assignment_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/assignment') }}">
+	    <a href="{{team_url_for('team.assignment_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/assignment') }}">
 		Assignments
 	    </a>
-	    <a href="{{url_for('team.user_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/user') }}">
+	    <a href="{{team_url_for('team.user_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/user') }}">
 		Team Directory
 	    </a>
 	</div>
@@ -42,10 +49,10 @@
 		    {% else %}
 			{% for n in current_user.notifications %}
 			    <div class="navbar-item tc-notification" >
-				<a class="tc-notification__content" href="{{ url_for('team.notification_redirect', id=n.id) }}">
+				<a class="tc-notification__content" href="{{ team_url_for('team.notification_redirect', id=n.id, sub=g.team.sub) }}">
 				    {{ n.text }}
 				</a>
-				<a href="{{ url_for('team.notification_dismiss', id=n.id )}}" class="tc-notification__dismiss">
+				<a href="{{ team_url_for('team.notification_dismiss', id=n.id )}}" class="tc-notification__dismiss">
 				    <span class="icon is-medium badge">
 					<i class="fas fa-minus-square fa-lg"></i>
 				    </span>
@@ -59,7 +66,7 @@
 		Welcome {{current_user.name}}
 	    </div>
 	    <div class="navbar-item">
-		<a href="{{url_for('logout')}}">
+		<a href="{{team_url_for('logout')}}">
 		    <button class="button is-link">
 			Sign Out
 		    </button>

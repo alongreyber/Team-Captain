@@ -14,7 +14,7 @@
     </thead>
     <tbody>
 	{% for user in users %}    
-	<tr {{helpers.onclick(url_for('team.user_view', id=user.id))}}>
+	<tr {{helpers.onclick(team_url_for('team.user_view', id=user.id))}}>
 	    <td>
 		{{user.first_name}}
 	    </td>

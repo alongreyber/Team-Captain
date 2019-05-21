@@ -1,5 +1,5 @@
 {% extends 'team/calendar/event_base.html' %}
-{% set up_url = url_for('team.event_info', id=event.id, cid=calendar.id) %}
+{% set up_url = team_url_for('team.event_info', id=event.id, cid=calendar.id) %}
 
 {% block event_content %}
 <h1 class="title is-1">Edit Attendance for {{eu.user.first_name}} {{eu.user.last_name}}</h1>

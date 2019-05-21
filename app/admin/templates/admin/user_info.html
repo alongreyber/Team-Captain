@@ -1,6 +1,6 @@
 {% extends 'admin/base.html' %}
 
-{% set back_url = url_for('admin.user_list') %}
+{% set back_url = team_url_for('admin.user_list') %}
 
 {% block admin_content %}
 <h1 class="title is-1">{{user.first_name}} {{user.last_name}}</h1>
@@ -41,7 +41,7 @@
     </div>
 
     <input class="button is-primary" id="submit" name="submit" type="submit" value="Save">
-    <a href="{{url_for('admin.user_delete', id=user.id)}}" class="button is-danger">
+    <a href="{{team_url_for('admin.user_delete', id=user.id)}}" class="button is-danger">
 	Delete
     </a>
 </form>

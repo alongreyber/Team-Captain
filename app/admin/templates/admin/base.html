@@ -15,16 +15,19 @@
 	    </div>
 	</div>
 	<div class="navbar-start">
-	    <a href="{{url_for('admin.user_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/user') }}">
+	    <a href="{{team_url_for('admin.team_settings')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/settings') }}">
+		Team Settings
+	    </a>
+	    <a href="{{team_url_for('admin.user_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/user') }}">
 		Users
 	    </a>
-	    <a href="{{url_for('admin.role_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/role') }}">
+	    <a href="{{team_url_for('admin.role_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/role') }}">
 		Roles
 	    </a>
-	    <a href="{{url_for('admin.attendance_graphs')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/attendance') }}">
+	    <a href="{{team_url_for('admin.attendance_graphs')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/attendance') }}">
 		Attendance
 	    </a>
-	    <a href="{{url_for('admin.debug_tools')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/debug') }}">
+	    <a href="{{team_url_for('admin.debug_tools')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/debug') }}">
 		Debug Tools
 	    </a>
 	</div>
@@ -37,7 +40,7 @@
 		{% endif %}
 	    </div>
 	    <div class="navbar-item">
-		<a href="{{url_for('logout')}}">
+		<a href="{{team_url_for('logout')}}">
 		    <button class="button is-link">
 			Sign Out
 		    </button>
