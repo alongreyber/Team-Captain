@@ -14,8 +14,7 @@ import pendulum
 # Custom field for storing datetime objects with the pendulum library
 class PendulumField(BaseField):
     # Whether times have to be UTC before saving to DB
-    def __init__(self, enforce_utc=True, **kwargs):
-        self.enforce_utc = enforce_utc
+    def __init__(self, **kwargs):
         super(PendulumField, self).__init__(**kwargs)
     def to_python(self, value):
         if value is None:
@@ -26,9 +25,6 @@ class PendulumField(BaseField):
             return value
         if not isinstance(value, pendulum.DateTime):
             self.error('Not an instance of a pendulum DateTime')
-        if self.enforce_utc and not value.is_utc():
-            self.error('Date not in UTC!')
-        # Automatically converted to string for storage
         return value
 
 class Team(db.Document):

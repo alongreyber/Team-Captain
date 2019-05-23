@@ -327,7 +327,6 @@ def clear_db():
 @admin.route('/debug/save_db')
 def save_db():
     collections = [
-        models.Team,
         models.Role,
         models.PushNotification,
         models.User,

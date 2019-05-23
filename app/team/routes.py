@@ -156,7 +156,10 @@ def fill_in_task_info(task):
         eu = models.EventUser.objects(user=current_user.id).first()
         event = models.Event.objects(team=g.team, users=eu).first()
         task.text = "RSVP for " + event.name
-        task.link = team_url_for('team.event_view', id=event.id)
+        if event.recurrence:
+            task.link = team_url_for('team.recurring_event_view', cid=event.calendar.id, id=event.recurrence.id)
+        else:
+            task.link = team_url_for('team.scheduled_event_view', cid=event.calendar.id,  id=event.id)
     elif type(task) == models.AssignmentUser:
         au = models.AssignmentUser.objects(user=current_user.id).first()
         assignment = models.Assignment.objects(team=g.team, users=au).first()
@@ -518,7 +521,6 @@ def event_info(cid, id):
             event=event,
             calendar=calendar)
 
-# This is like view but for editors. Shows more information like results of RSVP, etc
 @team.route('/calendar/<cid>/event/<id>/view')
 def scheduled_event_view(cid, id):
     calendar = models.Calendar.objects(team=g.team, id=cid).first()

@@ -7,6 +7,7 @@ from mongoengine.errors import NotUniqueError
 
 import requests
 import pendulum
+import os, json
 
 
 # What to do if user tries to access unauthorized route
@@ -112,14 +113,13 @@ def create_team():
                 flash('Subdomain already in use. Please pick another!', 'warning')
             if saved:
                 team.reload()
-                # Create roles
-                everyone_role = models.Role(team=team, name='everyone')
-                everyone_role.save()
-                admin_role    = models.Role(team=team, name='admin')
-                admin_role.save()
+                load_sample_data(team)
+                everyone_role = models.Role.objects(team=team, name='everyone').first()
+                admin_role    = models.Role.objects(team=team, name='admin').first()
+                mentor_role   = models.Role.objects(team=team, name='mentor').first()
                 current_user.team = team
                 current_user.approved = pendulum.now()
-                current_user.roles = [everyone_role, admin_role]
+                current_user.roles = [everyone_role, admin_role, mentor_role]
                 current_user.save()
                 # Don't know why we have to do this
                 this_user = models.User.objects(id=current_user.id).first()
@@ -135,48 +135,19 @@ def create_team():
         flash_errors(form)
     return render_template('create_team.html', form=form)
 
-def create_sample_data(team):
+def load_sample_data(team):
     # Sample roles
-    leadership_role = models.Role(team=team, name='leadership')
-    mentors_role = models.Role(team=team, name='mentors')
-    everyone_role = models.Role.objects(name='everyone').first()
-    leadership_role.save()
-    mentors_role.save()
-
-    # Sample users
-    mentor1 = models.User(team=team,
-                          first_name='Woodie',
-                          last_name='Flowers',
-                          bio="Dr. Woodie Flowers is the Pappalardo Professor Emeritus of Mechanical Engineering at the Massachusetts Institute of Technology and a Distinguished Partner at Olin College. Dr. Flowers serves as Distinguished Advisor to FIRST and participated in the design of the FIRST Robotics Competition game for many years.",
-                          roles=[mentors_role])
-    mentor2 = models.User(team=team,
-                          first_name='Donald',
-                          last_name='Bossi',
-                          bio='Donald E. Bossi is the president of the global nonprofit FIRST, where he is building on 25 years of experience as a successful technology executive to develop the next generation of innovators.',
-                          roles=[mentors_role])
-    mentor3 = models.User(team=team,
-                          first_name='Dean',
-                          last_name='Kamen',
-                          bio='Dean Kamen is an inventor, an entrepreneur, and a tireless advocate for science and technology. His roles as inventor and advocate are intertwined—his own passion for technology and its practical uses has driven his personal determination to spread the word about technologys virtues and by so doing to change the culture of the United States.',
-                          roles=[mentors_role])
-    mentor1.save()
-    mentor2.save()
-    mentor3.save()
-    students = []
-    for i in range(5):
-        student = models.User(team=team)
-        student.save()
-        students.append(student)
-    calendar_permission_set = models.PermissionSet()
-    calendar_permission_set.visible_roles = [everyone_role]
-    calendar_permission_set.editor_roles = [mentor_role]
-    meetings_calendar = models.Calendar(team=team,
-                                        name="Meetings",
-                                        content="This is where you can find our full team meetings for preseason.",
-                                        permissions=calendar_permission_set)
-    meetings_calendar.save()
-    outreach_event = models.Event(team=team,
-                                  is_draft=False)
+    path = './sample-data/'
+    files = os.listdir(path)
+    for f_name in files:
+        with open(path + f_name, 'r') as f:
+            f_str = f.read()
+        collection = json.loads(f_str)
+        for doc in collection:
+            Model = getattr(models, f_name[:f_name.find('.')])
+            obj = Model.from_json(json.dumps(doc))
+            obj.team = team
+            obj.save()
 
 @app.route('/jointeam', methods=['GET', 'POST'])
 @login_required
