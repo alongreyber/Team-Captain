@@ -38,7 +38,10 @@
     <div class="field">
 	{{ form.barcode.label(class_='label') }}
 	<div class="control">
-	    {{ form.barcode(class_='input') }}
+	    {{ form.barcode(class_='input', style="width: 50%") }}
+	    <span class="button is-info icon is-medium" onclick="$('#barcode').val(Math.random().toString(36).substring(5));">
+		<i class="fas fa-redo"></i>
+	    </span>
 	</div>
     </div>
     <br >

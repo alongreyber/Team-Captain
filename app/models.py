@@ -32,12 +32,12 @@ class PendulumField(BaseField):
         return value
 
 class Team(db.Document):
-    confirmed = PendulumField()
     # Subdomain
     sub = db.StringField(unique=True)
     name = db.StringField()
     number = db.IntField(unique=True)
     email_subdomain = db.StringField()
+    owner = db.LazyReferenceField('User')
 
 class TeamDocument(db.Document):
     meta = {'abstract': True}
@@ -67,11 +67,8 @@ class AppNotification(db.EmbeddedDocument):
     recieve_date = PendulumField()
 
 class User(TeamDocument, UserMixin):
-    # Whether the user has been approved for their team
-    approved = PendulumField()
-    # Whether the user is creating a team or joining one
-    # only used for login process
-    creating_team = db.BooleanField()
+    # Used during sign up process
+    team_number = db.IntField()
 
     email = db.EmailField(max_length=100)
     personal_email = db.EmailField(max_length=100)
@@ -79,16 +76,21 @@ class User(TeamDocument, UserMixin):
     # Timemzone
     tz = db.StringField()
     bio = db.StringField()
-    barcode = db.StringField(max_length=100, unique=True)
+    # Sparse allows us to have null values without running into issues with unique constraint
+    barcode = db.StringField(max_length=100, unique=True, sparse=True)
     first_name = db.StringField(max_length=50)
     last_name = db.StringField(max_length=50)
     @property
     def name(self):
-        return self.first_name + " " + self.last_name
+        return f"{self.first_name} {self.last_name}"
     roles = db.ListField(db.ReferenceField(Role))
-    # This will work with any object with a "seen" and "completed" field
     assigned_tasks = db.ListField(db.GenericReferenceField())
     notifications = db.EmbeddedDocumentListField(AppNotification)
+    def is_admin(self):
+        for r in self.roles:
+            if r.name == 'admin':
+                return True
+        return False
 
 @login_manager.user_loader
 def load_user(user_id):

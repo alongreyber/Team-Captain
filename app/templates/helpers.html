@@ -1,3 +1,7 @@
 {% macro onclick(url) %}
 onclick="location.href = '{{url}}'"
 {% endmacro %}
+
+{% macro toggle_active(id) %}
+onclick="var e = document.getElementById('{{id}}'); e.classList.toggle('is-active')"
+{% endmacro %}

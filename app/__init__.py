@@ -1,6 +1,6 @@
 import os, configparser, json
 from flask import Flask, redirect
-from flask_mongoengine import MongoEngine
+from flask_mongoengine import MongoEngine, MongoEngineSessionInterface
 from flask_login import LoginManager, current_user
 from flask_gravatar import Gravatar
 
@@ -18,7 +18,13 @@ app.config['MONGODB_SETTINGS'] = {
 app.config['SECRET_KEY'] = 'dont-guess-this-please'
 app.config['SERVER_NAME'] = os.environ.get('SERVER_NAME')
 
+# For flask_login
+app.config['USE_SESSION_FOR_NEXT'] = True
+
 db = MongoEngine(app)
+
+# Use MongoEngine to store session variables
+app.session_interface = MongoEngineSessionInterface(db)
 
 login_manager = LoginManager(app)
 login_manager.login_view = "login"

@@ -32,6 +32,8 @@
     <br />
     <h4 class="title is-4">Notification Schedule</h4>
     {# Render the notifications formfield #}
+    {% set notifications_form = form.notifications %}
+    {% set max_date_selector = "#due" %}
     {% include 'team/components/notifications_form.html' %}
 
     <br />

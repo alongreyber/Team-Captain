@@ -19,6 +19,16 @@ def get_team(endpoint, values):
         abort(404)
     g.team = team
 
+# Check that user belongs to this team
+@team.before_request
+def check_team():
+    if not current_user.team:
+        return redirect(url_for('landing_page'))
+    if current_user.team.id != g.team.id:
+        flash('You are not a member of this team!', 'warning')
+        team = current_user.team.fetch()
+        return redirect(url_for('team.index', sub=team.sub))
+
 # Inject a function team_url_for that adds the correct subdomain
 def team_url_for(*args, **kwargs):
     return url_for(*args, sub=g.team.sub, **kwargs)
@@ -26,7 +36,7 @@ def team_url_for(*args, **kwargs):
 def inject_url_for():
     return dict(team_url_for=team_url_for)
 
-@team.route('/home')
+@team.route('/')
 def index():
     return redirect(team_url_for('team.user_profile'))
 
@@ -45,6 +55,11 @@ def edit_profile():
         try:
             current_user.modify(**updated_dict)
             flash('Changes Saved', 'success')
+            if current_user.first_name and current_user.last_name:
+                for task in current_user.assigned_tasks:
+                    if task.id == current_user.id:
+                        current_user.assigned_tasks.remove(task)
+                        current_user.save()
             return redirect(team_url_for('team.user_profile'))
         except NotUniqueError:
             flash('Barcode already in use', 'warning')
@@ -117,6 +132,10 @@ def assignment_complete(id):
     if not au.completed:
         au.completed = pendulum.now('UTC')
         au.save()
+    for task in current_user.assigned_tasks:
+        if task.id == au.id:
+            current_user.assigned_tasks.remove(task)
+            current_user.save()
     return redirect(team_url_for('team.assignment_view', id=assignment.id))
 
 @team.route('/assignment/<id>/info')
@@ -134,15 +153,18 @@ def assignment_info(id):
 def fill_in_task_info(task):
     if type(task) == models.EventUser:
         # Have to find the event
-        event = models.Event.objects(team=g.team, users=current_user.id).first()
-        if not event:
-            print("Problem!")
+        eu = models.EventUser.objects(user=current_user.id).first()
+        event = models.Event.objects(team=g.team, users=eu).first()
         task.text = "RSVP for " + event.name
         task.link = team_url_for('team.event_view', id=event.id)
     elif type(task) == models.AssignmentUser:
-        assignment = models.Assignment.objects(team=g.team, users=current_user.id).first()
+        au = models.AssignmentUser.objects(user=current_user.id).first()
+        assignment = models.Assignment.objects(team=g.team, users=au).first()
         task.text = assignment.subject
         task.link = team_url_for('team.assignment_view', id=assignment.id)
+    elif type(task) == models.User:
+        task.text = 'Please fill out your profile'
+        task.link = team_url_for('team.edit_profile')
     else:
         raise
 
@@ -153,12 +175,12 @@ def task_redirect(id):
     # Make sure that the task is in the user assigned task list
     task = None
     for task_list in current_user.assigned_tasks:
-        if task_list.id == id:
+        if task_list.id == ObjectId(id):
             task = task_list 
-    fill_in_task_info(task)
     if not task:
         abort(404)
-    # Not done yet!
+    fill_in_task_info(task)
+    return redirect(task.link)
 
 @team.route('/tasks')
 def task_list():
@@ -166,7 +188,6 @@ def task_list():
     tasks = current_user.assigned_tasks
     for task in tasks:
         fill_in_task_info(task)
-    # TODO fill in information such as URL based on task type
     return render_template('team/task_list.html',tasks=tasks)
 
 @team.route('/rsvp/<id>')
@@ -428,6 +449,7 @@ def scheduled_event_edit(id):
 
             # Update task
             save_notification_form(form.rsvp_notifications, event.rsvp_notifications)
+            event.rsvp_notifications.text = "RSVP for " + event.name
             flash('Changes Saved', 'success')
             event.save()
             event.reload()
@@ -644,7 +666,7 @@ def scheduled_event_delete(cid, id):
             eu.delete()
     event.delete()
     flash('Deleted Event', 'success')
-    return redirect(team_url_for('admin.event_list'))
+    return redirect(team_url_for('team.event_list'))
 
 @team.route('/event-recurring/new')
 @login_required
@@ -715,6 +737,7 @@ def recurring_event_edit(id):
             event.calendar = ObjectId(form.calendar.data)
 
             save_notification_form(form.rsvp_notifications, event.rsvp_notifications)
+            event.rsvp_notifications.text = "RSVP for " + event.name
 
             event.save()
             event.reload()
@@ -976,6 +999,7 @@ def article_edit(tid, id):
         article.content = form.content.data
         article.save()
         flash('Changes Saved', 'success')
+        article.reload()
     return render_template('team/wiki/article_edit.html',
             article=article,
             form=form,
@@ -986,7 +1010,7 @@ def article_view(tid, id):
     topic = models.Topic.objects(team=g.team, id=tid).first()
     if not topic:
         abort(404)
-    if not topic.permissions.check_visible(current_user):
+    if not topic.permissions.check_visible(current_user) and not topic.permissions.check_editor(current_user):
         abort(404)
     article = models.Article.objects(team=g.team, id=id).first()
     if not article:
@@ -1058,13 +1082,14 @@ def assignment_edit(id):
     form_data = assignment.to_mongo().to_dict()
     form_data['due'] = form_data['due'].in_tz(current_user.tz)
     form = forms.AssignmentForm(data=form_data)
-    init_permission_form(form.permissions, assignment.permissions)
+    init_permission_form(form.permissions)
     if form.validate_on_submit():
         assignment.subject = form.subject.data
         assignment.content = form.content.data
         assignment.due = pendulum.instance(form.due.data, tz=current_user.tz).in_tz('UTC')
         save_permission_form(form.permissions, assignment.permissions)
-        save_notification_form(assignment.notifications, form.notifications)
+        save_notification_form(form.notifications, assignment.notifications)
+        assignment.notifications.text = assignment.subject
         if assignment.due < pendulum.now('UTC'):
             flash('Task cannot be due in the past', 'warning')
         else:
@@ -1074,7 +1099,7 @@ def assignment_edit(id):
             flash('Changes Saved', 'success')
     if len(form.errors) > 0:
         flash_errors(form)
-    set_selected_permission_form(form.permissiosn, assignment.permissions)
+    set_selected_permission_form(form.permissions, assignment.permissions)
     set_selected_notification_form(form.notifications, assignment.notifications)
     return render_template('team/assignment_edit.html',
             assignment=assignment,
@@ -1087,8 +1112,9 @@ def assignment_publish(id):
         abort(404)
     if not assignment.is_draft:
         redirect(team_url_for('team.assignment_edit', id=id))
-    # Parse assignment into viewing format
-    # Save original list of assigned_users so it's possible to duplicate assignments
+    # Find all users with role
+    # "assigned_users" is a temporary array of user references that is used to create
+    # the "users" array
     assignment.assigned_users = assignment.permissions.visible_users
     for role in assignment.permissions.visible_roles:
         users_with_role = models.User.objects(team=g.team, roles=role)
@@ -1138,9 +1164,6 @@ def assignment_duplicate(id):
     new_assignment.assigned_roles = assignment.assigned_roles
     new_assignment.assigned_users = assignment.assigned_users
     new_assignment.due     = pendulum.tomorrow('UTC')
-    new_assignment.task    = assignment.task
-    # Clear notification dates in case they are outside the range
-    new_assignment.task.notification_dates = []
     new_assignment.save()
     return redirect(team_url_for('team.assignment_edit', id=new_assignment.id))
 
@@ -1154,8 +1177,9 @@ def assignment_delete(id):
         abort(404)
     if not assignment.is_draft:
         for au in assignment.users:
-            au.user.assigned_tasks.remove(au)
-            au.user.save()
+            if au in au.user.assigned_tasks:
+                au.user.assigned_tasks.remove(au)
+                au.user.save()
             au.delete()
     assignment.delete()
     return redirect(team_url_for('team.assignment_list'))

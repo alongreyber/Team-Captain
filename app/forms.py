@@ -100,10 +100,9 @@ class ArticleForm(FlaskForm):
     content = TextAreaField()
 
 class CreateTeamForm(FlaskForm):
-    name = StringField(validators=[required()])
-    sub = StringField(validators=[required()])
+    name = StringField('Team Name', validators=[required()])
+    sub = StringField('Workspace URL', validators=[required()])
     number = IntegerField(validators=[required()])
-    code = StringField(validators=[required()])
 
 class JoinTeamForm(FlaskForm):
     number = IntegerField(validators=[required()])

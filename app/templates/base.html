@@ -44,6 +44,24 @@
     <body>
 	{% block nav %}{% endblock %}
 
+	{# If we have a message, display to user using a modal #}
+	{% set modal_title = session.pop('modal_title', None) %}
+	{% set modal_content = session.pop('modal_content', None) %}
+	<div class="modal {{ 'is-active' if modal_title }}" id="modal" >
+	  <div class="modal-background"></div>
+	  <div class="modal-content">
+	    <article class="message is-primary">
+	      <div class="message-header">
+		  <p>{{ modal_title }}</p>
+		  <button class="delete" {{ helpers.toggle_active('modal') }}></button>
+	      </div>
+	      <div class="message-body is-size-5">
+		  {{ modal_content }}
+	      </div>
+	    </article>
+	  </div>
+	</div>
+
 	{# Render a back button #}
 	<div class="container" id='main-container'>
 	    <div class="columns">

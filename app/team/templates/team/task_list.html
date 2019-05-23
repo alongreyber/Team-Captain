@@ -4,23 +4,17 @@
 <h1 class="title is-1"> My Tasks </h1>
 
 {% if tasks|length > 0 %}
-<table class="table is-hoverable">
+<table class="table is-hoverable" style="min-width: 40%">
     <thead>
 	<tr>
-	    <th>Completed?</th>
+	    <th>Name</th>
 	</tr>
     </thead>
     <tbody>
-	{% for task in tasks %}    
-	<tr onclick="window.location='{{team_url_for('team.task_redirect', id=task.id)}}'">
-	    <td style="text-align: center">
-		<div class="icon is-medium" style="display: inline-table;">
-		    {% if task.completed %}
-		    <i class="far fa-check-square fa-lg"></i>
-		    {% else %}
-		    <i class="far fa-square fa-lg"></i>
-		    {% endif %}
-		</div>
+	{% for task in tasks %}
+	<tr {{helpers.onclick(team_url_for('team.task_redirect',id=task.id))}}>
+	    <td>
+		{{task.text}}
 	    </td>
 	</tr>
 	{% endfor %}
