@@ -98,3 +98,12 @@ class ArticleForm(FlaskForm):
     topic = SelectField('Topic')
     name = StringField(validators=[required()])
     content = TextAreaField()
+
+class CreateTeamForm(FlaskForm):
+    name = StringField(validators=[required()])
+    sub = StringField(validators=[required()])
+    number = IntegerField(validators=[required()])
+    code = StringField(validators=[required()])
+
+class JoinTeamForm(FlaskForm):
+    number = IntegerField(validators=[required()])

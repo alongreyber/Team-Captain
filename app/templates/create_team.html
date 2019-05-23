@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="title is-1 has-text-centered">
+    <br/>
+    <br/>
+    <br/>
+    Welcome to Team Captain!<br/> Let's verify your team number.
+</div>
+<div class="columns is-centered">
+    <div class="column is-three-quarters">
+	<p class="is-size-5">
+	To verify your team number please find the Avatar Code in the FIRST dashboard in the Passwords/Vouchers section. Please note that this code will NOT be stored and will only be used to verify the team number.
+	</p>
+	<br/>
+	<br/>
+	<form id="create-team-form" submit="return false;" action="" method="post">
+	    {{ form.hidden_tag() }}
+	    <div class="field">
+		<div class="control">
+		    {{ form.number(class_='input is-expanded', placeholder='Team Number') }}
+		</div>
+	    </div>
+	    <div class="field">
+		<div class="control">
+		    {{ form.code(class_='input', placeholder='Avatar Code') }}
+		</div>
+	    </div>
+	    <input class="button is-primary has-text-centered" id="submit" name="submit" type="submit" value="Save">
+	</form>
+    </div>
+</div>
+{% endblock %}

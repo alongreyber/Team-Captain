@@ -32,19 +32,16 @@ class PendulumField(BaseField):
         return value
 
 class Team(db.Document):
+    confirmed = PendulumField()
     # Subdomain
     sub = db.StringField(unique=True)
     name = db.StringField()
-    number = db.IntField()
+    number = db.IntField(unique=True)
     email_subdomain = db.StringField()
 
 class TeamDocument(db.Document):
     meta = {'abstract': True}
     team = db.LazyReferenceField(Team) 
-    # Filter to objects in org
-    # @db.queryset_manager
-    # def objects(doc_cls, query):
-    #    return query
 
 class Role(TeamDocument):
     name = db.StringField()
@@ -70,6 +67,12 @@ class AppNotification(db.EmbeddedDocument):
     recieve_date = PendulumField()
 
 class User(TeamDocument, UserMixin):
+    # Whether the user has been approved for their team
+    approved = PendulumField()
+    # Whether the user is creating a team or joining one
+    # only used for login process
+    creating_team = db.BooleanField()
+
     email = db.EmailField(max_length=100)
     personal_email = db.EmailField(max_length=100)
     phone_number = db.StringField(max_length=20)

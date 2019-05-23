@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="title is-1 has-text-centered">
+    <br/>
+    <br/>
+    <br/>
+    Time to join a team! What team are you on?
+</div>
+<div class="columns is-centered">
+    <div class="column is-three-quarters">
+	<form id="join-team-form" submit="return false;" action="" method="post">
+	    {{ form.hidden_tag() }}
+	    <div class="field">
+		<div class="control">
+		    {{ form.number(class_='input is-expanded', placeholder='Team Number') }}
+		</div>
+	    </div>
+	    <input class="button is-primary has-text-centered" id="submit" name="submit" type="submit" value="Join">
+	</form>
+    </div>
+</div>
+{% endblock %}
