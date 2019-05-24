@@ -216,9 +216,9 @@ def init_permission_form(form):
     all_roles = models.Role.objects(team=g.team)
     all_users = models.User.objects(team=g.team)
     form.visible_roles.choices = [(str(role.id), role.name) for role in all_roles]
-    form.visible_users.choices = [(str(user.id), user.first_name + " " + user.last_name) for user in all_users]
+    form.visible_users.choices = [(str(user.id), user.name) for user in all_users]
     form.editor_roles.choices = [(str(role.id), role.name) for role in all_roles]
-    form.editor_users.choices = [(str(user.id), user.first_name + " " + user.last_name) for user in all_users]
+    form.editor_users.choices = [(str(user.id), user.name) for user in all_users]
 
 def save_permission_form(form, obj):
     obj.visible_roles = [ObjectId(r) for r in form.visible_roles.data]

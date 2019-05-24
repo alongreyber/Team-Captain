@@ -55,6 +55,7 @@ class PushNotification(TeamDocument):
     send_app   = db.BooleanField()
 
 # Notification that appears in app
+# Need to create an ID field
 class AppNotification(db.EmbeddedDocument):
     id = db.ObjectIdField(required=True, default=ObjectId,
                     unique=True, primary_key=True)
@@ -72,8 +73,7 @@ class User(TeamDocument, UserMixin):
     # Timemzone
     tz = db.StringField()
     bio = db.StringField()
-    # Sparse allows us to have null values without running into issues with unique constraint
-    barcode = db.StringField(max_length=100, unique=True, sparse=True)
+    barcode = db.StringField(max_length=100)
     first_name = db.StringField(max_length=50)
     last_name = db.StringField(max_length=50)
     @property

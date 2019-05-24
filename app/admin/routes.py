@@ -305,39 +305,36 @@ def article_list():
 def debug_tools():
     return render_template('admin/debug_tools.html')
 
+collections = [
+    models.Role,
+    models.PushNotification,
+    models.User,
+    models.Calendar,
+    models.Event,
+    models.RecurringEvent,
+    models.EventUser,
+    models.Assignment,
+    models.AssignmentUser,
+    models.Topic,
+    models.Article]
 
 @admin.route('/debug/clear_db')
 def clear_db():
+    for c in collections:
+        c.drop_collection()
     models.Team.drop_collection()
-    models.Role.drop_collection()
-    models.PushNotification.drop_collection()
-    models.User.drop_collection()
-    models.Calendar.drop_collection()
-    models.Event.drop_collection()
-    models.RecurringEvent.drop_collection()
-    models.EventUser.drop_collection()
-    models.Assignment.drop_collection()
-    models.AssignmentUser.drop_collection()
-    models.Topic.drop_collection()
-    models.Article.drop_collection()
-
     flash('Cleared DB', 'success')
     return redirect(team_url_for('admin.debug_tools'))
 
+@admin.route('/debug/delete_team/<s>')
+def delete_team(s):
+    team = models.Team.objects(sub=s).first()
+    for c in collections:
+        team_objects = c.objects(team=team)
+        team_objects.delete()
+
 @admin.route('/debug/save_db')
 def save_db():
-    collections = [
-        models.Role,
-        models.PushNotification,
-        models.User,
-        models.Calendar,
-        models.Event,
-        models.RecurringEvent,
-        models.EventUser,
-        models.Assignment,
-        models.AssignmentUser,
-        models.Topic,
-        models.Article]
     for c in collections:
         c_str = c.objects.to_json()
         with open("export/" + c.__name__ + ".json", 'w') as outfile:

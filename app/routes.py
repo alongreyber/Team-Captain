@@ -9,6 +9,7 @@ import requests
 import pendulum
 import os, json
 
+from bson import ObjectId
 
 # What to do if user tries to access unauthorized route
 @login_manager.unauthorized_handler
@@ -136,18 +137,30 @@ def create_team():
     return render_template('create_team.html', form=form)
 
 def load_sample_data(team):
-    # Sample roles
     path = './sample-data/'
     files = os.listdir(path)
+    # We need to replace all ObjectIds with new ones
+    oid_mappings = {}
     for f_name in files:
+        if not f_name.endswith('.json'):
+            continue
         with open(path + f_name, 'r') as f:
             f_str = f.read()
-        collection = json.loads(f_str)
+        def generate_new_oid(v):
+            # Only one key-val
+            if len(v) == 1:
+                if '$oid' in v:
+                    oid = v['$oid']
+                    if oid not in oid_mappings:
+                        oid_mappings[oid] = str(ObjectId())
+                    v['$oid'] = oid_mappings[oid]
+            return v
+        collection = json.loads(f_str, object_hook=generate_new_oid)
         for doc in collection:
             Model = getattr(models, f_name[:f_name.find('.')])
             obj = Model.from_json(json.dumps(doc))
             obj.team = team
-            obj.save()
+            obj.save(force_insert=True)
 
 @app.route('/jointeam', methods=['GET', 'POST'])
 @login_required
