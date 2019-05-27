@@ -32,7 +32,15 @@
 		    {{ form.number(class_='input is-expanded', placeholder='Team Number') }}
 		</div>
 	    </div>
-	    <input class="button is-primary has-text-centered" id="submit" name="submit" type="submit" value="Let's Go!">
+	    <br/>
+	    <br/>
+	    <div class="columns is-centered">
+		<div class="column is-one-quarter">
+		    <button class="button is-primary is-large" onclick="$(this).addClass('is-loading')" id="submit" name="submit" type="submit" >
+			Let's Go!
+		    </button>
+		</div>
+	    </div>
 	</form>
     </div>
 </div>

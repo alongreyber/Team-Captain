@@ -34,3 +34,10 @@ table.is-hoverable:hover {
 .is-not-hoverable {
     pointer-events: none;
 }
+
+.background-image {
+  margin-top: 200px;
+  position: absolute;
+  left: 0;
+  right: 0;
+}

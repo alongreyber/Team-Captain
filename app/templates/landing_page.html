@@ -2,21 +2,39 @@
 
 
 {% block content %}
+{# Include background image in grayscale. Not sure if this should be colored or grayscale #}
 <style>
 body {
-    background-image: url({{url_for('static', filename='images/skyline.svg')}});
+    background-image:
+	linear-gradient(white,white),
+	url({{url_for('static', filename='images/skyline.svg')}});
+    background-blend-mode: saturation;
     height: 1050px;
 }
 </style>
 
 <div class="level">
-    <div class="level-left is-size-3">
-	Team Captain
+    <div class="level-left">
+	<img style="width: 200px; margin-top: 10px" src="{{url_for('static', filename='images/logo-text.png')}}">
     </div>
     <div class="level-right">
-	<a href="{{url_for('login')}}" class="level-item button is-primary is-medium">
+	{% if current_user.is_authenticated %}
+	    <a class="button is-outlined is-dark is-medium" href="{{url_for('logout')}}">
+		Sign Out
+	    </a>
+	    {% if team %}
+	    <a class="button is-primary is-medium" style="margin-left: 10px" href="{{url_for('team.index', sub=team.sub)}}">
+		Go to Workspace
+		<span style="margin-left: 5px" class="icon is-medium">
+		    <i class="fas fa-arrow-right"></i>
+		</span>
+	    </a>
+	    {% endif %}
+	{% else %}
+	<a class="button is-link is-medium" href="{{url_for('login')}}">
 	    Sign In
 	</a>
+	{% endif %}
     </div>
 </div>
 <div class="container">

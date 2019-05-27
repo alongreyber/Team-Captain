@@ -19,12 +19,11 @@ def unauthorized_callback():
 
 @app.route('/')
 def landing_page():
+    team = None
     if current_user.is_authenticated:
-        if not current_user.team:
-            return redirect(url_for('join_team_pending'))
-        team = current_user.team.fetch()
-        return redirect(url_for('team.index', sub=team.sub))
-    return render_template('landing_page.html')
+        if current_user.team:
+            team = current_user.team.fetch()
+    return render_template('landing_page.html', team=team)
 
 @app.route('/login')
 def login():
@@ -33,7 +32,9 @@ def login():
         return redirect(url_for('team.index', sub=team.sub))
     # Save the URL that we go to after logging in
     google = oauth.get_google_auth()
-    auth_url, state = google.authorization_url( oauth.AUTH_URI, access_type='offline')
+    auth_url, state = google.authorization_url(oauth.AUTH_URI,
+                                               access_type='offline',
+                                               prompt='consent')
     session['oauth_state'] = state
     return redirect(auth_url)
 
@@ -46,10 +47,6 @@ def logout():
 @app.route('/oauth2callback')
 def callback():
     next_url = session.pop('next_url', None)
-    # Redirect user to home page if already logged in.
-    if current_user is not None and current_user.is_authenticated:
-        team = current_user.team.fetch()
-        return redirect(url_for('team.index', sub=team.sub))
     if 'error' in request.args:
         if request.args.get('error') == 'access_denied':
             return 'You denied access.'
@@ -76,11 +73,7 @@ def callback():
             login_user(user)
             if next_url:
                 return redirect(next_url)
-            if not user.team:
-                flash('Please create or join a team first!', 'warning')
-                return redirect(url_for('landing_page'))
-            team = user.team.fetch()
-            return redirect(url_for('team.index', sub=team.sub))
+            return redirect(url_for('landing_page'))
         return 'Could not fetch your information.'
 
 def verify_team(number, code):
@@ -95,6 +88,9 @@ def verify_team(number, code):
 @app.route('/createteam', methods=['GET', 'POST'])
 @login_required
 def create_team():
+    if current_user.team:
+        flash('You are already a member of a team! To change or leave your team please go to the user settings page', 'warning')
+        return redirect(request.referrer)
     form = forms.CreateTeamForm()
     if form.validate_on_submit():
         team = models.Team.objects(number=form.number.data).first()
@@ -165,11 +161,11 @@ def load_sample_data(team):
 @app.route('/jointeam', methods=['GET', 'POST'])
 @login_required
 def join_team():
+    if current_user.team:
+        flash('You are already a member of a team! To change or leave your team please go to the user settings page', 'warning')
+        return redirect(request.referrer)
     form = forms.JoinTeamForm()
     if form.validate_on_submit():
-        if current_user.team:
-            team = current_user.team.fetch()
-            return redirect(url_for('team.index', sub=team.sub))
         team = models.Team.objects(number=form.number.data).first()
         if not team:
             flash('This team does not have a Team Captain account yet. Ask your mentors to sign up!', 'warning')
