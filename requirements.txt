@@ -2,6 +2,7 @@ Flask
 Flask-WTF
 Flask-Login
 Flask-Gravatar
+Flask-Uploads
 mongoengine
 flask-mongoengine
 hashids

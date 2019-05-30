@@ -1,0 +1,70 @@
+{% extends 'team/calendar/event_base.html' %}
+
+{% block event_content %}
+<div class="level">
+    <div class="level-left">
+	<h1 class="title is-1">{{event.name}}</h1>
+    </div>
+    <div class="level-right">
+	{% if calendar.permissions.check_visible(current_user) %}
+	<a href="{{url_for('team.recurring_event_view', cid=calendar.id, id=event.id)}}" class="level-item button is-medium is-outlined is-success">
+	    <span class="icon is-large">
+		<i class="fas fa-eye fa-lg"></i>
+	    </span>
+	    <span class="is-size-4">
+		View
+	    </span>
+	</a>
+	{% endif %}
+    </div>
+</div>
+
+<div class="content is-medium" id="content-div" style="border: 1px solid gray; padding: 20px"></div>
+<script>
+    var md = window.markdownit();
+    var input = {{event.content|tojson}};
+    var result = md.render(input);
+    $('#content-div').html(result);
+</script>
+
+<hr/>
+
+<table class="table is-hoverable is-size-5">
+    <thead>
+	<th>Date</th>
+	<th>Time</th>
+	<th>Status</th>
+    </thead>
+    <tbody>
+	{% for e in subevents %}
+	<tr {{helpers.onclick(url_for('team.event_info', cid=calendar.id, id=e.id))}}>
+	    <td>
+		{{e.start|localize|format("MM/DD/YY")}}
+	    </td>
+	    <td>
+		{{e.start|localize|format("hh:mm A")}} - {{e.end|localize|format("hh:mm A")}}
+	    </td>
+	    <td>
+		{% if e.start < now and e.end < now %}
+		Past
+		{% elif e.start > now and e.end < now %}
+		In Progress
+		{% else %}
+		Upcoming
+		{% endif %}
+	    </td>
+	</tr>
+	{% endfor %}
+    </tbody>
+</table>
+
+<hr/>
+
+<p class="is-size-4">
+Actions
+</p>
+<br/>
+<br/>
+
+<a href="{{url_for('team.recurring_event_delete', cid=calendar.id, id=event.id)}}" class="button is-danger">Delete</a>
+{% endblock %}

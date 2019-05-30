@@ -1,0 +1,76 @@
+{% extends 'team/calendar/event_base.html' %}
+
+{% block event_content %}
+<h1 class="title is-1">Edit Event</h1>
+<form action="" method="post">
+    {{ form.hidden_tag() }}
+    <div class="field">
+	{{ form.calendar.label(class_='label') }}
+	<select id="calendar" name="calendar" class="select2" style="width: 100%">
+	    {% for r in form.calendar.choices %}
+		<option value="{{r[0]}}" {% if r[0] == event.calendar.id|string %}selected="selected"{% endif %}>{{r[1]}}</option>
+	    {% endfor %}
+	</select>
+    </div>
+
+
+    <div class="field">
+	{{ form.name.label(class_='label') }}
+	<div class="control">
+	    {{ form.name(class_='input') }}
+	</div>
+    </div>
+    <div class="field">
+	{{ form.content.label(class_='label') }}
+	{{ form.content(id="editor") }}
+    </div>
+    <div class="field">
+	{{ form.start.label(class_='label') }}
+	<div class="control">
+	    {{ form.start(class_='input') }}
+	</div>
+    </div>
+    <div class="field">
+	{{ form.end.label(class_='label') }}
+	<div class="control">
+	    {{ form.end(class_='input') }}
+	</div>
+    </div>
+    <br />
+    <br />
+    <div class="field">
+	{{ form.enable_rsvp(class_='is-checkradio is-block is-primary is-medium') }}
+	{{ form.enable_rsvp.label(class_='label') }}
+    </div>
+    <script>
+	// Only show date picker if RSVP is enabled
+	$(document).ready(function() {
+	    var onRSVPEnabledChange = function() {
+		if($("#enable_rsvp").is(":checked")) {
+		    $("#rsvp-reminders").show();
+		} else {
+		    $("#rsvp-reminders").hide();
+		}
+	    };
+	    $("#enable_rsvp").change(onRSVPEnabledChange);
+	    onRSVPEnabledChange();
+	});
+    </script>
+
+    <div id="rsvp-reminders">
+	{% set notifications_form = form.rsvp_notifications %}
+	{% set max_date_selector = "#start" %}
+	{% include 'team/components/notifications_form.html' %}
+    </div>
+
+    <br />
+    <div class="field">
+	{{ form.enable_attendance(class_='is-checkradio is-block is-primary is-medium') }}
+	{{ form.enable_attendance.label(class_='label') }}
+    </div>
+    <br />
+    <input class="button is-primary" id="submit" name="submit" type="submit" value="Save">
+    <a href="{{url_for('team.scheduled_event_publish', cid=event.calendar.id, id=event.id)}}" class="button is-success" id="publish" >Publish</a>
+    <a href="{{url_for('team.scheduled_event_delete', cid=event.calendar.id,  id=event.id)}}" class="button is-danger" >Delete</a>
+</form>
+{% endblock %}

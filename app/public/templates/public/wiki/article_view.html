@@ -1,0 +1,29 @@
+{% extends 'team/wiki/base.html' %}
+
+{% block wiki_content %}
+<div class="level">
+    <div class="level-left">
+	<h1 class="level-item title is-1">{{article.name}}</h1>
+    </div>
+    <div class="level-right">
+	<a href="{{url_for('team.article_edit', tid=article.topic.id, id=article.id)}}" class="level-item button is-medium is-outlined is-success">
+	    <span class="icon is-large">
+		<i class="fas fa-pencil-alt fa-lg"></i>
+	    </span>
+	    <span class="is-size-4">
+		Edit
+	    </span>
+	</a>
+    </div>
+</div>
+<br/>
+
+<div class="content is-medium" id="content-div" style="border: 1px solid gray; padding: 20px"></div>
+<script>
+    var md = window.markdownit();
+    var input = {{article.content|tojson}};
+    var result = md.render(input);
+    $('#content-div').html(result);
+</script>
+
+{% endblock %}

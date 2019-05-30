@@ -1,0 +1,51 @@
+{% extends 'public/base.html' %}
+
+{% block public_content %}
+<h1 class="title is-1">Edit Assignment</h1>
+<form id="assignment-form" submit="return false;" action="" method="post">
+    {{ form.hidden_tag() }}
+
+    <div class="field">
+	{{ form.subject.label(class_='label') }}
+	<div class="control">
+	    {{ form.subject(class_='input') }}
+	</div>
+    </div>
+    <div class="field">
+	{{ form.due.label(class_='label') }}
+	<div class="control">
+	{{ form.due(class_='input') }}
+	</div>
+    </div>
+
+    {{ form.content.label(class_='label') }}
+    {{ form.content(id="editor") }}
+    <br />
+
+    <br />
+    {# Render the permissions formfield #}
+    {% set editor_label = "Editable by" %}
+    {% set visible_label = "Assigned to" %}
+    {% set max_date_selector = "#due" %}
+    {% include 'public/components/permissions_form.html' %}
+
+    <br />
+    <h4 class="title is-4">Notification Schedule</h4>
+    {# Render the notifications formfield #}
+    {% set notifications_form = form.notifications %}
+    {% set max_date_selector = "#due" %}
+    {% include 'public/components/notifications_form.html' %}
+
+    <br />
+    <input class="button is-primary" id="submit" name="submit" type="submit" value="Save">
+    <a href="{{url_for('public.assignment_publish', id=assignment.id)}}" id="publish" class="button is-success" tooltip="Please save your changes first">
+	Publish
+    </a>
+    <a href="{{url_for('public.assignment_delete', id=assignment.id)}}" class="button is-danger">
+	Delete
+    </a>
+</form>
+
+
+
+{% endblock %}

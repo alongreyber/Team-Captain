@@ -1,0 +1,27 @@
+{% extends 'public/base.html' %}
+
+{% block public_content %}
+
+{# Add rounded borders and bigger shadow #}
+<div class="card" style="border-radius: 10px; box-shadow: 0 5px 7px rgba(10,10,10,0.1), 0 0 0 1px rgba(10,10,10,0.1) ">
+    {# Space-between so that the icons show up in opposite corners #}
+    <div class="card-header" style="justify-content: space-between">
+	<a href="{{ up_url if up_url else '#' }}" class="card-header-icon">
+	    <span class="icon" style="font-size: 1.2em">
+		{% if up_url %}
+		&nbsp;<i class="fas fa-arrow-left fa-lg"></i>
+		{% endif %}
+	    </span>
+	</a>
+	<a href="{{url_for('public.calendar_home')}}" class="card-header-icon">
+	    <span class="icon" style="font-size: 1.4em">
+		&nbsp;<i class="fas fa-times fa-lg"></i>
+	    </span>
+	</a>
+    </div>
+    <div class="card-content">
+	{% block event_content %}{% endblock %}
+    </div>
+</div>
+
+{% endblock %}

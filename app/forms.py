@@ -5,6 +5,11 @@ from wtforms.fields import html5
 from wtforms.fields import *
 from wtforms.validators import *
 
+from flask_wtf.file import FileField, FileRequired, FileAllowed
+from flask_uploads import UploadSet, IMAGES
+
+images = UploadSet('images', IMAGES)
+
 class PermissionSetForm(FlaskForm):
     editor_roles = SelectMultipleField('Roles')
     editor_users = SelectMultipleField('Users')
@@ -23,6 +28,12 @@ class UserForm(FlaskForm):
     email = html5.EmailField()
     barcode = StringField()
     roles = SelectMultipleField('Roles', coerce=str)
+
+class TeamUpdateForm(FlaskForm):
+    content = TextAreaField(validators=[required()])
+    images = FileField(validators=[FileAllowed('Images only!')])
+    post = SubmitField()
+    edit = SubmitField()
 
 class PublicUserForm(FlaskForm):
     first_name = StringField()

@@ -1,0 +1,57 @@
+{% extends 'team/wiki/base.html' %}
+
+{% block wiki_content %}
+<div class="level">
+    <div class="level-left">
+	<h1 class="level-item title is-1">{{topic.name}}</h1>
+    </div>
+    <div class="level-right">
+	{% if topic.permissions.check_editor(current_user) %}
+	<a href="{{url_for('team.topic_edit', id=topic.id)}}" class="level-item button is-medium is-outlined is-success">
+	    <span class="icon is-large">
+		<i class="fas fa-pencil-alt fa-lg"></i>
+	    </span>
+	    <span class="is-size-4">
+		Edit
+	    </span>
+	</a>
+	{% endif %}
+    </div>
+</div>
+
+
+<p class="is-size-4">{{topic.description}}</p>
+<br/>
+
+<div class='columns'>
+    <div class="column">
+	<h3 class="title is-3">Editors</h3>
+	{% for role in topic.permissions.editor_roles %}
+	    {% include 'team/components/role_list.html' %}
+	{% endfor %}
+	{% for user in topic.permissions.editor_users %}
+	    {% set link = url_for('team.user_view', id=user.id) %}
+	    {% include 'team/components/user_list.html' %}
+	{% endfor %}
+    </div>
+    <div class="column">
+	<h3 class="title is-3">Visible To</h3>
+	{% for role in topic.permissions.visible_roles %}
+	    {% include 'team/components/role_list.html' %}
+	{% endfor %}
+	{% for user in topic.permissions.visible_users %}
+	    {% set link = url_for('team.user_view', id=user.id) %}
+	    {% include 'team/components/user_list.html' %}
+	{% endfor %}
+    </div>
+</div>
+
+<div class="is-divider" ></div>
+<h3 class="title is-3">Recent Activity</h3>
+
+{% if topic.permissions.check_editor(current_user) %}
+<a class="button is-primary" href="{{url_for('team.article_new', id=topic.id)}}" >New Article</a>
+<br />
+{% endif %}
+
+{% endblock %}

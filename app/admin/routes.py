@@ -14,35 +14,21 @@ admin = Blueprint('admin', __name__, template_folder='templates')
 # Roles that can't be deleted
 protected_roles = ['everyone', 'admin']
 
-# Look up the current team
-@admin.url_value_preprocessor
-def get_team(endpoint, values):
-    team = models.Team.objects(sub=values.pop('sub')).first()
-    if not team:
-        abort(404)
-    g.team = team
-
-# Inject a function team_url_for that adds the correct subdomain
-def team_url_for(*args, **kwargs):
-    return url_for(*args, sub=g.team.sub, **kwargs)
-@admin.context_processor
-def inject_url_for():
-    return dict(team_url_for=team_url_for)
-
+# Make sure user has "admin" role
 @admin.before_request
 def require_authorization():
     if not current_user.is_authenticated:
         flash('Please log in to view this page', 'danger')
-        return redirect(team_url_for('login', next=request.endpoint))
+        return redirect(url_for('login', next=request.endpoint))
     for role in current_user.roles:
         if role.name == 'admin':
             return
     flash('You do not have permission to view this page', 'danger')
-    return redirect(team_url_for('team.index'))
+    return redirect(url_for('public.index'))
 
 @admin.route('/')
 def index():
-    return redirect(team_url_for('admin.user_list'))
+    return redirect(url_for('admin.user_list'))
 
 @admin.route('/settings', methods=['GET', 'POST'])
 def team_settings():
@@ -57,7 +43,7 @@ def team_settings():
         flash('Changes Saved', 'success')
         g.team.reload()
         if g.team.sub != old_subdomain:
-            return redirect(team_url_for('admin.team_settings'))
+            return redirect(url_for('admin.team_settings'))
     return render_template('admin/team_settings.html',
             form=form)
 
@@ -96,7 +82,7 @@ def user_approve(id):
     user.assigned_tasks = [user]
     user.save()
     flash('User Approved', 'success')
-    return redirect(team_url_for('admin.user_list'))
+    return redirect(url_for('admin.user_list'))
 
 @admin.route('/user/<id>/deny')
 def user_deny(id):
@@ -108,7 +94,7 @@ def user_deny(id):
     user.team_number = None
     user.save()
     flash('User Denied', 'success')
-    return redirect(team_url_for('admin.user_list'))
+    return redirect(url_for('admin.user_list'))
 
 @admin.route('/user/<id>', methods=['GET', 'POST'])
 def user_info(id):
@@ -139,7 +125,7 @@ def user_delete(id):
     for tu in user.assigned_tasks:
         tu.delete()
     user.delete()
-    return redirect(team_url_for('admin.user_list'))
+    return redirect(url_for('admin.user_list'))
 
 @admin.route('/roles')
 def role_list():
@@ -155,14 +141,14 @@ def role_new():
         for r in all_roles:
             if r.name == form.data['role'].lower():
                 flash('Role already exists', 'warning')
-                return redirect(team_url_for('admin.role_list'))
+                return redirect(url_for('admin.role_list'))
         new_role = models.Role(team=g.team)
         new_role.name = form.data['role'].lower()
         new_role.save()
         flash('Added Role', 'success')
     if len(form.errors) > 0:
         flash_errors(form)
-    return redirect(team_url_for('admin.role_list'))
+    return redirect(url_for('admin.role_list'))
 
 @admin.route('/role/<id>/remove')
 def role_delete(id):
@@ -175,7 +161,7 @@ def role_delete(id):
             user.save()
         role.delete()
         flash('Deleted Role', 'success')
-    return redirect(team_url_for('admin.role_list'))
+    return redirect(url_for('admin.role_list'))
 
 @admin.route('/attendance', methods=['GET', 'POST'])
 def attendance_graphs():
@@ -324,7 +310,7 @@ def clear_db():
         c.drop_collection()
     models.Team.drop_collection()
     flash('Cleared DB', 'success')
-    return redirect(team_url_for('admin.debug_tools'))
+    return redirect(url_for('admin.debug_tools'))
 
 @admin.route('/debug/delete_team/<s>')
 def delete_team(s):
@@ -340,7 +326,7 @@ def save_db():
         with open("export/" + c.__name__ + ".json", 'w') as outfile:
             outfile.write(c_str)
     flash('Saved DB', 'success')
-    return redirect(team_url_for('admin.debug_tools'))
+    return redirect(url_for('admin.debug_tools'))
 
 
 def flash_errors(form):

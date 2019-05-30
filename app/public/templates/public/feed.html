@@ -1,0 +1,64 @@
+{% extends 'public/base.html' %}
+
+{% block public_content %}
+
+{# Large borders around the feed #}
+<div style="margin-left: 120px; margin-right: 120px">
+
+<br/>
+<div class="card">
+    <header class="card-header">
+	<p class="card-header-title">
+	  Make a post
+	</p>
+    </header>
+    <div class="card-content">
+	<form submit="return false;" action="" method="post">
+	    {{ form.hidden_tag() }}
+	    <div class="field">
+		<div class="control">
+		    {{ form.content(class_='textarea', rows="5", placeholder="What's going on in your build space?") }}
+		</div>
+	    </div>
+	    <button type="submit" class="button is-outlined is-primary" name="post" value="Post">
+		Post
+	    </button>
+	    <button type="submit" class="button is-outlined is-primary" name="edit" style="margin-left: 15px" value="Edit">
+		<span class="icon is-medium">
+		    <i class="fas fa-image fa-lg"></i>
+		</span>
+		<span>
+		    Add Photos
+		</span>
+	    </button>
+	    <button type="submit" class="button is-outlined is-primary" name="edit" style="margin-left: 15px" value="Edit">
+		<span class="icon is-medium">
+		    <i class="fas fa-video"></i>
+		</span>
+		<span>
+		    Add Videos
+		</span>
+	    </button>
+	</form>
+    </div>
+</div>
+
+</br>
+</br>
+</br>
+
+<div class="card">
+    <div class="card-content">
+	<div class="content">
+	    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+	    Phasellus nec iaculis mauris. <a>@bulmaio</a>.
+	    <a href="#">#css</a> <a href="#">#responsive</a>
+	    <br>
+	    <time datetime="2016-1-1">11:09 PM - 1 Jan 2016</time>
+	</div>
+    </div>
+</div>
+
+</div>
+
+{% endblock %}

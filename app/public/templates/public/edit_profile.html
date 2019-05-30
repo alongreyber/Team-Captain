@@ -1,0 +1,51 @@
+{% extends 'public/base.html' %}
+
+{% block public_content %}
+<h1 class="title">Edit Profile</h1>
+
+<form submit="return false;" action="" method="post">
+    {{ form.hidden_tag() }}
+    <div class="field">
+	{{ form.first_name.label(class_='label') }}
+	<div class="control">
+	    {{ form.first_name(class_='input') }}
+	</div>
+    </div>
+    <div class="field">
+	{{ form.last_name.label(class_='label') }}
+	<div class="control">
+	{{ form.last_name(class_='input') }}
+	</div>
+    </div>
+    <div class="field">
+	{{ form.personal_email.label(class_='label') }}
+	<div class="control">
+	    {{ form.personal_email(class_='input') }}
+	</div>
+    </div>
+    <div class="field">
+	{{ form.phone_number.label(class_='label') }}
+	<div class="control">
+	{{ form.phone_number(class_='input') }}
+	</div>
+    </div>
+    <div class="field">
+	{{ form.bio.label(class_='label') }}
+	<div class="control">
+	{{ form.bio(class_='textarea', rows="5") }}
+	</div>
+    </div>
+    <div class="field">
+	{{ form.barcode.label(class_='label') }}
+	<div class="control">
+	    {{ form.barcode(class_='input', style="width: 50%") }}
+	    <span class="button is-info icon is-medium" onclick="$('#barcode').val(Math.random().toString(36).substring(5));">
+		<i class="fas fa-redo"></i>
+	    </span>
+	</div>
+    </div>
+    <br >
+    <input class="button is-primary" id="submit" name="submit" type="submit" value="Save">
+</form>
+
+{% endblock %}

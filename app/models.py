@@ -28,11 +28,8 @@ class PendulumField(BaseField):
         return value
 
 class Team(db.Document):
-    # Subdomain
-    sub = db.StringField(unique=True)
     name = db.StringField()
     number = db.IntField(unique=True)
-    email_subdomain = db.StringField()
     owner = db.LazyReferenceField('User')
 
 class TeamDocument(db.Document):
@@ -55,7 +52,7 @@ class PushNotification(TeamDocument):
     send_app   = db.BooleanField()
 
 # Notification that appears in app
-# Need to create an ID field
+# Need to create an ID field because this is an embedded document
 class AppNotification(db.EmbeddedDocument):
     id = db.ObjectIdField(required=True, default=ObjectId,
                     unique=True, primary_key=True)
@@ -121,6 +118,10 @@ class NotificationSettings(db.EmbeddedDocument):
     notify_by_push  = db.BooleanField(default=False)
     notify_by_app   = db.BooleanField(default=False)
     text = db.StringField()
+
+class TeamUpdate(TeamDocument):
+    content = db.StringField()
+    is_draft = db.BooleanField(default=False)
 
 # Calendar models
 

@@ -2,18 +2,59 @@
 
 {% block nav %}
 <div class="navbar is-info">
+    <div class="navbar-brand">
+	<a class="navbar-item" href="#">
+	    <img src="{{url_for('static', filename='images/logo-no-text.png')}}">
+	</a>
+    </div>
     <div class="navbar-menu is-active">
 	<div class="navbar-start">
-	    <a href="#" class="navbar-item">
-		Profile
-	    </a>
 	</div>
 	<div class="navbar-end">
+	    <div id="notification-dropdown" class="navbar-item has-dropdown {% if session['open-notifications'] %}{{ session.pop('open-notifications') }} is-active{% endif %}">
+		<a class="navbar-link is-arrowless " {{helpers.toggle_active('notification-dropdown')}}>
+		    {% if current_user.notifications|length == 0 %}
+		    <span class="icon is-medium badge">
+		    {% else %}
+		    <span class="icon is-medium badge has-badge-rounded is-badge-small" data-badge="{{current_user.notifications|length}}" style="margin-right: 4px">
+		    {% endif %}
+			<i class="fas fa-bell fa-lg"></i>
+		    </span>
+		</a>
+		<div class="navbar-dropdown">
+		    {% if current_user.notifications|length == 0 %}
+		    	<a class="navbar-item">
+			    All caught up!
+			</a>
+		    {% else %}
+			{% for n in current_user.notifications %}
+			    <div class="navbar-item tc-notification" >
+				<a class="tc-notification__content" href="{{ url_for('public.notification_redirect', id=n.id) }}">
+				    {{ n.text }}
+				</a>
+				<a href="{{ url_for('public.notification_dismiss', id=n.id )}}" class="tc-notification__dismiss">
+				    <span class="icon is-medium badge">
+					<i class="fas fa-minus-square fa-lg"></i>
+				    </span>
+				</a>
+			    </div>
+			{% endfor %}
+		    {% endif %}
+		</div>
+	    </div>
+	    {# This has to have the has-dropdown class to make it look identical to the notification button #}
+	    <div class="navbar-item has-dropdown">
+		<a class="navbar-link is-arrowless" href="{{url_for('public.user_profile')}}">
+		    <span class="icon is-medium">
+			<i class="fas fa-user fa-lg"></i>
+		    </span>
+		</a>
+	    </div>
 	    <div class="navbar-item">
 		Welcome {{current_user.name}}
 	    </div>
 	    <div class="navbar-item">
-		<a href="">
+		<a href="{{url_for('logout')}}">
 		    <button class="button is-link">
 			Sign Out
 		    </button>
@@ -24,6 +65,35 @@
 </div>
 {% endblock %}
 
+{% block sidebar %}
+<aside class="menu" >
+  <ul class="menu-list">
+    <li><a href="{{url_for('public.feed')}}" class="menu-item {{ "is-active" if request.path == '/' }}">
+	News Feed
+    </a></li>
+    <li><a href="{{url_for('public.user_profile')}}" class="menu-item {{ "is-active" if request.path.startswith('/profile') }}">
+	Profile
+    </a></li>
+    <li><a href="{{url_for('public.task_list')}}" class="menu-item {{ "is-active" if request.path.startswith('/task') }}">
+	Tasks
+    </a></li>
+    <li><a href="{{url_for('public.calendar_home')}}" class="menu-item {{ "is-active" if request.path.startswith('/calendar') }}">
+	Events
+    </a></li>
+    <li><a href="{{url_for('public.wiki_home')}}" class="menu-item {{ "is-active" if request.path.startswith('/wiki') }}">
+	Wiki
+    </a></li>
+    <li><a href="{{url_for('public.assignment_list')}}" class="menu-item {{ "is-active" if request.path.startswith('/assignment') }}">
+	Assignments
+    </a></li>
+    <li><a href="{{url_for('public.user_list')}}" class="menu-item {{ "is-active" if request.path.startswith('/user') }}">
+	Team Directory
+    </a></li>
+  </ul>   
+</aside>
+{% endblock %}
+
 {% block content %}
 {% block public_content %}{% endblock %}
 {% endblock %}
+

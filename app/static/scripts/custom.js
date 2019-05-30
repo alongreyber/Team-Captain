@@ -24,7 +24,7 @@ $(document).ready(function() {
     $(":input").change(changeFunc);
 
     // Exception to displaying warning is when we click on form submission button
-    $("#submit").on('click', function() {
+    $(":submit").on('click', function() {
 	unsaved = false;
     });
 

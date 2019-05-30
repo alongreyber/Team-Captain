@@ -1,0 +1,32 @@
+{% extends 'public/base.html' %}
+{% block public_content %}
+
+<h1 class="title is-1"> {{user.name}} </h1>
+<img src="{{current_user.email | gravatar(size=128) }}" style="border-radius: 5%; border: 1px solid #ddd; padding: 5px"></img>
+<br/>
+
+<p class="is-size-4 has-text-black">Bio</p>
+<p>
+    {{user.bio}}
+</p>
+<br/>
+
+<p class="is-size-4 has-text-black">Phone Number</p>
+<p>
+    {{user.phone_number}}
+</p>
+<br/>
+
+<p class="is-size-4 has-text-black">Team Email</p>
+<p>
+    {{user.email}}
+</p>
+<br/>
+
+<p class="is-size-4 has-text-black">Personal Email</p>
+<p>
+    {{user.personal_email}}
+</p>
+<br/>
+
+{% endblock %}

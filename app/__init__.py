@@ -41,7 +41,6 @@ gravatar = Gravatar(app,
                     base_url=None)
 
 from app.admin.routes import admin as admin_module
-from app.team.routes import team as team_module
 from app.public.routes import public as public_module
 
 from app.huey import huey
@@ -64,8 +63,7 @@ def format(dt, fmt_string="MM/DD/YY h:mm A"):
     return dt.format(fmt_string)
 
 # Register admin first so that it takes precendence over our domain search
-app.register_blueprint(admin_module, subdomain='<sub>', url_prefix='/admin')
-app.register_blueprint(team_module,  subdomain='<sub>')
+app.register_blueprint(admin_module, url_prefix='/admin')
 app.register_blueprint(public_module)
 
 from app import routes

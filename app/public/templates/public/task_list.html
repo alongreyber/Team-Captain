@@ -1,0 +1,29 @@
+{% extends 'public/base.html' %}
+{% block public_content %}
+
+<h1 class="title is-1"> My Tasks </h1>
+
+{% if tasks|length > 0 %}
+<table class="table is-hoverable" style="min-width: 40%">
+    <thead>
+	<tr>
+	    <th>Name</th>
+	</tr>
+    </thead>
+    <tbody>
+	{% for task in tasks %}
+	<tr {{helpers.onclick(url_for('public.task_redirect',id=task.id))}}>
+	    <td>
+		{{task.text}}
+	    </td>
+	</tr>
+	{% endfor %}
+    </tbody>
+</table>
+{% else %}
+<h3 class="title is-3">
+    No tasks right now!
+</h3>
+{% endif %}
+
+{% endblock %}
