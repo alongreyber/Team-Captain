@@ -1,4 +1,4 @@
-from app import models, forms, oauth, tasks
+from app import models, forms, oauth, tasks, storage
 from flask import render_template, request, redirect, flash, session, abort, url_for, Blueprint, g
 from flask_login import current_user, login_required
 
@@ -7,12 +7,14 @@ from bson import ObjectId
 
 from mongoengine.errors import NotUniqueError
 
-import datetime
+import datetime, tempfile
+import PIL
 
 public = Blueprint('public', __name__, template_folder='templates')
 
-@public.route('/', methods=['GET', 'POST'])
+@public.route('/feed', methods=['GET', 'POST'])
 def feed():
+    # Form is for creating a new post
     form = forms.TeamUpdateForm()
     if form.validate_on_submit():
         update = models.TeamUpdate()
@@ -27,7 +29,9 @@ def feed():
             return redirect(url_for('public.update_edit', id=update.id))
     if len(form.errors) > 0:
         flash_errors(form)
-    return render_template('public/feed.html', form=form)
+    updates = models.TeamUpdate.objects()
+    # TODO figure out how we're filtering this
+    return render_template('public/feed.html', form=form, updates=updates)
 
 @public.route('/update/<id>/edit', methods=['GET', 'POST'])
 def update_edit(id):
@@ -35,9 +39,43 @@ def update_edit(id):
     if not update:
         abort(404)
     form = forms.TeamUpdateForm(data=update.to_mongo().to_dict())
-    print(update.content)
-    print(form.content.data)
+    if form.validate_on_submit():
+        update.content = form.content.data
+        update.images = []
+
+        save = True
+        for f in request.files.getlist('images'):
+            if f.filename == '':
+                continue
+            if '.' not in f.filename:
+                flash('Image files only!', 'warning')
+                save = False
+                break
+            extension = f.filename.rsplit('.', 1)[1].lower()
+            pil_image = PIL.Image.open(f.stream)
+            fd, path = tempfile.mkstemp(suffix='.webp')
+            with open(path, 'r+b') as image_webp:
+                pil_image.save(image_webp)
+                image_webp.seek(0)
+                image_for_db = models.CloudStorageObject()
+                image_for_db.extension = 'webp'
+                image_for_db.file = image_webp
+                image_for_db.save()
+                update.images.append(image_for_db)
+        if save:
+            update.save()
+            flash('Created Post!', 'success')
+            return redirect(url_for('public.feed'))
+    if len(form.errors) > 0:
+        flash_errors(form)
     return render_template('public/update_edit.html', form=form)
+
+@public.route('/update/<id>', methods=['GET', 'POST'])
+def update_view(id):
+    update = models.TeamUpdate.objects(id=id).first()
+    if not update:
+        abort(404)
+    # TODO 
 
 @public.route('/profile')
 @login_required
@@ -1184,3 +1222,12 @@ def assignment_delete(id):
             au.delete()
     assignment.delete()
     return redirect(url_for('public.assignment_list'))
+
+def flash_errors(form):
+    """Flash errors from a form at the top of the page"""
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(u"Error in the %s field - %s" % (
+                getattr(form, field).label.text,
+                error
+            ), 'warning')

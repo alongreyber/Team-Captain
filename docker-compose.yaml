@@ -7,6 +7,7 @@ services:
       FLASK_ENV: development
       SERVER_NAME: manager.com:5000
       OAUTHLIB_INSECURE_TRANSPORT: 1
+      GOOGLE_APPLICATION_CREDENTIALS: /code/gcloud-credentials.json
     volumes:
       - .:/code
     ports:

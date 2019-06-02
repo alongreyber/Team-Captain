@@ -3,9 +3,9 @@
 {% block nav %}
 <div class="navbar is-info">
     <div class="navbar-brand">
-	<a class="navbar-item" href="#">
-	    <img src="{{url_for('static', filename='images/logo-no-text.png')}}">
-	</a>
+	<div class="navbar-item">
+	    <img style="filter: brightness(0) invert(1)" src="{{url_for('static', filename='images/logo-no-text.png')}}">
+	</div>
     </div>
     <div class="navbar-menu is-active">
 	<div class="navbar-start">
@@ -68,7 +68,7 @@
 {% block sidebar %}
 <aside class="menu" >
   <ul class="menu-list">
-    <li><a href="{{url_for('public.feed')}}" class="menu-item {{ "is-active" if request.path == '/' }}">
+    <li><a href="{{url_for('public.feed')}}" class="menu-item {{ "is-active" if request.path.endswith('feed') }}">
 	News Feed
     </a></li>
     <li><a href="{{url_for('public.user_profile')}}" class="menu-item {{ "is-active" if request.path.startswith('/profile') }}">

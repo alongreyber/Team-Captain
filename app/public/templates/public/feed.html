@@ -17,7 +17,7 @@
 	    {{ form.hidden_tag() }}
 	    <div class="field">
 		<div class="control">
-		    {{ form.content(class_='textarea', rows="5", placeholder="What's going on in your build space?") }}
+		    {{ form.content(class_='textarea', rows="3", autofocus="True", placeholder="What's going on in your build space?") }}
 		</div>
 	    </div>
 	    <button type="submit" class="button is-outlined is-primary" name="post" value="Post">
@@ -47,17 +47,27 @@
 </br>
 </br>
 
-<div class="card">
+{% for u in updates %}
+<div class="card" style="margin-bottom: 20px">
     <div class="card-content">
+	{% if u.images|length > 0 %}
+	    {% for i in u.images %}
+		<img src="{{i.public_url}}">
+	    {% endfor %}
+	{% endif %}
 	<div class="content">
-	    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-	    Phasellus nec iaculis mauris. <a>@bulmaio</a>.
-	    <a href="#">#css</a> <a href="#">#responsive</a>
-	    <br>
-	    <time datetime="2016-1-1">11:09 PM - 1 Jan 2016</time>
+	    {{u.content}}
+	</div>
+	<div class="ssk-group ssk-rounded ssk-sm">
+	    <a href="{{url_for('public.update_view', id=u.id)}}" class="ssk ssk-twitter"></a>
+	    <a href="{{url_for('public.update_view', id=u.id)}}" class="ssk ssk-facebook"></a>
+	    <a href="{{url_for('public.update_view', id=u.id)}}" class="ssk ssk-google-plus"></a>
+	    <a href="{{url_for('public.update_view', id=u.id)}}" class="ssk ssk-pinterest"></a>
+	    <a href="{{url_for('public.update_view', id=u.id)}}" class="ssk ssk-tumblr"></a>
 	</div>
     </div>
 </div>
+{% endfor %}
 
 </div>
 

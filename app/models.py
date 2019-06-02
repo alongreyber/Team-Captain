@@ -1,5 +1,5 @@
 import datetime
-from app import db, login_manager, tasks
+from app import db, login_manager, tasks, storage
 
 from flask import url_for
 
@@ -26,6 +26,25 @@ class PendulumField(BaseField):
         if not isinstance(value, pendulum.DateTime):
             self.error('Not an instance of a pendulum DateTime')
         return value
+
+# Object that gets stored in Google Cloud Storage
+class CloudStorageObject(db.Document):
+    extension = db.StringField()
+
+    @classmethod
+    def post_save(cls, sender, document, **kwargs):
+        storage.upload_file_obj('team_captain', document.file, str(document.id) + "." + document.extension)
+
+    @classmethod
+    def post_delete(cls, sender, document, **kwargs):
+        storage.delete_obj(str(document.id) + "." + document.extension)
+
+    @property
+    def public_url(self):
+        return f"https://storage.googleapis.com/team_captain/{self.id}.{self.extension}"
+
+signals.post_save.connect(CloudStorageObject.post_save, sender=CloudStorageObject)
+signals.post_delete.connect(CloudStorageObject.post_save, sender=CloudStorageObject)
 
 class Team(db.Document):
     name = db.StringField()
@@ -121,6 +140,7 @@ class NotificationSettings(db.EmbeddedDocument):
 
 class TeamUpdate(TeamDocument):
     content = db.StringField()
+    images = db.ListField(db.ReferenceField(CloudStorageObject))
     is_draft = db.BooleanField(default=False)
 
 # Calendar models

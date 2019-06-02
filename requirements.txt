@@ -2,7 +2,6 @@ Flask
 Flask-WTF
 Flask-Login
 Flask-Gravatar
-Flask-Uploads
 mongoengine
 flask-mongoengine
 hashids
@@ -12,3 +11,5 @@ huey
 redis
 pendulum
 blinker
+Pillow
+google-cloud-storage

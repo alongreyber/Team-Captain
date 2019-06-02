@@ -12,19 +12,51 @@
 	</div>
     </div>
 
-    <div style="width: 100%; height: 200px">
-	{{ form.images(class_="filepond", multiple='True') }}
+    <div class="file has-name is-boxed">
+	<label class="file-label">
+	    {{ form.images(class_='file-input', multiple='True') }}
+	    <span class="file-cta">
+		<span class="file-icon">
+		    <i class="fas fa-upload"></i>
+		</span>
+		<span class="file-label">
+		    Add Images
+		</span>
+	    </span>
+	</label>
     </div>
+
+    <div class="list" id='fileList' style="width: 17%">
+    </div>
+
+    <br/>
+    <input class="button is-primary" id="submit" name="submit" type="submit" value="Post">
 </form>
 
-<!-- Load FilePond library -->
-<script src="https://unpkg.com/filepond/dist/filepond.js"></script>
-<!-- Load stylesheet -->
-<link href="https://unpkg.com/filepond/dist/filepond.css" rel="stylesheet">
-
-<!-- Turn all file input elements into ponds -->
 <script>
-FilePond.parse(document.body);
+    $('#images').change(function(){
+	var files = Array.from($(this)[0].files);
+	var fileListElement = $("#fileList");
+	fileListElement.empty();
+	console.log(files.length);
+	if(files.length > 0) {
+		var fileIconElement = $(".file-icon").children();	
+	    	fileIconElement.removeClass('fa-upload');
+	    	fileIconElement.addClass('fa-check');
+	    	var fileElement = $('.file');
+	    	fileElement.addClass('is-success');
+	} else {
+		var fileIconElement = $(".file-icon").children();	
+	    	fileIconElement.removeClass('fa-check');
+	    	fileIconElement.addClass('fa-upload');
+	    	var fileElement = $('.file');
+	    	fileElement.removeClass('is-success');
+	}
+	files.forEach(function(e) {
+	    fileListElement.append('<div class="list-item" style="overflow:hidden">' + e.name + '</div>');
+	});
+    });
 </script>
+
 
 {% endblock %}

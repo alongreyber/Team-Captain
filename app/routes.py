@@ -19,11 +19,7 @@ def unauthorized_callback():
 
 @app.route('/')
 def landing_page():
-    team = None
-    if current_user.is_authenticated:
-        if current_user.team:
-            team = current_user.team.fetch()
-    return render_template('landing_page.html', team=team)
+    return render_template('landing_page.html')
 
 @app.route('/login')
 def login():
