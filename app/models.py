@@ -55,6 +55,9 @@ class Team(db.Document):
     name = db.StringField()
     number = db.IntField(unique=True)
     owner = db.LazyReferenceField('User')
+    description = db.StringField()
+    photo = db.ReferenceField(Image)
+    editor_roles = db.ListField(db.ReferenceField('Role'))
 
 class TeamDocument(db.Document):
     meta = {'abstract': True}

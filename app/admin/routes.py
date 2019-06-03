@@ -11,15 +11,20 @@ from bson import ObjectId
 
 admin = Blueprint('admin', __name__, template_folder='templates')
 
-# Roles that can't be deleted
-protected_roles = ['everyone', 'admin']
-
-# Make sure user has "admin" role
-@admin.before_request
-def require_authorization():
+# Make sure user can see this team and is an admin
+@admin.url_value_preprocessor
+def look_up_team(endpoint, values):
+    team = models.Team.objects(id=values['team_id']).first()
+    values.pop('team_id')
+    if not team:
+        abort(404)
     if not current_user.is_authenticated:
         flash('Please log in to view this page', 'danger')
         return redirect(url_for('login', next=request.endpoint))
+    if not current_user.team.id == team.id:
+        flash('You are not a member of this team', 'danger')
+        return redirect(url_for('public.feed'))
+    g.team = team
     for role in current_user.roles:
         if role.name == 'admin':
             return

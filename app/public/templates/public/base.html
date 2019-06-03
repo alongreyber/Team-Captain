@@ -71,8 +71,8 @@
     <li><a href="{{url_for('public.feed')}}" class="menu-item {{ "is-active" if request.path.endswith('feed') }}">
 	News Feed
     </a></li>
-    <li><a href="{{url_for('public.user_profile')}}" class="menu-item {{ "is-active" if request.path.startswith('/profile') }}">
-	Profile
+    <li><a href="{{url_for('public.team_list')}}" class="menu-item {{ "is-active" if request.path.startswith('/team') }}">
+	Team Directory
     </a></li>
     <li><a href="{{url_for('public.task_list')}}" class="menu-item {{ "is-active" if request.path.startswith('/task') }}">
 	Tasks
@@ -85,9 +85,6 @@
     </a></li>
     <li><a href="{{url_for('public.assignment_list')}}" class="menu-item {{ "is-active" if request.path.startswith('/assignment') }}">
 	Assignments
-    </a></li>
-    <li><a href="{{url_for('public.user_list')}}" class="menu-item {{ "is-active" if request.path.startswith('/user') }}">
-	Team Directory
     </a></li>
   </ul>   
 </aside>

@@ -64,9 +64,10 @@ def update_edit(id):
             # User submitted a video
             if form.video.data:
                 match = youtube_url_validation(form.video.data)
-                if not match:
+                if match:
+                    update.video = match
+                else:
                     flash('Invalid Youtube URL', 'warning')
-                update.video = match
             else: 
                 for f in request.files.getlist('images'):
                     if f.filename == '':
@@ -116,7 +117,19 @@ def update_view(id):
     update = models.TeamUpdate.objects(id=id).first()
     if not update:
         abort(404)
-    # TODO 
+    # TODO figure out how to go to specific update
+
+@public.route('/teams')
+def team_list():
+    teams = models.Team.objects()
+    return render_template('public/team_list.html', teams=teams)
+
+@public.route('/team/<id>')
+def team_view(id):
+    team = models.Team.objects(id=id).first()
+    if not team:
+        abort(404)
+    return render_template('public/team_view.html', team=team)
 
 @public.route('/profile')
 @login_required

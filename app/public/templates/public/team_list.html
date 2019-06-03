@@ -1,0 +1,38 @@
+{% extends 'public/base.html' %}
+{% block public_content %}
+
+
+<h1 class="title is-1"> Team Directory </h1>
+<div id="teamTable">
+    <input style="margin-bottom:20px" class="input is-large search" placeholder="Filter by Name or Number"></input>
+    <table class="table is-hoverable" style="width: 100%">
+	<thead>
+	    <tr>
+		<th>Name</th>
+		<th>Number</th>
+	    </tr>
+	</thead>
+	<tbody class="list">
+	    {% for team in teams %}    
+	    <tr {{helpers.onclick(url_for('public.team_view', id=team.id))}}>
+		<td class="name">
+		    {{team.name}}
+		</td>
+		<td class="number">
+		    {{team.number}}
+		</td>
+	    </tr>
+	    {% endfor %}
+	</tbody>
+    </table>
+</div>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/list.js/1.5.0/list.min.js"></script>
+<script>
+    var options = {
+	valueNames: ['name', 'number']
+    };
+    var tableList = new List('teamTable', options)
+</script>
+
+{% endblock %}

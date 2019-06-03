@@ -8,7 +8,7 @@
 <div class="navbar is-danger">
     <div class="navbar-menu is-active">
 	<div class="navbar-brand">
-	    <a href="{{ team_url_for('public.user_profile') }}" class="navbar-item has-text-weight-bold">
+	    <a href="{{ url_for('public.user_profile') }}" class="navbar-item has-text-weight-bold">
 		<span class="icon">
 		    <i class="fas fa-home"></i>
 		</span>
@@ -18,19 +18,19 @@
 	    </a>
 	</div>
 	<div class="navbar-start">
-	    <a href="{{team_url_for('admin.team_settings')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/settings') }}">
+	    <a href="{{url_for('admin.team_settings')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/settings') }}">
 		Team Settings
 	    </a>
-	    <a href="{{team_url_for('admin.user_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/user') }}">
+	    <a href="{{url_for('admin.user_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/user') }}">
 		Users
 	    </a>
-	    <a href="{{team_url_for('admin.role_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/role') }}">
+	    <a href="{{url_for('admin.role_list')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/role') }}">
 		Roles
 	    </a>
-	    <a href="{{team_url_for('admin.attendance_graphs')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/attendance') }}">
+	    <a href="{{url_for('admin.attendance_graphs')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/attendance') }}">
 		Attendance
 	    </a>
-	    <a href="{{team_url_for('admin.debug_tools')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/debug') }}">
+	    <a href="{{url_for('admin.debug_tools')}}" class="navbar-item {{ "is-active" if request.path.startswith('/admin/debug') }}">
 		Debug Tools
 	    </a>
 	</div>
@@ -43,7 +43,7 @@
 		{% endif %}
 	    </div>
 	    <div class="navbar-item">
-		<a href="{{team_url_for('logout')}}">
+		<a href="{{url_for('logout')}}">
 		    <button class="button is-link">
 			Sign Out
 		    </button>
