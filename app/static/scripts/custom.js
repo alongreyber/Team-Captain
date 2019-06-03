@@ -39,6 +39,27 @@ $(document).ready(function() {
     
 });
 
+$(document).ready(function() {
+    if( $(".galleria").length ) {
+	Galleria.loadTheme('https://cdnjs.cloudflare.com/ajax/libs/galleria/1.5.7/themes/classic/galleria.classic.min.js');
+	Galleria.configure({
+	    thumbnails: 'false',
+	    lightBox: 'true',
+	    extend: function(options) {
+		// Galleria open lightbox when image clicked
+		this.bind('image', function(e) {
+
+		    // lets make galleria open a lightbox when clicking the main image:
+		    $(e.imageTarget).click(this.proxy(function() {
+			this.openLightbox();
+		    }));
+		});
+	    }
+	});
+	Galleria.run('.galleria');
+    }
+})
+
 // Quick script to allow toggling an element
 // Used for notification dropdown
 function toggle_active(id) {
@@ -83,3 +104,20 @@ $(document).ready(function() {
 	});
     }
 });
+
+// Check if youtube URL is valid
+function validateYouTubeUrl(url)
+{
+    if (url != undefined || url != '') {
+	var regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|\?v=)([^#\&\?]*).*/;
+	var match = url.match(regExp);
+	if (match && match[2].length == 11) {
+	    // Do anything for being valid
+	    // if need to change the url to embed url then use below line
+	    return 'https://www.youtube.com/embed/' + match[2] + '?autoplay=0';
+	}
+	else {
+	    return null;
+	}
+    }
+}

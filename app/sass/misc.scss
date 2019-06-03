@@ -41,3 +41,19 @@ table.is-hoverable:hover {
   left: 0;
   right: 0;
 }
+
+.galleria-container {
+    background: white;
+}
+
+.galleria-image:hover {
+    cursor: pointer;
+}
+
+// Need this to get Galleria to work on a light background
+.galleria-image-nav-left {
+    background-image: url(/static/images/galleria-buttons-recolored.png) !important;
+}
+.galleria-image-nav-right {
+    background-image: url(/static/images/galleria-buttons-recolored.png) !important;
+}

@@ -27,8 +27,9 @@ class UserForm(FlaskForm):
     roles = SelectMultipleField('Roles', coerce=str)
 
 class TeamUpdateForm(FlaskForm):
-    content = TextAreaField(validators=[required()])
+    content = TextAreaField()
     images = FileField()
+    video = StringField()
     post = SubmitField()
     edit = SubmitField()
 

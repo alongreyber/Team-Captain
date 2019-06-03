@@ -50,14 +50,36 @@
 {% for u in updates %}
 <div class="card" style="margin-bottom: 20px">
     <div class="card-content">
-	{% if u.images|length > 0 %}
-	    {% for i in u.images %}
-		<img src="{{i.public_url}}">
-	    {% endfor %}
-	{% endif %}
+	<div class="media">
+	    <div class="media-left">
+		<p class="image is-64x64">
+		    <img src="{{u.owner.email | gravatar(size=64) }}" style="border-radius: 12%; border: 1px solid #ddd; padding: 10%"></img>
+		</p>
+	    </div>
+	    <div class="media-content">
+		<p class="is-size-5"><strong>{{u.owner.name}}</strong></p>
+		<p>{{u.post_time|localize|format}}</p>
+	    </div>
+	    <div class="media-right">
+		<a href="{{url_for('public.update_star', id=u.id)}}" {{helpers.fa_toggle_icon_style()}} >
+		    {% if current_user in u.users_starred %}
+		    <i class="fas fa-star fa-2x"></i>
+		    {% else %}
+		    <i class="far fa-star fa-2x"></i>
+		    {% endif %}
+		</a>
+	    </div>
+	</div>
 	<div class="content">
 	    {{u.content}}
 	</div>
+	{% if u.images|length > 0 %}
+	<div class="galleria" style="height: 500px">
+	    {% for i in u.images %}
+	    <img src="{{i.public_url}}" width="{{i.width}}" height="{{i.height}}">
+	    {% endfor %}
+	</div>
+	{% endif %}
 	<div class="ssk-group ssk-rounded ssk-sm">
 	    <a href="{{url_for('public.update_view', id=u.id)}}" class="ssk ssk-twitter"></a>
 	    <a href="{{url_for('public.update_view', id=u.id)}}" class="ssk ssk-facebook"></a>

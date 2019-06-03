@@ -1,5 +1,5 @@
 <!-- Root element of PhotoSwipe. Must have class pswp. -->
-<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="pswp" id="pswp-{{pswp_id}}" tabindex="-1" role="dialog" aria-hidden="true">
 
     <!-- Background of PhotoSwipe. 
          It's a separate element as animating opacity is faster than rgba(). -->
@@ -65,13 +65,13 @@
 
 
 <script>
-var pswpElement = document.querySelectorAll('.pswp')[0];
+var pswpElement = $('#pswp-{{pswp_id}}')[0];
 
 // build items array
 var items = [
     {% for image in images %}
 	{
-	    src: '{{image.src}}',
+	    src: '{{image.public_url}}',
 	    w: {{image.width}},
 	    h: {{image.height}}
 	},
@@ -80,9 +80,19 @@ var items = [
 
 // define options (if needed)
 var options = {
-    // optionName: 'option value'
-    // for example:
-    index: 0 // start at first slide
+    // Stay in element
+    modal: false, 
+    closeOnScroll: false,
+    index: 0,
+    getThumbBoundsFn: function(index) {
+        // rect was the original bounds
+        var rect = {x: ..., y: ..., w: ...},
+
+        var templateBounds = pswpElement.parentElement.getBoundingClientRect();
+        rect.x -= templateBounds.left;
+        rect.y -= templateBounds.top;
+        return rect;
+    }
 };
 
 // Initializes and opens PhotoSwipe

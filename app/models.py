@@ -29,6 +29,7 @@ class PendulumField(BaseField):
 
 # Object that gets stored in Google Cloud Storage
 class CloudStorageObject(db.Document):
+    meta = { 'allow_inheritance' : True }
     extension = db.StringField()
 
     @classmethod
@@ -43,8 +44,12 @@ class CloudStorageObject(db.Document):
     def public_url(self):
         return f"https://storage.googleapis.com/team_captain/{self.id}.{self.extension}"
 
-signals.post_save.connect(CloudStorageObject.post_save, sender=CloudStorageObject)
-signals.post_delete.connect(CloudStorageObject.post_save, sender=CloudStorageObject)
+class Image(CloudStorageObject):
+    width = db.IntField()
+    height = db.IntField()
+
+signals.post_save.connect(Image.post_save, sender=Image)
+signals.post_delete.connect(Image.post_save, sender=Image)
 
 class Team(db.Document):
     name = db.StringField()
@@ -139,9 +144,13 @@ class NotificationSettings(db.EmbeddedDocument):
     text = db.StringField()
 
 class TeamUpdate(TeamDocument):
+    owner = db.ReferenceField(User)
+    post_time = PendulumField()
     content = db.StringField()
-    images = db.ListField(db.ReferenceField(CloudStorageObject))
+    images = db.ListField(db.ReferenceField(Image))
+    video = db.StringField()
     is_draft = db.BooleanField(default=False)
+    users_starred = db.ListField(db.LazyReferenceField(User))
 
 # Calendar models
 

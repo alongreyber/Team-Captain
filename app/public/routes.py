@@ -7,7 +7,7 @@ from bson import ObjectId
 
 from mongoengine.errors import NotUniqueError
 
-import datetime, tempfile
+import datetime, tempfile, re
 import PIL
 
 public = Blueprint('public', __name__, template_folder='templates')
@@ -19,7 +19,9 @@ def feed():
     if form.validate_on_submit():
         update = models.TeamUpdate()
         update.content = form.content.data
+        update.owner = current_user.id
         if form.post.data:
+            update.post_time = pendulum.now('UTC')
             update.save()
             flash('Update posted!', 'success')
             return redirect(url_for('public.feed'))
@@ -33,6 +35,18 @@ def feed():
     # TODO figure out how we're filtering this
     return render_template('public/feed.html', form=form, updates=updates)
 
+def youtube_url_validation(url):
+    youtube_regex = (
+        r'(https?://)?(www\.)?'
+        '(youtube|youtu|youtube-nocookie)\.(com|be)/'
+        '(watch\?v=|embed/|v/|.+\?v=)?([^&=%\?]{11})')
+
+    youtube_regex_match = re.match(youtube_regex, url)
+    if youtube_regex_match:
+        return youtube_regex_match.group(6)
+
+    return youtube_regex_match
+
 @public.route('/update/<id>/edit', methods=['GET', 'POST'])
 def update_edit(id):
     update = models.TeamUpdate.objects(id=id).first()
@@ -41,34 +55,61 @@ def update_edit(id):
     form = forms.TeamUpdateForm(data=update.to_mongo().to_dict())
     if form.validate_on_submit():
         update.content = form.content.data
-        update.images = []
+        if not update.content or update.content == '':
+            flash('Please add text to your post', 'warning')
+        else:
+            update.images = []
 
-        save = True
-        for f in request.files.getlist('images'):
-            if f.filename == '':
-                continue
-            if '.' not in f.filename:
-                flash('Image files only!', 'warning')
-                save = False
-                break
-            extension = f.filename.rsplit('.', 1)[1].lower()
-            pil_image = PIL.Image.open(f.stream)
-            fd, path = tempfile.mkstemp(suffix='.webp')
-            with open(path, 'r+b') as image_webp:
-                pil_image.save(image_webp)
-                image_webp.seek(0)
-                image_for_db = models.CloudStorageObject()
-                image_for_db.extension = 'webp'
-                image_for_db.file = image_webp
-                image_for_db.save()
-                update.images.append(image_for_db)
-        if save:
-            update.save()
-            flash('Created Post!', 'success')
-            return redirect(url_for('public.feed'))
+            save = True
+            # User submitted a video
+            if form.video.data:
+                match = youtube_url_validation(form.video.data)
+                if not match:
+                    flash('Invalid Youtube URL', 'warning')
+                update.video = match
+            else: 
+                for f in request.files.getlist('images'):
+                    if f.filename == '':
+                        continue
+                    if '.' not in f.filename:
+                        flash('Image files only!', 'warning')
+                        save = False
+                        break
+                    extension = f.filename.rsplit('.', 1)[1].lower()
+                    pil_image = PIL.Image.open(f.stream)
+                    width, height = pil_image.size
+                    fd, path = tempfile.mkstemp(suffix='.webp')
+                    with open(path, 'r+b') as image_webp:
+                        pil_image.save(image_webp)
+                        image_webp.seek(0)
+                        image_for_db = models.Image()
+                        image_for_db.extension = 'webp'
+                        image_for_db.width = width
+                        image_for_db.height = height
+                        # This is a temporary field that won't be saved
+                        image_for_db.file = image_webp
+                        image_for_db.save()
+                        update.images.append(image_for_db)
+            if save:
+                update.post_time = pendulum.now('UTC')
+                update.save()
+                flash('Created Post!', 'success')
+                return redirect(url_for('public.feed'))
     if len(form.errors) > 0:
         flash_errors(form)
     return render_template('public/update_edit.html', form=form)
+
+@public.route('/update/<id>/star', methods=['GET', 'POST'])
+def update_star(id):
+    update = models.TeamUpdate.objects(id=id).first()
+    if not update:
+        abort(404)
+    if current_user in update.users_starred:
+        update.users_starred.remove(current_user)
+    else:
+        update.users_starred.append(current_user.id)
+    update.save()
+    return ('', 204)
 
 @public.route('/update/<id>', methods=['GET', 'POST'])
 def update_view(id):

@@ -12,7 +12,8 @@
 	</div>
     </div>
 
-    <div class="file has-name is-boxed">
+    <div style='display:flex; flex-direction:row'>
+    <div class="file has-name is-boxed" id="file-button" style="margin-right: 20px">
 	<label class="file-label">
 	    {{ form.images(class_='file-input', multiple='True') }}
 	    <span class="file-cta">
@@ -25,12 +26,41 @@
 	    </span>
 	</label>
     </div>
+    <div class="file has-name is-boxed" id="video-button" {{ helpers.toggle_active('video-modal') }}>
+	    <span class="file-cta">
+		<span class="file-icon">
+		    <i class="fab fa-youtube"></i>
+		</span>
+		<span class="file-label">
+		    Add Video
+		</span>
+	    </span>
+    </div>
+    </div>
+
+    <div class="modal" id="video-modal">
+	<div class="modal-background"></div>
+	<div class="modal-card">
+	    <header class="modal-card-head">
+		<p class="modal-card-title">Embed YouTube Video</p>
+		<button class="delete" type="button" aria-label="close" {{ helpers.toggle_active('video-modal') }}></button>
+	    </header>
+	    <section class="modal-card-body">
+		<div class="field">
+		    {{ form.video(class_='input') }}
+		</div>
+	    </section>
+	    <footer class="modal-card-foot">
+		<button class="button is-success" type="button" {{ helpers.toggle_active('video-modal')}}>Save</button>
+	    </footer>
+	</div>
+    </div>
 
     <div class="list" id='fileList' style="width: 17%">
     </div>
 
     <br/>
-    <input class="button is-primary" id="submit" name="submit" type="submit" value="Post">
+    <button onclick="$(this).addClass('is-loading')" class="button is-primary" id="submit" name="submit" type="submit">Post</button>
 </form>
 
 <script>
@@ -38,23 +68,41 @@
 	var files = Array.from($(this)[0].files);
 	var fileListElement = $("#fileList");
 	fileListElement.empty();
-	console.log(files.length);
 	if(files.length > 0) {
-		var fileIconElement = $(".file-icon").children();	
+		$('#video').val('');
+	    	$("#video").trigger('change');
+		var fileIconElement = $("#file-button .file-icon").children();	
 	    	fileIconElement.removeClass('fa-upload');
 	    	fileIconElement.addClass('fa-check');
-	    	var fileElement = $('.file');
+	    	var fileElement = $('#file-button');
 	    	fileElement.addClass('is-success');
 	} else {
-		var fileIconElement = $(".file-icon").children();	
+		var fileIconElement = $("#file-button .file-icon").children();	
 	    	fileIconElement.removeClass('fa-check');
 	    	fileIconElement.addClass('fa-upload');
-	    	var fileElement = $('.file');
+	    	var fileElement = $('#file-button');
 	    	fileElement.removeClass('is-success');
 	}
 	files.forEach(function(e) {
 	    fileListElement.append('<div class="list-item" style="overflow:hidden">' + e.name + '</div>');
 	});
+    });
+
+    $('#video').change(function() {
+	console.log('Calling video change');
+	if( $('#video').val() != '' ) {
+		$('#video-button').addClass('is-success');
+	    	$('#images').val('');
+	    	$('#images').trigger('change');
+		var fileIconElement = $("#video-button .file-icon").children();	
+	    	fileIconElement.removeClass('fa-youtube fab');
+	    	fileIconElement.addClass('fa-check fas');
+	} else {
+		$('#video-button').removeClass('is-success');
+		var fileIconElement = $("#video-button .file-icon").children();	
+	    	fileIconElement.removeClass('fa-check fas');
+	    	fileIconElement.addClass('fa-youtube fab');
+	}
     });
 </script>
 

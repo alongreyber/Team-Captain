@@ -5,3 +5,18 @@ onclick="location.href = '{{url}}'"
 {% macro toggle_active(id) %}
 onclick="var e = document.getElementById('{{id}}'); e.classList.toggle('is-active')"
 {% endmacro %}
+
+{% macro fa_toggle_icon_style() %}
+onclick="
+var icon = $(this).find('.svg-inline--fa');
+var icon_fa_prefix = icon.attr('data-prefix');
+
+if (icon_fa_prefix === 'fas') {
+    icon.attr('data-prefix', 'far');
+
+} else {
+    icon.attr('data-prefix', 'fas');
+}
+"
+{% endmacro %}
+
