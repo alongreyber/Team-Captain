@@ -13,23 +13,9 @@
 	</div>
     </div>
     <div class="field">
-	{{ form.sub.label(class_='label') }}
+	{{ form.social_facebook.label(class_='label') }}
 	<div class="control">
-	    {{ form.sub(class_='input', style='width: 20%') }} 
-	    <span class="is-size-4">.teamcaptain.org</span>
-	</div>
-    </div>
-    <div class="field">
-	{{ form.number.label(class_='label') }}
-	<div class="control">
-	    {{ form.number(class_='input') }}
-	</div>
-    </div>
-    <div class="field">
-	{{ form.email_subdomain.label(class_='label') }}
-	Use this if your team uses G-Suite and you would like your users to use thier G-Suite emails on Team Captain.
-	<div class="control">
-	    {{ form.email_subdomain(class_='input') }}
+	    {{ form.social_facebook(class_='input') }}
 	</div>
     </div>
     <input class="button is-primary" id="submit" name="submit" type="submit" value="Save">

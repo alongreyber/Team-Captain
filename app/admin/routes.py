@@ -4,7 +4,7 @@ from flask import render_template, request, redirect, flash, session, abort, url
 
 from flask_login import current_user
 
-import datetime, json, io, csv
+import datetime, json, io, csv, re
 
 import pendulum
 from bson import ObjectId
@@ -14,22 +14,14 @@ admin = Blueprint('admin', __name__, template_folder='templates')
 # Make sure user can see this team and is an admin
 @admin.url_value_preprocessor
 def look_up_team(endpoint, values):
-    team = models.Team.objects(id=values['team_id']).first()
-    values.pop('team_id')
-    if not team:
+    if not current_user.team:
         abort(404)
     if not current_user.is_authenticated:
         flash('Please log in to view this page', 'danger')
         return redirect(url_for('login', next=request.endpoint))
-    if not current_user.team.id == team.id:
-        flash('You are not a member of this team', 'danger')
-        return redirect(url_for('public.feed'))
-    g.team = team
-    for role in current_user.roles:
-        if role.name == 'admin':
-            return
-    flash('You do not have permission to view this page', 'danger')
-    return redirect(url_for('public.index'))
+    if not current_user.is_admin and not current_user.team.owner == current_user:
+        flash('You do not have permission to view this page', 'danger')
+        return redirect(url_for('public.index'))
 
 @admin.route('/')
 def index():
@@ -37,36 +29,22 @@ def index():
 
 @admin.route('/settings', methods=['GET', 'POST'])
 def team_settings():
-    form = forms.TeamForm(data=g.team.to_mongo().to_dict())
+    form = forms.TeamForm(data=current_user.team.to_mongo().to_dict())
     if form.validate_on_submit():
-        old_subdomain = g.team.sub
-        g.team.name = form.name.data
-        g.team.sub = form.sub.data
-        g.team.number = form.number.data
-        g.team.email_subdomain = form.email_subdomain.data
-        g.team.save()
+        match_facebook = re.compile("^https?:\/\/facebook\.com\/([a-zA-Z0-9]+)$")
+        social_facebook = match_facebook.search(form.social_facebook.data)
+        if not social_facebook:
+            flash('Invalid Facebook link', 'warning')
+        current_user.team.social_facebook = social_facebook
         flash('Changes Saved', 'success')
-        g.team.reload()
-        if g.team.sub != old_subdomain:
-            return redirect(url_for('admin.team_settings'))
+        current_user.team.save()
     return render_template('admin/team_settings.html',
             form=form)
 
 @admin.route('/users')
 def user_list():
-    users = models.User.objects(team=g.team)
-    role_colors = ['#5484ed', '#dc2127', '#a4bdfc', '#46d6db', '#7ae7bf',  '#fbd75b', '#ffb878', '#51b749', '#ff887c', '#dbadff', '#e1e1e1']
-    seen_roles = []
-    for user in users:
-        for role in user.roles:
-            if role not in seen_roles:
-                seen_roles.append(role)
-                role.color = role_colors[len(seen_roles)]
-            else:
-                for r in seen_roles:
-                    if r.id == role.id:
-                        role.color = r.color
-    unconfirmed_users = models.User.objects(team=None, team_number=g.team.number)
+    users = models.User.objects(team=current_user.team)
+    unconfirmed_users = models.User.objects(team=None, team_number=current_user.team.number)
     return render_template('admin/user_list.html',
             users=users,
             unconfirmed_users=unconfirmed_users)
@@ -78,14 +56,10 @@ def user_approve(id):
         abort(404)
     if user.team:
         abort(404)
-    user.team = g.team
-    everyone_role = models.Role.objects(team=g.team, name='everyone').first()
-    user.roles = [everyone_role]
+    user.team = current_user.team
     user.team_number = None
     user.save()
     # Make users complete their profile
-    user.assigned_tasks = [user]
-    user.save()
     flash('User Approved', 'success')
     return redirect(url_for('admin.user_list'))
 
@@ -98,7 +72,7 @@ def user_deny(id):
         abort(404)
     user.team_number = None
     user.save()
-    flash('User Denied', 'success')
+    flash('User join request denied', 'success')
     return redirect(url_for('admin.user_list'))
 
 @admin.route('/user/<id>', methods=['GET', 'POST'])
@@ -124,22 +98,46 @@ def user_info(id):
     return render_template('admin/user_info.html', user=user, form=form,
             selected_roles=[role.name for role in user.roles])
 
-@admin.route('/user/<id>/delete')
-def user_delete(id):
-    user = models.User.objects(team=g.team, id=id).first()
-    for tu in user.assigned_tasks:
-        tu.delete()
-    user.delete()
+@admin.route('/user/<id>/make_admin')
+def user_make_admin(id):
+    user = models.User.objects(team=current_user.team, id=id).first()
+    if not user:
+        abort(404)
+    user.admin = True
+    user.save()
+    flash('Changes Saved', 'success')
+    return redirect(request.referrer)
+
+@admin.route('/user/<id>/remove_admin')
+def user_remove_admin(id):
+    user = models.User.objects(team=current_user.team, id=id).first()
+    if not user:
+        abort(404)
+    user.admin = False
+    user.save()
+    flash('Changes Saved', 'success')
+    return redirect(request.referrer)
+
+@admin.route('/user/<id>/remove')
+def user_remove(id):
+    user = models.User.objects(team=current_user.team, id=id).first()
+    if not user:
+        abort(404)
+    user.team = None
+    user.save()
+    flash('Removed User', 'success')
     return redirect(url_for('admin.user_list'))
 
 @admin.route('/roles')
 def role_list():
+    abort(404)
     roles = models.Role.objects(team=g.team)
     role_form = forms.RoleForm()
     return render_template('admin/role_list.html', roles=roles, role_form=role_form, protected_roles=protected_roles)
 
 @admin.route('/newrole', methods=['POST'])
 def role_new():
+    abort(404)
     form = forms.RoleForm()
     all_roles = models.Role.objects(team=g.team)
     if form.validate_on_submit():
@@ -157,6 +155,7 @@ def role_new():
 
 @admin.route('/role/<id>/remove')
 def role_delete(id):
+    abort(404)
     role = models.Role.objects(team=g.team, id=id).first()
     if role.name in protected_roles:
         flash('Cannot delete this role', 'danger')
@@ -170,6 +169,7 @@ def role_delete(id):
 
 @admin.route('/attendance', methods=['GET', 'POST'])
 def attendance_graphs():
+    abort(404)
     all_eus = models.EventUser.objects(team=g.team)
     all_events = models.Event.objects(team=g.team)
     all_users = models.User.objects(team=g.team)
@@ -241,6 +241,7 @@ def attendance_graphs():
 
 @admin.route('/attendance/csv')
 def attendance_download_csv():
+    abort(404)
     all_eus = models.EventUser.objects(team=g.team)
     all_users = models.User.objects(team=g.team)
     # Fill in eu.user
@@ -288,6 +289,7 @@ def attendance_download_csv():
 
 @admin.route('/wiki')
 def article_list():
+    abort(404)
     articles = models.Article.objects(team=g.team)
     topics = models.Topic.objects(team=g.team)
     return render_template('admin/article_list.html', articles=articles, topics=topics)
@@ -297,7 +299,6 @@ def debug_tools():
     return render_template('admin/debug_tools.html')
 
 collections = [
-    models.Role,
     models.PushNotification,
     models.User,
     models.Calendar,

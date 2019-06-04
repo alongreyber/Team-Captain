@@ -63,7 +63,7 @@ def format(dt, fmt_string="MM/DD/YY h:mm A"):
     return dt.format(fmt_string)
 
 # Register admin first so that it takes precendence over our domain search
-app.register_blueprint(admin_module, url_prefix='/admin/<team_id>/')
+app.register_blueprint(admin_module, url_prefix='/admin')
 app.register_blueprint(public_module)
 
 from app import routes

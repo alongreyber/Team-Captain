@@ -15,9 +15,12 @@ class PermissionSetForm(FlaskForm):
 
 class TeamForm(FlaskForm):
     name = StringField()
-    sub = StringField('Workspace URL')
-    number = IntegerField()
-    email_subdomain = StringField('Email Subdomain (optional)')
+    description = StringField()
+    social_facebook  = StringField()
+    social_instagram = StringField()
+    social_github    = StringField()
+    social_twitter   = StringField()
+    social_youtube   = StringField()
 
 class UserForm(FlaskForm):
     first_name = StringField()
@@ -110,7 +113,6 @@ class ArticleForm(FlaskForm):
 
 class CreateTeamForm(FlaskForm):
     name = StringField('Team Name', validators=[required()])
-    sub = StringField('Workspace URL', validators=[required()])
     number = IntegerField(validators=[required()])
 
 class JoinTeamForm(FlaskForm):

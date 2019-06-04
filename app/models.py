@@ -48,6 +48,7 @@ class Image(CloudStorageObject):
     width = db.IntField()
     height = db.IntField()
 
+# This should really be on CloudStorageObject but signals aren't triggered for superclasses
 signals.post_save.connect(Image.post_save, sender=Image)
 signals.post_delete.connect(Image.post_save, sender=Image)
 
@@ -57,17 +58,14 @@ class Team(db.Document):
     owner = db.LazyReferenceField('User')
     description = db.StringField()
     photo = db.ReferenceField(Image)
-    editor_roles = db.ListField(db.ReferenceField('Role'))
-
-class TeamDocument(db.Document):
-    meta = {'abstract': True}
-    team = db.LazyReferenceField(Team) 
-
-class Role(TeamDocument):
-    name = db.StringField()
+    social_facebook  = db.StringField()
+    social_instagram = db.StringField()
+    social_github    = db.StringField()
+    social_twitter   = db.StringField()
+    social_youtube   = db.StringField()
 
 # Notification that has been queued to send to user
-class PushNotification(TeamDocument):
+class PushNotification(db.Document):
     user = db.ReferenceField('User')
     text = db.StringField()
     link = db.StringField()
@@ -87,9 +85,12 @@ class AppNotification(db.EmbeddedDocument):
     link = db.StringField()
     recieve_date = PendulumField()
 
-class User(TeamDocument, UserMixin):
+class User(db.Document, UserMixin):
     # Used during sign up process
     team_number = db.IntField()
+    # Used after sign up
+    team = db.ReferenceField(Team)
+    admin = db.BooleanField(default=False)
 
     email = db.EmailField(max_length=100)
     personal_email = db.EmailField(max_length=100)
@@ -102,8 +103,12 @@ class User(TeamDocument, UserMixin):
     last_name = db.StringField(max_length=50)
     @property
     def name(self):
-        return f"{self.first_name} {self.last_name}"
-    roles = db.ListField(db.ReferenceField(Role))
+        if self.first_name and self.last_name:
+            return f"{self.first_name} {self.last_name}"
+        if self.first_name:
+            return f"{self.first_name}"
+        else:
+            return ""
     assigned_tasks = db.ListField(db.GenericReferenceField())
     notifications = db.EmbeddedDocumentListField(AppNotification)
     def is_admin(self):
@@ -118,9 +123,7 @@ def load_user(user_id):
 
 class PermissionSet(db.EmbeddedDocument):
     editor_users = db.ListField(db.ReferenceField(User))
-    editor_roles = db.ListField(db.ReferenceField(Role))
     visible_users = db.ListField(db.ReferenceField(User))
-    visible_roles = db.ListField(db.ReferenceField(Role))
     def check_editor(self, user):
         for u in self.editor_users:
             if u.id == user.id:
@@ -146,7 +149,7 @@ class NotificationSettings(db.EmbeddedDocument):
     notify_by_app   = db.BooleanField(default=False)
     text = db.StringField()
 
-class TeamUpdate(TeamDocument):
+class TeamUpdate(db.Document):
     owner = db.ReferenceField(User)
     post_time = PendulumField()
     content = db.StringField()
@@ -157,12 +160,12 @@ class TeamUpdate(TeamDocument):
 
 # Calendar models
 
-class Calendar(TeamDocument):
+class Calendar(db.Document):
     name = db.StringField()
     description = db.StringField()
     permissions = db.EmbeddedDocumentField(PermissionSet)
 
-class Event(TeamDocument):
+class Event(db.Document):
     name = db.StringField()
     calendar = db.ReferenceField(Calendar)
     content = db.StringField()
@@ -176,7 +179,7 @@ class Event(TeamDocument):
     rsvp_notifications = db.EmbeddedDocumentField(NotificationSettings)
     enable_attendance = db.BooleanField(default=False)
 
-class RecurringEvent(TeamDocument):
+class RecurringEvent(db.Document):
     name = db.StringField()
     calendar = db.ReferenceField(Calendar)
     content = db.StringField()
@@ -194,7 +197,7 @@ class RecurringEvent(TeamDocument):
     rsvp_notifications = db.EmbeddedDocumentField(NotificationSettings)
     enable_attendance = db.BooleanField(default=False)
 
-class EventUser(TeamDocument):
+class EventUser(db.Document):
     user = db.ReferenceField('User')
     rsvp = db.StringField()
     sign_in = PendulumField()
@@ -204,7 +207,7 @@ class EventUser(TeamDocument):
 
 # Assignment models
 
-class Assignment(TeamDocument):
+class Assignment(db.Document):
     permissions = db.EmbeddedDocumentField(PermissionSet)
     users = db.ListField(db.ReferenceField('AssignmentUser'))
     subject = db.StringField()
@@ -213,19 +216,19 @@ class Assignment(TeamDocument):
     is_draft = db.BooleanField(default=True)
     notifications = db.EmbeddedDocumentField(NotificationSettings)
 
-class AssignmentUser(TeamDocument):
+class AssignmentUser(db.Document):
     user = db.ReferenceField('User')
     seen = PendulumField()
     completed = PendulumField()
 
 # Wiki models
 
-class Topic(TeamDocument):
+class Topic(db.Document):
     permissions = db.EmbeddedDocumentField(PermissionSet)
     name = db.StringField()
     description = db.StringField()
 
-class Article(TeamDocument):
+class Article(db.Document):
     name = db.StringField()
     content = db.StringField()
     topic = db.ReferenceField(Topic)

@@ -3,18 +3,18 @@
 
 
 <h1 class="title is-1"> All Users </h1>
-<table class="table is-hoverable">
+<table class="table is-hoverable" style='width: 100%'>
     <thead>
 	<tr>
 	    <th>Name</th>
 	    <th>Email</th>
-	    <th>Barcode</th>
-	    <th>Roles</th>
+	    <th>Workspace Role</th>
+	    <th></th>
 	</tr>
     </thead>
     <tbody>
 	{% for user in users %}    
-	<tr {{helpers.onclick(team_url_for('admin.user_info', id=user.id))}}>
+	<tr >
 	    <td>
 		{{user.name}}
 	    </td>
@@ -22,12 +22,37 @@
 		{{user.email}}
 	    </td>
 	    <td>
-		{{user.barcode}}
+		{% if current_user.team.owner == user %}
+		Owner
+		{% elif user.admin %}
+		Admin
+		{% else %}
+		Member
+		{% endif %}
 	    </td>
-	    <td>
-		{% for r in user.roles %}
-		<div class="button is-rounded has-text-white" style="background-color: {{r.color}}">{{r.name | capitalize}}</div>
-		{% endfor %}
+	    <td align="right">
+		<div class="dropdown is-right" id="dropdown-{{user.id}}">
+		    <div class="dropdown-trigger">
+			<button class="button" {{ helpers.toggle_active("dropdown-" + user.id|string) if not current_user.team.owner == user }} >
+			    <span class="icon is-small">
+				<i class="fas fa-ellipsis-v"></i>
+			    </span>
+			</button>
+		    </div>
+		    <div class="dropdown-menu" id="dropdown-menu" role="menu">
+			<div class="dropdown-content">
+			    {% if user.admin %}
+			    <a class='dropdown-item' href='{{url_for('admin.user_remove_admin', id=user.id)}}'>Demote to Member</a>
+			    {% else %}
+			    <a class='dropdown-item' href='{{url_for('admin.user_make_admin', id=user.id)}}'>Promote to Admin</a>
+			    {% endif %}
+			    <a class="dropdown-item" href="">Transfer Ownership</a>
+			    <a class="dropdown-item has-text-danger" href="{{url_for('admin.user_remove', id=user.id)}}">Remove from Team</a>
+			</div>
+		    </div>
+		</div>
+		{% if not current_user.team.owner == user %}
+		{% endif %}
 	    </td>
 	</tr>
 	{% endfor %}
@@ -47,8 +72,8 @@
 	<tr>
 	    <td>{{user.email}}</td>
 	    <td>
-		<a href="{{team_url_for('admin.user_approve', id=user.id)}}" class="button is-success">Approve</a>
-		<a href="{{team_url_for('admin.user_deny', id=user.id)}}" class="button is-danger">Deny</a>
+		<a href="{{url_for('admin.user_approve', id=user.id)}}" class="button is-success">Approve</a>
+		<a href="{{url_for('admin.user_deny', id=user.id)}}" class="button is-danger">Deny</a>
 	    </td>
 	</tr>
 	{% endfor %}

@@ -60,11 +60,15 @@ def callback():
         resp = google.get(oauth.USER_INFO)
         if resp.status_code == 200:
             user_data = resp.json()
+            print(user_data)
             email = user_data['email']
             domain = email[email.find('@')+1:]
             user = models.User.objects(email=email).first()
             if not user:
-                user = models.User(email=email)
+                user = models.User()
+                user.email = user_data['email']
+                user.first_name = user_data['given_name']
+                user.last_name = user_data['family_name']
                 user.save()
             login_user(user)
             if next_url:
@@ -97,7 +101,6 @@ def create_team():
             team.owner = current_user.id
             team.number = form.number.data
             team.name = form.name.data
-            team.sub = form.sub.data
             saved = False
             try:
                 team.save()
@@ -106,24 +109,14 @@ def create_team():
                 flash('Subdomain already in use. Please pick another!', 'warning')
             if saved:
                 team.reload()
-                load_sample_data(team)
-                everyone_role = models.Role.objects(team=team, name='everyone').first()
-                admin_role    = models.Role.objects(team=team, name='admin').first()
-                mentor_role   = models.Role.objects(team=team, name='mentor').first()
                 current_user.team = team
-                current_user.approved = pendulum.now()
-                current_user.roles = [everyone_role, admin_role, mentor_role]
-                current_user.save()
-                # Don't know why we have to do this
-                this_user = models.User.objects(id=current_user.id).first()
-                current_user.assigned_tasks = [this_user]
                 current_user.save()
                 # Redirect to new workspace
                 session['modal_title'] = 'Welcome!'
                 session['modal_content'] = '''
-                Thanks for joining Team Captain! We've loaded some sample data into your workspace so you can take a look around. Let us know if you have any questions!
+                Thanks for joining Team Captain!
                 '''
-                return redirect(url_for('team.index', sub=team.sub))
+                return redirect(url_for('admin.index'))
     if len(form.errors) > 0:
         flash_errors(form)
     return render_template('create_team.html', form=form)
