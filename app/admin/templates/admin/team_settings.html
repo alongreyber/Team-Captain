@@ -3,8 +3,18 @@
 
 <h1 class="title is-1">Team Settings</h1>
 
-<form submit="return false;" action="" method="post">
+<form submit="return false;" action="" method="post" enctype="multipart/form-data" >
     {{ form.hidden_tag() }}
+    {# 
+    <a class="button is-outlined is-secondary" href="#" >
+	View Profile 
+	<span style="margin-left: 5px" class="icon is-medium">
+	    <i class="fas fa-arrow-right"></i>
+	</span>
+    </a>
+    <br/>
+    #}
+    <img src="{{current_user.team.cover_photo.public_url}}" style="width: 100%">
 
     <div class="field">
 	{{ form.name.label(class_='label') }}
@@ -12,13 +22,97 @@
 	    {{ form.name(class_='input') }}
 	</div>
     </div>
+    <br/>
     <div class="field">
-	{{ form.social_facebook.label(class_='label') }}
+	{{ form.description.label(class_='label') }}
 	<div class="control">
-	    {{ form.social_facebook(class_='input') }}
+	    {{ form.description(class_='textarea', rows="5") }}
 	</div>
     </div>
+    <div class="field">
+	{{ form.website.label(class_='label') }}
+	<div class="control">
+	    {{ form.website(class_='input') }}
+	</div>
+    </div>
+    <br/>
+
+    <div class="label">
+	Cover Photo
+    </div>
+
+    {{ form.cover_photo(type="hidden") }}
+    <div class="file has-name is-boxed" id="" style="margin-right: 20px">
+	<label class="file-label">
+	    <input class="file-input" type="file" id="inputImage">
+	    <span class="file-cta">
+		<span class="file-icon">
+		    <i class="fas fa-upload"></i>
+		</span>
+		<span class="file-label">
+		    Upload
+		</span>
+	    </span>
+	</label>
+    </div>
+    <br/>
+    <br/>
+    <div class="field">
+	<div class="label">Social Media Accounts</div>
+	<div class="control" style="display: flex; flex-direction: row">
+	    <span class="ssk ssk-facebook"></span>
+	    {{ form.social_facebook(class_='input') }}
+	</div>
+	<div class="control" style="display: flex; flex-direction: row">
+	    <span class="ssk ssk-instagram"></span>
+	    {{ form.social_instagram(class_='input') }}
+	</div>
+	<div class="control" style="display: flex; flex-direction: row">
+	    <span class="ssk ssk-github ssk-black"></span>
+	    {{ form.social_github(class_='input') }}
+	</div>
+	<div class="control" style="display: flex; flex-direction: row">
+	    <span class="ssk ssk-twitter"></span>
+	    {{ form.social_twitter(class_='input') }}
+	</div>
+	<div class="control" style="display: flex; flex-direction: row">
+	    <span class="ssk ssk-youtube" style="background-color: #ff0001"></span>
+	    {{ form.social_youtube(class_='input') }}
+	</div>
+    </div>
+    <br/>
     <input class="button is-primary" id="submit" name="submit" type="submit" value="Save">
 </form>
+
+<script>
+    function readURL(input) {
+	if (input.files && input.files[0]) {
+	    var reader = new FileReader();
+	    reader.onload = function(e) {
+		$('#my-image').attr('src', e.target.result);
+		var resize = new Croppie($('#my-image')[0], {
+		    viewport: { width: 100, height: 100 },
+		    boundary: { width: 300, height: 300 },
+		    showZoomer: false,
+		    enableResize: true,
+		    enableOrientation: true
+		});
+		$('#use').fadeIn();
+		$('#use').on('click', function() {
+		    resize.result('base64').then(function(dataImg) {
+			var data = [{ image: dataImg }, { name: 'myimgage.jpg' }];
+			// use ajax to send data to php
+			$('#result').attr('src', dataImg);
+		    })
+		})
+	    }
+	    reader.readAsDataURL(input.files[0]);
+	}
+    }
+    $("#inputImage").change(function() {
+      readURL(this);
+    });
+
+</script>
 
 {% endblock %}

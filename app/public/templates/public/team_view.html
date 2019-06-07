@@ -1,6 +1,21 @@
 {% extends 'public/base.html' %}
 
 {% block public_content %}
-<h1 class="title is-1">{{team.name}}</h1>
+<div style="width: 100%;
+	   position:absolute;
+	   padding-left:20px;
+	   padding-right:20px;
+	   padding-top:20px;
+	   left:0px;
+	   top:0px;
+    ">
+    <img src="{{team.cover_photo.public_url}}" style="width: 100%">
+    <h1 class="title is-1 has-text-white" style="position:absolute; top:75%;left:8%; font-size: 5rem;">{{team.name}}</h1>
+
+</div>
+
+<p class="is-size-5">
+    {{team.description}}
+</p>
 
 {% endblock %}

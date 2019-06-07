@@ -24,8 +24,7 @@ def landing_page():
 @app.route('/login')
 def login():
     if current_user.is_authenticated:
-        team = current_user.team.fetch()
-        return redirect(url_for('team.index', sub=team.sub))
+        return redirect(url_for('public.feed'))
     # Save the URL that we go to after logging in
     google = oauth.get_google_auth()
     auth_url, state = google.authorization_url(oauth.AUTH_URI,

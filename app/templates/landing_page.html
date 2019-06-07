@@ -5,10 +5,7 @@
 {# Include background image in grayscale. Not sure if this should be colored or grayscale #}
 <style>
 body {
-    background-image:
-	linear-gradient(white,white),
-	url({{url_for('static', filename='images/skyline.svg')}});
-    background-blend-mode: saturation;
+    background-image: url({{url_for('static', filename='images/skyline.svg')}});
     height: 1050px;
 }
 </style>

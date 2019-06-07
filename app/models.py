@@ -1,4 +1,4 @@
-import datetime
+import datetime, re
 from app import db, login_manager, tasks, storage
 
 from flask import url_for
@@ -57,7 +57,9 @@ class Team(db.Document):
     number = db.IntField(unique=True)
     owner = db.LazyReferenceField('User')
     description = db.StringField()
-    photo = db.ReferenceField(Image)
+    cover_photo = db.ReferenceField(Image)
+    profile_photo = db.ReferenceField(Image)
+    website = db.StringField()
     social_facebook  = db.StringField()
     social_instagram = db.StringField()
     social_github    = db.StringField()

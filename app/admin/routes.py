@@ -4,21 +4,25 @@ from flask import render_template, request, redirect, flash, session, abort, url
 
 from flask_login import current_user
 
-import datetime, json, io, csv, re
+import datetime, json, io, csv, re, tempfile
 
 import pendulum
 from bson import ObjectId
+
+from mongoengine.errors import ValidationError
+
+import PIL
 
 admin = Blueprint('admin', __name__, template_folder='templates')
 
 # Make sure user can see this team and is an admin
 @admin.url_value_preprocessor
 def look_up_team(endpoint, values):
-    if not current_user.team:
-        abort(404)
     if not current_user.is_authenticated:
         flash('Please log in to view this page', 'danger')
         return redirect(url_for('login', next=request.endpoint))
+    if not current_user.team:
+        abort(404)
     if not current_user.is_admin and not current_user.team.owner == current_user:
         flash('You do not have permission to view this page', 'danger')
         return redirect(url_for('public.index'))
@@ -31,13 +35,64 @@ def index():
 def team_settings():
     form = forms.TeamForm(data=current_user.team.to_mongo().to_dict())
     if form.validate_on_submit():
-        match_facebook = re.compile("^https?:\/\/facebook\.com\/([a-zA-Z0-9]+)$")
-        social_facebook = match_facebook.search(form.social_facebook.data)
-        if not social_facebook:
-            flash('Invalid Facebook link', 'warning')
-        current_user.team.social_facebook = social_facebook
-        flash('Changes Saved', 'success')
-        current_user.team.save()
+        save = True
+        match_facebook = re.compile("^https?:\/\/(?:www\.)?facebook\.com\/([a-zA-Z0-9]+)\/?$")
+        if form.social_facebook.data and not match_facebook.match(form.social_facebook.data):
+            flash('Invalid Facebook URL', 'warning')
+            save = False
+        match_instagram = re.compile("^https?:\/\/(?:www\.)?instagram\.com\/([a-zA-Z0-9]+)\/?$")
+        if form.social_instagram.data and not match_instagram.match(form.social_instagram.data):
+            flash('Invalid Instagram URL', 'warning')
+            save = False
+        match_github = re.compile("^https?:\/\/(?:www\.)?github\.com\/([a-zA-Z0-9]+)\/?$")
+        if form.social_github.data and not match_github.match(form.social_github.data):
+            flash('Invalid Github URL', 'warning')
+            save = False
+        match_twitter = re.compile("^https?:\/\/(?:www\.)?twitter\.com\/([a-zA-Z0-9]+)\/?$")
+        if form.social_twitter.data and not match_twitter.match(form.social_twitter.data):
+            flash('Invalid Twitter URL', 'warning')
+            save = False
+        match_youtube = re.compile("^https?:\/\/(?:www\.)?youtube\.com\/([a-zA-Z0-9]+)\/?$")
+        if form.social_youtube.data and not match_youtube.match(form.social_youtube.data):
+            flash('Invalid Youtube URL', 'warning')
+            save = False
+        current_user.team.social_facebook = form.social_facebook.data
+        current_user.team.social_instagram = form.social_instagram.data
+        current_user.team.social_github = form.social_github.data
+        current_user.team.social_twitter = form.social_twitter.data
+        current_user.team.social_youtube = form.social_youtube.data
+        # Process image upload
+        if 'cover_photo' not in request.files:
+            flash('No file part', 'warning')
+            save = False
+        f = request.files['cover_photo']
+        # if user does not select file, browser also
+        # submit a empty part without filename
+        if not f.filename == '' :
+            if '.' not in f.filename:
+                flash('Image files only!', 'warning')
+                save = False
+            else:
+                pil_image = PIL.Image.open(f.stream)
+                width, height = pil_image.size
+                fd, path = tempfile.mkstemp(suffix='.webp')
+                with open(path, 'r+b') as image_webp:
+                    pil_image.save(image_webp)
+                    image_webp.seek(0)
+                    image_for_db = models.Image()
+                    image_for_db.extension = 'webp'
+                    image_for_db.width = width
+                    image_for_db.height = height
+                    # This is a temporary field that won't be saved
+                    image_for_db.file = image_webp
+                    image_for_db.save()
+                    current_user.team.cover_photo = image_for_db
+        if save:
+            current_user.team.save()
+            current_user.team.reload()
+            flash('Changes Saved', 'success')
+    if len(form.errors) > 0:
+        flash_errors(form)
     return render_template('admin/team_settings.html',
             form=form)
 

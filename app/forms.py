@@ -15,7 +15,10 @@ class PermissionSetForm(FlaskForm):
 
 class TeamForm(FlaskForm):
     name = StringField()
-    description = StringField()
+    description = TextAreaField("Team Bio")
+    cover_photo = FileField()
+    profile_photo = FileField()
+    website = html5.URLField(validators=[url(), optional()])
     social_facebook  = StringField()
     social_instagram = StringField()
     social_github    = StringField()
