@@ -169,12 +169,10 @@ class Calendar(db.Document):
 
 class Event(db.Document):
     name = db.StringField()
-    calendar = db.ReferenceField(Calendar)
-    content = db.StringField()
-    start = PendulumField()
-    end = PendulumField()
+    description = db.StringField()
+    photo = db.ReferenceField(Image)
+    date = PendulumField()
     is_draft = db.BooleanField(default=True)
-    recurrence = db.ReferenceField('RecurringEvent')
     enable_rsvp = db.BooleanField(default=False)
     # This is used to store RSVP and attendance information
     users = db.ListField(db.ReferenceField('EventUser'))

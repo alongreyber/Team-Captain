@@ -1,7 +1,7 @@
 {% extends 'public/base.html' %}
 
 {% block public_content %}
-<h1 class="title">Edit Post</h1>
+<h1 class="title">Edit Draft</h1>
 
 <form submit="return false;" action="" method="post" enctype="multipart/form-data" >
     {{ form.hidden_tag() }}
@@ -60,7 +60,7 @@
     </div>
 
     <br/>
-    <button onclick="$(this).addClass('is-loading')" class="button is-primary" id="submit" name="submit" type="submit">Post</button>
+    <button onclick="$(this).addClass('is-loading')" class="button is-primary" id="submit" name="submit" type="submit">Post!</button>
 </form>
 
 <script>

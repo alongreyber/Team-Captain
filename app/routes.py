@@ -72,7 +72,7 @@ def callback():
             login_user(user)
             if next_url:
                 return redirect(next_url)
-            return redirect(url_for('landing_page'))
+            return redirect(url_for('public.feed'))
         return 'Could not fetch your information.'
 
 def verify_team(number, code):

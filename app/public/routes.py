@@ -173,8 +173,10 @@ def user_list():
     return render_template('public/user_list.html', users=users)
 
 @public.route('/submittimezone', methods=['POST'])
-@login_required
 def timezone_submit():
+    # Basically just ignore if user isn't authenticated
+    if not current_user.is_authenticated:
+        return "Not Authenticated", 200
     # This isn't stored in db
     if request.json:
         current_user.tz = request.json
@@ -283,6 +285,12 @@ def task_list():
     for task in tasks:
         fill_in_task_info(task)
     return render_template('public/task_list.html',tasks=tasks)
+
+@public.route('/events')
+@login_required
+def event_list():
+    events = models.Event.objects()
+    return render_template('public/event_list.html', events=events)
 
 @public.route('/rsvp/<id>')
 @login_required

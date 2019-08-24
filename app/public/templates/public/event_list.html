@@ -3,32 +3,24 @@
 {% block public_content %}
 <h1 class="title">Events</h1>
 
-{# Initialize fullcalendar #}
-<link href='https://unpkg.com/@fullcalendar/core/main.min.css' rel='stylesheet' />
-<link href='https://unpkg.com/@fullcalendar/daygrid/main.min.css' rel='stylesheet' />
-<link href='https://unpkg.com/@fullcalendar/timegrid/main.min.css' rel='stylesheet' />
-
-<script src='https://unpkg.com/@fullcalendar/core@4.1.0/main.min.js'></script>
-<script src='https://unpkg.com/@fullcalendar/daygrid/main.min.js'></script>
-<script src='https://unpkg.com/@fullcalendar/timegrid/main.min.js'></script>
-
-
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    var calendarEl = document.getElementById('calendar');
-
-    var calendar = new FullCalendar.Calendar(calendarEl, {
-      header: { center: 'dayGridMonth,timeGridWeek' },
-      plugins: [ 'dayGrid', 'timeGrid' ],
-      events: {{events_for_fullcalendar|tojson}},
-      aspectRatio: 1.8
-    });
-
-    calendar.render();
-  });
-
-</script>
-
-<div id="calendar">
+<div class="level">
+    <div class="level-left">
+	{% for event in events %}
+	<div class="card">
+	    <div class="card-content">
+		<div class="ssk-group ssk-rounded ssk-sm">
+		    <a href="#" class="ssk ssk-twitter"></a>
+		    <a href="#" class="ssk ssk-facebook"></a>
+		    <a href="#" class="ssk ssk-google-plus"></a>
+		    <a href="#" class="ssk ssk-pinterest"></a>
+		    <a href="#" class="ssk ssk-tumblr"></a>
+		</div>
+	    </div>
+	</div>
+	{% endfor %}
+    </div>
+    <div class="level-right">
+    </div>
 </div>
+
 {% endblock %}
